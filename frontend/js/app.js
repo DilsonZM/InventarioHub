@@ -154,7 +154,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   setCurrentDate();
   var initialView = location.hash.slice(1) || 'dashboard';
   navigate(initialView);
-  startAutoRefresh();
 
   console.log('[App] Aplicacion inicializada correctamente');
 });
