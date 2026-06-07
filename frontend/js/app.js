@@ -944,17 +944,11 @@ async function openSaleModal() {
 
   try {
     var res = await API.products.list();
-    var available = res.data.filter(function (p) { return p.stock > 0; });
-    var sel = $('#saleProductSelect');
-    sel.innerHTML = '<option value="">Seleccionar producto</option>'
-      + available.map(function (p) {
-          return '<option value="' + p.id + '"'
-            + ' data-stock="' + p.stock + '"'
-            + ' data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
-            + escapeHtml(p.name) + ' (Stock: ' + p.stock + ' ' + escapeHtml(p.unidad || 'unidad') + ')'
-            + '</option>';
-        }).join('');
-  } catch (e) {}
+    state.allAvailableProducts = (res.data || []).filter(function (p) { return p.stock > 0; });
+    refreshSaleProductOptions();
+  } catch (e) {
+    state.allAvailableProducts = [];
+  }
 
   // Resetear selector de presentacion
   var presSel = $('#saleUnidadPresentacion');
@@ -971,6 +965,18 @@ $('#saleProductSelect').addEventListener('change', function () {
   var qty = $('#saleQuantity');
 
   if (!this.value) {
+    presSel.innerHTML = '<option value="">Misma unidad base</option>';
+    qty.value = 1;
+    qty.removeAttribute('max');
+    $('#saleConversionPreview').classList.add('hidden');
+    return;
+  }
+
+  // Defensa adicional: si el navegador permite seleccionar un option disabled
+  // (algunos navegadores lo hacen con teclado), rechazar.
+  if (opt.disabled) {
+    showToast('Este producto ya esta en la salida. Para cambiar la cantidad, eliminalo primero.', 'error');
+    this.value = '';
     presSel.innerHTML = '<option value="">Misma unidad base</option>';
     qty.value = 1;
     qty.removeAttribute('max');
@@ -1041,6 +1047,14 @@ $('#addSaleItem').addEventListener('click', function () {
   if (!sel.value) { showToast('Selecciona un producto', 'error'); return; }
   if (!qtyPres || qtyPres <= 0) { showToast('Cantidad invalida', 'error'); return; }
 
+  // Rechazar productos ya agregados (defensa: el select los marca disabled,
+  // pero si llega aqui es porque algo se salteo el filtro)
+  var alreadyAdded = state.saleItems.find(function (i) { return i.productId === sel.value; });
+  if (alreadyAdded) {
+    showToast('Este producto ya esta en la salida. Eliminalo de la lista para volver a agregarlo con otra cantidad.', 'error');
+    return;
+  }
+
   var stock = parseFloat(opt.dataset.stock);
   var factor = pOpt && pOpt.value ? (parseFloat(pOpt.dataset.factor) || 1) : 1;
   var cantidadBase = qtyPres * factor;
@@ -1053,37 +1067,54 @@ $('#addSaleItem').addEventListener('click', function () {
   var presValue = pOpt && pOpt.value ? pOpt.value : null;
   var presLabel = pOpt && pOpt.value ? pOpt.textContent.split(' (')[0].toLowerCase() : null;
 
-  var existing = state.saleItems.find(function (i) {
-    return i.productId === sel.value && (i.unidadPresentacion || null) === presValue;
+  state.saleItems.push({
+    productId: sel.value,
+    productName: opt.textContent.split(' (')[0],
+    cantidadPresentacion: qtyPres,
+    cantidadBase: cantidadBase,
+    unidadBase: opt.dataset.unidad || 'unidad',
+    unidadPresentacion: presValue,
+    unidadPresentacionLabel: presLabel,
+    factorConversion: factor
   });
-  if (existing) {
-    var newBase = existing.cantidadBase + cantidadBase;
-    if (newBase > stock) { showToast('Stock maximo: ' + stock, 'error'); return; }
-    existing.cantidadPresentacion += qtyPres;
-    existing.cantidadBase = newBase;
-  } else {
-    state.saleItems.push({
-      productId: sel.value,
-      productName: opt.textContent.split(' (')[0],
-      cantidadPresentacion: qtyPres,
-      cantidadBase: cantidadBase,
-      unidadBase: opt.dataset.unidad || 'unidad',
-      unidadPresentacion: presValue,
-      unidadPresentacionLabel: presLabel,
-      factorConversion: factor
-    });
-  }
 
   renderSaleItems();
   sel.value = '';
   presSel.value = '';
   $('#saleQuantity').value = 1;
   $('#saleConversionPreview').classList.add('hidden');
+  showToast('Producto agregado. Para cambiar la cantidad, eliminalo de la lista.', 'success');
 });
+
+function refreshSaleProductOptions() {
+  var sel = $('#saleProductSelect');
+  if (!sel || !state.allAvailableProducts) return;
+  var addedIds = state.saleItems.map(function (i) { return i.productId; });
+  var currentValue = sel.value;
+  sel.innerHTML = '<option value="">Seleccionar producto</option>'
+    + state.allAvailableProducts.map(function (p) {
+        var alreadyAdded = addedIds.indexOf(p.id) !== -1;
+        var label = escapeHtml(p.name) + ' (Stock: ' + p.stock + ' ' + escapeHtml(p.unidad || 'unidad') + ')';
+        if (alreadyAdded) label = label + ' \u2014 ya agregado';
+        return '<option value="' + p.id + '"'
+          + ' data-stock="' + p.stock + '"'
+          + ' data-unidad="' + escapeHtml(p.unidad || 'unidad') + '"'
+          + (alreadyAdded ? ' disabled' : '')
+          + '>' + label + '</option>';
+      }).join('');
+  // Restaurar seleccion si aun no esta agregada
+  if (currentValue && addedIds.indexOf(currentValue) === -1) {
+    sel.value = currentValue;
+  } else {
+    sel.value = '';
+  }
+}
 
 function renderSaleItems() {
   var tbody = $('#saleItemsTable');
   var cards = $('#saleItemsCards');
+
+  refreshSaleProductOptions();
 
   if (state.saleItems.length === 0) {
     tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">Sin productos agregados</td></tr>';

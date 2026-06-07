@@ -520,6 +520,18 @@
     .clear-filters-btn svg {
       transition: transform 0.2s ease-out;
     }
+
+    /* Opciones de select deshabilitadas: gris + tachado */
+    select option:disabled {
+      color: #94a3b8;
+      background-color: #f8fafc;
+      text-decoration: line-through;
+      font-style: italic;
+    }
+    [data-theme="dark"] select option:disabled {
+      color: #475569;
+      background-color: #1e293b;
+    }
   </style>
 </head>
 <body class="h-full bg-slate-50 animate-fade-in">
