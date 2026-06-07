@@ -236,15 +236,34 @@ function navigate(view) {
   }
 }
 
-async function initDashboard() {}
+function initDashboard() {
+  var ids = {
+    dateFrom: '#filterDateFromDash',
+    dateTo: '#filterDateToDash',
+    period: '#filterQuickPeriodDash',
+    clear: '#clearFiltersBtnDash'
+  };
+  var loader = loadDashboard;
+  $(ids.dateFrom).addEventListener('change', function () { $(ids.period).value = ''; loader(); });
+  $(ids.dateTo).addEventListener('change', function () { $(ids.period).value = ''; loader(); });
+  $(ids.period).addEventListener('change', function () { applyQuickPeriod(ids, loader); });
+  $(ids.clear).addEventListener('click', function () { clearFilters(ids, loader); });
+}
 
 async function loadDashboard() {
   console.log('[Dashboard] Cargando datos del dashboard...');
   try {
+    var fromDash = $('#filterDateFromDash').value;
+    var toDash = $('#filterDateToDash').value;
+    var statsParams = {};
+    var movParams = { limit: 10 };
+    if (fromDash) { statsParams.from = fromDash; movParams.from = fromDash; }
+    if (toDash) { statsParams.to = toDash; movParams.to = toDash; }
+
     var results = await Promise.all([
-      API.stats(),
+      API.stats(statsParams),
       API.products.list(),
-      API.reportes.movimientos({ limit: 10 }),
+      API.reportes.movimientos(movParams),
     ]);
     var statsRes = results[0];
     var productsRes = results[1];
@@ -256,9 +275,13 @@ async function loadDashboard() {
 
     var stats = statsRes.data;
     $('#stat-products').textContent = stats.totalProducts;
-    $('#stat-revenue').textContent = formatCurrency(stats.todayRevenue);
+    $('#stat-revenue').textContent = formatCurrency(stats.periodRevenue || 0);
     $('#stat-lowstock').textContent = stats.lowStockCount;
     $('#stat-value').textContent = formatCurrency(stats.inventoryValue);
+    var revLabel = $('#stat-revenue-label');
+    if (revLabel && stats.periodLabel) {
+      revLabel.textContent = 'Salidas ' + stats.periodLabel.toLowerCase();
+    }
 
     console.log('[Dashboard] Stats actualizadas en UI');
 
@@ -688,11 +711,7 @@ async function loadSales() {
 
   try {
     var res = await API.sales.list(params);
-    var sales = res.data;
-
-    if (paymentMethod) {
-      sales = sales.filter(function (s) { return s.paymentMethod === paymentMethod; });
-    }
+    var sales = res.data || [];
 
     state.sales = sales;
     renderSalesTable();

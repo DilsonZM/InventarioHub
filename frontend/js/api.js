@@ -103,7 +103,10 @@ const API = (() => {
         request('/sales', { method: 'POST', body: JSON.stringify(sale) }),
     },
 
-    stats: () => request('/stats'),
+    stats: (params = {}) => {
+      var qs = new URLSearchParams(params).toString();
+      return request('/stats' + (qs ? '?' + qs : ''));
+    },
 
     compras: {
       list: (params = {}) => {

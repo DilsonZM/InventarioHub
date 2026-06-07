@@ -450,6 +450,48 @@
     #sidebar {
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    /* Date input minimalista - scroll horizontal fino */
+    input[type="date"] {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8125rem;
+      letter-spacing: -0.01em;
+      color: var(--color-text-primary, #1e293b);
+      cursor: pointer;
+      min-width: 0;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      opacity: 0.4;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      filter: invert(0);
+    }
+    [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.9);
+    }
+    input[type="date"]:hover::-webkit-calendar-picker-indicator { opacity: 0.8; }
+    input[type="date"]::-webkit-datetime-edit {
+      padding: 0;
+    }
+    input[type="date"]::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+    input[type="date"]::-webkit-datetime-edit-month-field,
+    input[type="date"]::-webkit-datetime-edit-day-field,
+    input[type="date"]::-webkit-datetime-edit-year-field {
+      padding: 1px 2px;
+      border-radius: 4px;
+      caret-color: transparent;
+    }
+    input[type="date"]:focus::-webkit-datetime-edit-month-field,
+    input[type="date"]:focus::-webkit-datetime-edit-day-field,
+    input[type="date"]:focus::-webkit-datetime-edit-year-field {
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--color-accent-blue, #3b82f6);
+    }
+    /* Hide spinner arrows in number inputs */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
   </style>
 </head>
 <body class="h-full bg-slate-50 animate-fade-in">
@@ -563,6 +605,33 @@
 
     <main class="p-4 sm:p-6 lg:p-8">
       <div id="view-dashboard" class="view-section">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 p-4 mb-6">
+          <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
+                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all">
+                  <input type="date" id="filterDateFromDash" data-view="dashboard" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
+                  <div class="w-px bg-slate-200 self-stretch"></div>
+                  <input type="date" id="filterDateToDash" data-view="dashboard" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
+                <select id="filterQuickPeriodDash" data-view="dashboard" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                  <option value="today">Hoy</option>
+                  <option value="week">Esta semana</option>
+                  <option value="month">Este mes</option>
+                  <option value="quarter">Este trimestre</option>
+                  <option value="year">Este ano</option>
+                </select>
+              </div>
+              <div>
+                <button id="clearFiltersBtnDash" data-view="dashboard" class="w-full px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Limpiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-blue-100 animate-stagger animate-stagger-1">
             <div class="flex items-center justify-between mb-3">
@@ -584,7 +653,7 @@
               </div>
             </div>
             <p class="text-2xl font-bold text-slate-800" id="stat-revenue">$0</p>
-            <p class="text-sm text-slate-500">Salidas hoy</p>
+            <p class="text-sm text-slate-500" id="stat-revenue-label">Salidas hoy</p>
           </div>
           <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-amber-100 animate-stagger animate-stagger-3">
             <div class="flex items-center justify-between mb-3">

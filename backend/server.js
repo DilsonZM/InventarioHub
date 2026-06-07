@@ -38,6 +38,8 @@ app.use('/api/reportes', authMiddleware, reportesRoutes);
 
 app.get('/api/stats', authMiddleware, async (req, res) => {
   try {
+    const { from, to } = req.query;
+
     const { count: totalProducts } = await supabase
       .from('productos')
       .select('*', { count: 'exact', head: true })
@@ -56,15 +58,23 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
       .eq('activo', true);
     const lowStockCount = lowStockData ? lowStockData.filter(p => p.stock_actual <= p.stock_minimo).length : 0;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const { data: todaySales } = await supabase
+    let ventasQuery = supabase
       .from('ventas')
       .select('total')
-      .eq('estado', 'completada')
-      .gte('creado_en', today.toISOString());
-    const todaySalesCount = todaySales ? todaySales.length : 0;
-    const todayRevenue = todaySales ? todaySales.reduce((sum, s) => sum + parseFloat(s.total), 0) : 0;
+      .eq('estado', 'completada');
+    if (from) {
+      ventasQuery = ventasQuery.gte('creado_en', from);
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      ventasQuery = ventasQuery.gte('creado_en', today.toISOString());
+    }
+    if (to) {
+      ventasQuery = ventasQuery.lte('creado_en', to + 'T23:59:59');
+    }
+    const { data: periodSales } = await ventasQuery;
+    const periodSalesCount = periodSales ? periodSales.length : 0;
+    const periodRevenue = periodSales ? periodSales.reduce((sum, s) => sum + parseFloat(s.total), 0) : 0;
 
     res.json({
       success: true,
@@ -73,8 +83,9 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
         totalStock,
         inventoryValue,
         lowStockCount,
-        todaySales: todaySalesCount,
-        todayRevenue
+        periodSales: periodSalesCount,
+        periodRevenue,
+        periodLabel: from ? 'Periodo' : 'Hoy'
       }
     });
   } catch (err) {
