@@ -1338,7 +1338,10 @@ window.viewSale = async function (id) {
 async function openSaleModal() {
   var isEditing = !!state.editingSaleId;
   if (!isEditing) state.saleItems = [];
-  $('#saleForm').reset();
+  // En edicion no reseteamos el form (mantenemos la cocina pre-poblada)
+  if (!isEditing) {
+    $('#saleForm').reset();
+  }
   $('#saleQuantity').removeAttribute('max');
   $('#saleTotal').textContent = '0 unid.';
   $('#saleFormError').classList.add('hidden');
@@ -1370,12 +1373,24 @@ async function openSaleModal() {
   var presSel = $('#saleUnidadPresentacion');
   if (presSel) presSel.innerHTML = '<option value="">Misma unidad base</option>';
 
+  // En edicion, auto-seleccionar el primer item del state para que el usuario vea
+  // su cantidad y el stock disponible, y poder cambiarla
+  if (isEditing && state.saleItems.length > 0) {
+    var firstItem = state.saleItems[0];
+    var sel = $('#saleProductSelect');
+    if (sel) {
+      sel.value = firstItem.productId;
+      // Disparar change manualmente para que se setee max y se actualice la UI
+      sel.dispatchEvent(new Event('change'));
+    }
+  }
+
   openModal('saleModal');
 }
 
 $('#saleProductSelect').addEventListener('change', function () {
   var opt = this.options[this.selectedIndex];
-  var stock = parseFloat(opt.dataset.stock) || 0;
+  var stockDisponible = parseFloat(opt.dataset.stock) || 0;
   var unidad = opt.dataset.unidad || 'unidad';
   var presSel = $('#saleUnidadPresentacion');
   var qty = $('#saleQuantity');
@@ -1389,7 +1404,6 @@ $('#saleProductSelect').addEventListener('change', function () {
   }
 
   // Defensa adicional: si el navegador permite seleccionar un option disabled
-  // (algunos navegadores lo hacen con teclado), rechazar.
   if (opt.disabled) {
     showToast('Este producto ya esta en la salida. Para cambiar la cantidad, eliminalo primero.', 'error');
     this.value = '';
@@ -1400,20 +1414,44 @@ $('#saleProductSelect').addEventListener('change', function () {
     return;
   }
 
-  qty.value = 1;
-  if (stock > 0) {
-    qty.max = stock;
+  // Si es edicion y el producto esta en state, pre-poblar con su cantidad
+  var existingItem = state.saleItems.find(function (i) { return i.productId === this.value; }.bind(this));
+  if (existingItem) {
+    var factorExist = existingItem.factorConversion || 1;
+    qty.value = factorExist !== 1 ? existingItem.cantidadPresentacion : existingItem.cantidadBase;
+    if (existingItem.unidadPresentacion && presSel) {
+      // Cargar opciones de presentacion
+      var presList = window.getPresentaciones(unidad);
+      presSel.innerHTML = presList.map(function (p) {
+        return '<option value="' + p.value + '" data-factor="' + p.factor + '" data-icon="' + p.icon + '">' + escapeHtml(p.label) + '</option>';
+      }).join('');
+      presSel.value = existingItem.unidadPresentacion || '';
+    }
+  } else {
+    qty.value = 1;
+  }
+
+  // Maximo = stock disponible (ya incluye lo reservado si es edicion)
+  if (stockDisponible > 0) {
+    qty.max = stockDisponible;
   } else {
     qty.removeAttribute('max');
   }
 
-  var pres = window.getPresentaciones(unidad);
-  presSel.innerHTML = pres.map(function (p) {
-    return '<option value="' + p.value + '" data-factor="' + p.factor + '" data-icon="' + p.icon + '">' + escapeHtml(p.label) + '</option>';
-  }).join('');
+  if (!existingItem) {
+    var pres = window.getPresentaciones(unidad);
+    presSel.innerHTML = pres.map(function (p) {
+      return '<option value="' + p.value + '" data-factor="' + p.factor + '" data-icon="' + p.icon + '">' + escapeHtml(p.label) + '</option>';
+    }).join('');
+    presSel.value = '';
+  }
 
-  presSel.value = '';
-  $('#saleConversionPreview').classList.add('hidden');
+  // Actualizar preview si hay presentacion
+  if (presSel.value) {
+    updateSaleConversionPreview();
+  } else {
+    $('#saleConversionPreview').classList.add('hidden');
+  }
 });
 
 $('#saleUnidadPresentacion').addEventListener('change', function () {
@@ -1463,43 +1501,63 @@ $('#addSaleItem').addEventListener('click', function () {
   if (!sel.value) { showToast('Selecciona un producto', 'error'); return; }
   if (!qtyPres || qtyPres <= 0) { showToast('Cantidad invalida', 'error'); return; }
 
-  // Rechazar productos ya agregados (defensa: el select los marca disabled,
-  // pero si llega aqui es porque algo se salteo el filtro)
   var alreadyAdded = state.saleItems.find(function (i) { return i.productId === sel.value; });
-  if (alreadyAdded) {
+  var isEditing = !!state.editingSaleId;
+
+  // En modo creacion, rechazar duplicados. En edicion, permitir reemplazar cantidad.
+  if (alreadyAdded && !isEditing) {
     showToast('Este producto ya esta en la salida. Eliminalo de la lista para volver a agregarlo con otra cantidad.', 'error');
     return;
   }
 
-  var stock = parseFloat(opt.dataset.stock);
+  var stockDisponible = parseFloat(opt.dataset.stock) || 0;  // ya incluye lo reservado
+  var stockReal = parseFloat(opt.dataset.stockReal) || 0;
+  var stockReservado = parseFloat(opt.dataset.stockReservado) || 0;
   var factor = pOpt && pOpt.value ? (parseFloat(pOpt.dataset.factor) || 1) : 1;
   var cantidadBase = qtyPres * factor;
 
-  if (cantidadBase > stock) {
-    showToast('Stock disponible: ' + stock + ' ' + (opt.dataset.unidad || 'u') + '. Pediste: ' + cantidadBase.toFixed(2), 'error');
+  if (cantidadBase > stockDisponible) {
+    var msg = 'Stock disponible: ' + stockDisponible + ' ' + (opt.dataset.unidad || 'u') + '. Pediste: ' + cantidadBase.toFixed(2);
+    if (stockReservado > 0) {
+      msg += ' (ya tienes ' + stockReservado + ' en esta salida)';
+    }
+    showToast(msg, 'error');
     return;
   }
 
   var presValue = pOpt && pOpt.value ? pOpt.value : null;
   var presLabel = pOpt && pOpt.value ? pOpt.textContent.split(' (')[0].toLowerCase() : null;
 
-  state.saleItems.push({
-    productId: sel.value,
-    productName: opt.textContent.split(' (')[0],
-    cantidadPresentacion: qtyPres,
-    cantidadBase: cantidadBase,
-    unidadBase: opt.dataset.unidad || 'unidad',
-    unidadPresentacion: presValue,
-    unidadPresentacionLabel: presLabel,
-    factorConversion: factor
-  });
+  if (alreadyAdded && isEditing) {
+    // Reemplazar la cantidad del item existente
+    alreadyAdded.cantidadPresentacion = qtyPres;
+    alreadyAdded.cantidadBase = cantidadBase;
+    alreadyAdded.unidadPresentacion = presValue;
+    alreadyAdded.unidadPresentacionLabel = presLabel;
+    alreadyAdded.factorConversion = factor;
+  } else {
+    state.saleItems.push({
+      productId: sel.value,
+      productName: opt.textContent.split(' (')[0],
+      cantidadPresentacion: qtyPres,
+      cantidadBase: cantidadBase,
+      unidadBase: opt.dataset.unidad || 'unidad',
+      unidadPresentacion: presValue,
+      unidadPresentacionLabel: presLabel,
+      factorConversion: factor
+    });
+  }
 
   renderSaleItems();
   sel.value = '';
   presSel.value = '';
   $('#saleQuantity').value = 1;
   $('#saleConversionPreview').classList.add('hidden');
-  showToast('Producto agregado. Para cambiar la cantidad, eliminalo de la lista.', 'success');
+  if (alreadyAdded && isEditing) {
+    showToast('Cantidad actualizada', 'success');
+  } else {
+    showToast('Producto agregado. Para cambiar la cantidad, eliminalo de la lista.', 'success');
+  }
 });
 
 function refreshSaleProductOptions() {
@@ -1507,20 +1565,37 @@ function refreshSaleProductOptions() {
   if (!sel || !state.allAvailableProducts) return;
   var addedIds = state.saleItems.map(function (i) { return i.productId; });
   var currentValue = sel.value;
+  var isEditing = !!state.editingSaleId;
+
   sel.innerHTML = '<option value="">Seleccionar producto</option>'
     + state.allAvailableProducts.map(function (p) {
-        var alreadyAdded = addedIds.indexOf(p.id) !== -1;
-        var label = escapeHtml(p.name) + ' (Stock: ' + p.stock + ' ' + escapeHtml(p.unidad || 'unidad') + ')';
-        if (alreadyAdded) label = label + ' \u2014 ya agregado';
+        var addedItem = state.saleItems.find(function (i) { return i.productId === p.id; });
+        var alreadyAdded = !!addedItem;
+        // Stock "reservado" en la salida actual = cantidad ya en el item
+        var stockReservado = alreadyAdded ? addedItem.cantidadBase : 0;
+        // Stock disponible real = stock_actual + lo que ya esta descontado en esta salida
+        var stockDisponible = (p.stock || 0) + stockReservado;
+        var label = escapeHtml(p.name) + ' (Stock: ' + stockDisponible + ' ' + escapeHtml(p.unidad || 'unidad') + ')';
+        if (alreadyAdded && !isEditing) label = label + ' \u2014 ya agregado';
+        if (alreadyAdded && isEditing) label = label + ' \u2014 en esta salida';
         return '<option value="' + p.id + '"'
-          + ' data-stock="' + p.stock + '"'
+          + ' data-stock="' + stockDisponible + '"'
+          + ' data-stock-real="' + (p.stock || 0) + '"'
+          + ' data-stock-reservado="' + stockReservado + '"'
           + ' data-unidad="' + escapeHtml(p.unidad || 'unidad') + '"'
-          + (alreadyAdded ? ' disabled' : '')
+          + (alreadyAdded && !isEditing ? ' disabled' : '')
           + '>' + label + '</option>';
       }).join('');
-  // Restaurar seleccion si aun no esta agregada
-  if (currentValue && addedIds.indexOf(currentValue) === -1) {
-    sel.value = currentValue;
+
+  // Restaurar seleccion: solo si NO esta ya en state (en creacion) o siempre en edicion
+  if (currentValue) {
+    if (isEditing) {
+      sel.value = currentValue;
+    } else if (addedIds.indexOf(currentValue) === -1) {
+      sel.value = currentValue;
+    } else {
+      sel.value = '';
+    }
   } else {
     sel.value = '';
   }
