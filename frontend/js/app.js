@@ -1,24 +1,44 @@
-if (!API.isAuthenticated()) {
-  window.location.href = '/views/login.html';
-}
+// Esperar a que el DOM esté listo antes de ejecutar cualquier código
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[App] Inicializando InventarioApp...');
 
-const state = {
-  products: [],
-  sales: [],
-  categories: [],
-  saleItems: [],
-  currentView: 'dashboard',
-  user: API.getUser(),
-};
+  // Verificar autenticación
+  if (typeof API === 'undefined') {
+    console.error('[App] API no está definida. Verifica que api.js se cargó correctamente.');
+    return;
+  }
 
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
+  if (!API.isAuthenticated()) {
+    console.log('[App] Usuario no autenticado, redirigiendo a login...');
+    window.location.href = '/views/login.html';
+    return;
+  }
 
-const formatCurrency = Utils.formatCurrency;
-const formatDate = Utils.formatDate;
-const formatDateShort = Utils.formatDateShort;
-const escapeHtml = Utils.escapeHtml;
-const debounce = Utils.debounce;
+  // Verificar que Utils esté disponible
+  if (typeof Utils === 'undefined') {
+    console.error('[App] Utils no está definido. Verifica que utils.js se cargó correctamente.');
+    return;
+  }
+
+  console.log('[App] Usuario autenticado, cargando aplicación...');
+
+  const state = {
+    products: [],
+    sales: [],
+    categories: [],
+    saleItems: [],
+    currentView: 'dashboard',
+    user: API.getUser(),
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  const formatCurrency = Utils.formatCurrency;
+  const formatDate = Utils.formatDate;
+  const formatDateShort = Utils.formatDateShort;
+  const escapeHtml = Utils.escapeHtml;
+  const debounce = Utils.debounce;
 
 function showToast(message, type = 'success') {
   const toast = $('#toast');
@@ -737,3 +757,6 @@ function showError(id, msg) {
   el.classList.remove('hidden');
   el.querySelector('p').textContent = msg;
 }
+
+  console.log('[App] Aplicación inicializada correctamente');
+}); // Fin de DOMContentLoaded
