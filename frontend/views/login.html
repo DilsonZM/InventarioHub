@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InventarioApp - Acceso</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);
+      --text-base: clamp(1rem, 0.9rem + 0.5vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.625vw, 1.25rem);
+      --text-xl: clamp(1.25rem, 1rem + 1.25vw, 1.5rem);
+      --text-2xl: clamp(1.5rem, 1.25rem + 1.25vw, 2rem);
+      --text-3xl: clamp(1.875rem, 1.5rem + 1.875vw, 2.5rem);
+      --text-4xl: clamp(2.25rem, 1.75rem + 2.5vw, 3.5rem);
+    }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: var(--text-base);
+      min-height: 100dvh;
+    }
+    .font-mono { font-family: 'Space Mono', monospace; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.5); }
+    }
+
+    .animate-fade-up {
+      animation: fadeUp 0.6s ease-out forwards;
+      opacity: 0;
+    }
+    .animate-fade-up-delay-1 { animation-delay: 0.1s; }
+    .animate-fade-up-delay-2 { animation-delay: 0.2s; }
+    .animate-fade-up-delay-3 { animation-delay: 0.3s; }
+
+    .bg-noise {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    .gradient-mesh {
+      background:
+        radial-gradient(ellipse at 20% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+    }
+
+    input:focus, select:focus {
+      transform: translateY(-1px);
+    }
+
+    button:not(:disabled):active {
+      transform: scale(0.98);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-white">
+
+  <div class="min-h-[100dvh] flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+    <div class="absolute inset-0 gradient-mesh bg-noise"></div>
+
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
+
+    <div class="w-full max-w-md relative z-10">
+
+      <div class="text-center mb-6 sm:mb-8 animate-fade-up">
+        <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 mb-4 shadow-2xl shadow-blue-500/30" style="animation: pulse-glow 3s ease-in-out infinite;">
+          <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-violet-200 bg-clip-text text-transparent">InventarioApp</h1>
+        <p class="text-slate-400 mt-2 text-sm sm:text-base">Gestión inteligente de inventario</p>
+      </div>
+
+      <div class="bg-white/[0.03] backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-6 sm:p-8 animate-fade-up animate-fade-up-delay-1">
+
+        <div class="flex bg-white/5 rounded-xl p-1 mb-6">
+          <button id="tabLogin" class="auth-tab flex-1 py-3 text-sm font-semibold rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 text-white transition-all shadow-lg shadow-blue-500/20">Iniciar Sesión</button>
+          <button id="tabRegister" class="auth-tab flex-1 py-3 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Registrarse</button>
+        </div>
+
+        <form id="loginForm" class="space-y-5" novalidate>
+          <div>
+            <label for="loginUsername" class="block text-sm font-medium text-slate-300 mb-2">Usuario</label>
+            <input type="text" id="loginUsername" name="username" required autocomplete="username" placeholder="Tu usuario"
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+          </div>
+          <div>
+            <label for="loginPassword" class="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
+            <input type="password" id="loginPassword" name="password" required autocomplete="current-password" placeholder="Tu contraseña"
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+          </div>
+          <div id="loginError" class="hidden p-4 bg-red-500/10 border border-red-500/20 rounded-xl backdrop-blur-sm">
+            <p class="text-sm text-red-300 text-center"></p>
+          </div>
+          <button type="submit" id="loginBtn"
+            class="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-target">
+            <svg class="hidden w-5 h-5 animate-spin" data-spinner fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span>Iniciar Sesión</span>
+          </button>
+        </form>
+
+        <form id="registerForm" class="space-y-5 hidden" novalidate>
+          <div>
+            <label for="regUsername" class="block text-sm font-medium text-slate-300 mb-2">Usuario</label>
+            <input type="text" id="regUsername" name="username" required autocomplete="username" placeholder="Elige un usuario (min. 3 chars)"
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+          </div>
+          <div>
+            <label for="regPassword" class="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
+            <input type="password" id="regPassword" name="password" required autocomplete="new-password" placeholder="Mínimo 6 caracteres"
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+          </div>
+          <div>
+            <label for="regRole" class="block text-sm font-medium text-slate-300 mb-2">Rol</label>
+            <select id="regRole" name="role"
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+              <option value="vendedor" class="bg-slate-900">Vendedor</option>
+              <option value="admin" class="bg-slate-900">Administrador</option>
+            </select>
+          </div>
+          <div id="registerError" class="hidden p-4 bg-red-500/10 border border-red-500/20 rounded-xl backdrop-blur-sm">
+            <p class="text-sm text-red-300 text-center"></p>
+          </div>
+          <button type="submit" id="registerBtn"
+            class="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-target">
+            <svg class="hidden w-5 h-5 animate-spin" data-spinner fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span>Crear Cuenta</span>
+          </button>
+        </form>
+      </div>
+
+      <p class="text-center text-slate-500 text-xs sm:text-sm mt-6 animate-fade-up animate-fade-up-delay-2">
+        Demo: <span class="font-mono text-slate-400">admin</span> / <span class="font-mono text-slate-400">admin123</span>
+      </p>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+</body>
+</html>

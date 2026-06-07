@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InventarioApp</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --text-xs: clamp(0.7rem, 0.65rem + 0.25vw, 0.8rem);
+      --text-sm: clamp(0.8rem, 0.75rem + 0.25vw, 0.9rem);
+      --text-base: clamp(0.9rem, 0.85rem + 0.25vw, 1rem);
+      --text-lg: clamp(1rem, 0.95rem + 0.25vw, 1.15rem);
+      --text-xl: clamp(1.1rem, 1rem + 0.5vw, 1.35rem);
+      --text-2xl: clamp(1.3rem, 1.1rem + 1vw, 1.75rem);
+      --text-3xl: clamp(1.6rem, 1.3rem + 1.5vw, 2.25rem);
+      --text-4xl: clamp(2rem, 1.5rem + 2.5vw, 3rem);
+      --space-xs: clamp(0.25rem, 0.2rem + 0.25vw, 0.5rem);
+      --space-sm: clamp(0.5rem, 0.4rem + 0.5vw, 0.75rem);
+      --space-md: clamp(0.75rem, 0.6rem + 0.75vw, 1.25rem);
+      --space-lg: clamp(1rem, 0.8rem + 1vw, 1.75rem);
+      --space-xl: clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem);
+    }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: var(--text-base);
+    }
+    .font-mono { font-family: 'Space Mono', monospace; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes staggerFade {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+    .animate-slide-down { animation: slideDown 0.3s ease-out forwards; }
+    .animate-scale-in { animation: scaleIn 0.3s ease-out forwards; }
+    .animate-slide-in-right { animation: slideInRight 0.4s ease-out forwards; }
+    .animate-stagger { animation: staggerFade 0.5s ease-out forwards; opacity: 0; }
+    .animate-stagger-1 { animation-delay: 0.05s; }
+    .animate-stagger-2 { animation-delay: 0.1s; }
+    .animate-stagger-3 { animation-delay: 0.15s; }
+    .animate-stagger-4 { animation-delay: 0.2s; }
+
+    .stat-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .nav-link {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav-link:hover {
+      transform: translateX(4px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+    }
+    .btn-primary:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-success:hover {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+    }
+
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .table-card-mobile {
+      display: none;
+    }
+
+    @media (max-width: 767px) {
+      .table-desktop { display: none !important; }
+      .table-card-mobile { display: block !important; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .bg-noise {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-50 animate-fade-in">
+
+  <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-fade-in"></div>
+
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-slate-900 to-slate-950 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-out shadow-2xl">
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-white/5">
+      <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-white">InventarioApp</h1>
+        <p class="text-xs text-slate-400">Panel de control</p>
+      </div>
+    </div>
+
+    <nav class="px-4 py-6 space-y-1">
+      <a href="#dashboard" data-nav="dashboard" class="nav-link flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white group touch-target">
+        <div class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+          <svg class="w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+          </svg>
+        </div>
+        <span class="font-medium">Dashboard</span>
+      </a>
+      <a href="#inventory" data-nav="inventory" class="nav-link flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white group touch-target">
+        <div class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+          <svg class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+        </div>
+        <span class="font-medium">Inventario</span>
+      </a>
+      <a href="#sales" data-nav="sales" class="nav-link flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white group touch-target">
+        <div class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+          <svg class="w-5 h-5 text-slate-400 group-hover:text-violet-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+          </svg>
+        </div>
+        <span class="font-medium">Ventas</span>
+      </a>
+    </nav>
+
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5 bg-slate-900/50 backdrop-blur-sm">
+      <div class="flex items-center gap-3 px-2">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg">
+          <span class="text-sm font-bold text-white" id="userInitial">A</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-white truncate" id="userName">Admin</p>
+          <p class="text-xs text-slate-400" id="userRole">Administrador</p>
+        </div>
+        <button id="logoutBtn" class="p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all touch-target" title="Cerrar sesión">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="lg:pl-72 min-h-[100dvh]">
+    <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+      <div class="flex items-center justify-between px-4 py-3 sm:px-6">
+        <button id="menuToggle" class="lg:hidden p-2.5 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors touch-target">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex-1 lg:flex-none">
+          <h2 class="text-xl font-bold text-slate-800" id="pageTitle">Dashboard</h2>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="hidden sm:inline text-sm text-slate-500" id="currentDate"></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-4 sm:p-6 lg:p-8">
+      <div id="view-dashboard" class="view-section">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-blue-100 animate-stagger animate-stagger-1">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-slate-800" id="stat-products">0</p>
+            <p class="text-sm text-slate-500">Productos</p>
+          </div>
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-emerald-100 animate-stagger animate-stagger-2">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-slate-800" id="stat-revenue">$0</p>
+            <p class="text-sm text-slate-500">Ventas hoy</p>
+          </div>
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-amber-100 animate-stagger animate-stagger-3">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-slate-800" id="stat-lowstock">0</p>
+            <p class="text-sm text-slate-500">Stock bajo</p>
+          </div>
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-violet-100 animate-stagger animate-stagger-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-50 to-violet-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+            </div>
+            <p class="text-2xl font-bold text-slate-800" id="stat-value">$0</p>
+            <p class="text-sm text-slate-500">Valor inventario</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100/50">
+            <h3 class="text-base font-semibold text-slate-800 mb-4">Ventas por Categoría</h3>
+            <div class="relative h-64">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100/50">
+            <h3 class="text-base font-semibold text-slate-800 mb-4">Productos con Stock Bajo</h3>
+            <div id="lowStockList" class="space-y-3 overflow-y-auto max-h-64">
+              <p class="text-sm text-slate-400 text-center py-8">Cargando...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-base font-semibold text-slate-800">Ventas Recientes</h3>
+            <a href="#sales" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Ver todas</a>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full table-desktop">
+              <thead>
+                <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50/50">
+                  <th class="px-6 py-3">ID</th>
+                  <th class="px-6 py-3">Productos</th>
+                  <th class="px-6 py-3">Total</th>
+                  <th class="px-6 py-3">Pago</th>
+                  <th class="px-6 py-3">Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="recentSalesTable" class="divide-y divide-slate-100">
+                <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Cargando...</td></tr>
+              </tbody>
+            </table>
+            <div id="recentSalesCards" class="table-card-mobile p-4 space-y-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-inventory" class="view-section hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div class="flex items-center gap-3 flex-1">
+            <div class="relative flex-1 max-w-md">
+              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <input type="text" id="searchProducts" placeholder="Buscar por nombre o SKU..." class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+            </div>
+            <select id="filterCategory" class="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 hidden sm:block touch-target">
+              <option value="">Todas las categorías</option>
+            </select>
+          </div>
+          <button id="addProductBtn" class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 text-white text-sm font-semibold rounded-xl shadow-sm touch-target">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span>Nuevo Producto</span>
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full table-desktop">
+              <thead class="bg-slate-50/50">
+                <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th class="px-6 py-3">Producto</th>
+                  <th class="px-6 py-3">SKU</th>
+                  <th class="px-6 py-3">Categoría</th>
+                  <th class="px-6 py-3 text-right">Precio</th>
+                  <th class="px-6 py-3 text-center">Stock</th>
+                  <th class="px-6 py-3 text-center">Estado</th>
+                  <th class="px-6 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="productsTable" class="divide-y divide-slate-100">
+                <tr><td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Cargando productos...</td></tr>
+              </tbody>
+            </table>
+            <div id="productsCards" class="table-card-mobile p-4 space-y-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-sales" class="view-section hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 p-4 mb-6">
+          <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Desde</label>
+                <input type="date" id="filterDateFrom" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Hasta</label>
+                <input type="date" id="filterDateTo" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Método de Pago</label>
+                <select id="filterPaymentMethod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                  <option value="">Todos</option>
+                  <option value="efectivo">Efectivo</option>
+                  <option value="tarjeta">Tarjeta</option>
+                  <option value="transferencia">Transferencia</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Período Rápido</label>
+                <select id="filterQuickPeriod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                  <option value="">Personalizado</option>
+                  <option value="today">Hoy</option>
+                  <option value="week">Esta semana</option>
+                  <option value="month">Este mes</option>
+                  <option value="quarter">Este trimestre</option>
+                  <option value="year">Este año</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button id="clearFiltersBtn" class="px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Limpiar</button>
+              <button id="newSaleBtn" class="btn-success inline-flex items-center justify-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-xl shadow-sm touch-target">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span>Nueva Venta</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="salesSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-xl p-4 border border-slate-100/50">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Ventas</p>
+            <p class="text-xl font-bold text-slate-800 mt-1" id="summaryCount">0</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-slate-100/50">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Monto Total</p>
+            <p class="text-xl font-bold text-emerald-600 mt-1" id="summaryTotal">$0</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-slate-100/50">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Ticket Promedio</p>
+            <p class="text-xl font-bold text-blue-600 mt-1" id="summaryAvg">$0</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-slate-100/50">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Productos Vendidos</p>
+            <p class="text-xl font-bold text-violet-600 mt-1" id="summaryItems">0</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full table-desktop">
+              <thead class="bg-slate-50/50">
+                <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th class="px-6 py-3">ID Venta</th>
+                  <th class="px-6 py-3">Productos</th>
+                  <th class="px-6 py-3 text-right">Total</th>
+                  <th class="px-6 py-3">Método Pago</th>
+                  <th class="px-6 py-3">Fecha</th>
+                  <th class="px-6 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="salesTable" class="divide-y divide-slate-100">
+                <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Cargando ventas...</td></tr>
+              </tbody>
+            </table>
+            <div id="salesCards" class="table-card-mobile p-4 space-y-3"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="productModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
+      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" data-close-modal></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto z-10 animate-scale-in">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h3 class="text-lg font-semibold text-slate-800" id="productModalTitle">Nuevo Producto</h3>
+          <button data-close-modal class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors touch-target">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <form id="productForm" class="p-6 space-y-4">
+          <input type="hidden" id="productId">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Nombre *</label>
+              <input type="text" id="productName" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">SKU *</label>
+              <input type="text" id="productSku" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Categoría *</label>
+              <select id="productCategory" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+                <option value="">Seleccionar</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Precio Venta *</label>
+              <input type="number" id="productPrice" required min="0" step="0.01" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Costo *</label>
+              <input type="number" id="productCost" required min="0" step="0.01" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Stock *</label>
+              <input type="number" id="productStock" required min="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Stock Mínimo</label>
+              <input type="number" id="productMinStock" min="0" value="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
+              <textarea id="productDescription" rows="2" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all resize-none touch-target"></textarea>
+            </div>
+          </div>
+          <div id="productFormError" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p class="text-sm text-red-600"></p>
+          </div>
+          <div class="flex gap-3 pt-2">
+            <button type="button" data-close-modal class="flex-1 px-4 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
+            <button type="submit" class="btn-primary flex-1 px-4 py-3 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="saleModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
+      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" data-close-modal></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto z-10 animate-scale-in">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h3 class="text-lg font-semibold text-slate-800">Nueva Venta</h3>
+          <button data-close-modal class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors touch-target">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <form id="saleForm" class="p-6">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Agregar Productos</label>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <select id="saleProductSelect" class="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+                  <option value="">Seleccionar producto</option>
+                </select>
+                <div class="flex gap-2">
+                  <input type="number" id="saleQuantity" min="1" value="1" class="w-20 px-3 py-3 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+                  <button type="button" id="addSaleItem" class="btn-primary px-4 py-3 text-white rounded-xl text-sm font-medium touch-target">Agregar</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+              <table class="w-full text-sm table-desktop">
+                <thead class="bg-slate-50">
+                  <tr class="text-left text-xs font-medium text-slate-500 uppercase">
+                    <th class="px-4 py-2">Producto</th>
+                    <th class="px-4 py-2 text-center">Cant.</th>
+                    <th class="px-4 py-2 text-right">Precio</th>
+                    <th class="px-4 py-2 text-right">Subtotal</th>
+                    <th class="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody id="saleItemsTable" class="divide-y divide-slate-100">
+                  <tr><td colspan="5" class="px-4 py-6 text-center text-slate-400">Sin productos agregados</td></tr>
+                </tbody>
+              </table>
+              <div id="saleItemsCards" class="table-card-mobile p-4 space-y-3"></div>
+            </div>
+
+            <div class="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl">
+              <span class="text-base font-semibold text-slate-700">Total:</span>
+              <span class="text-2xl font-bold text-slate-800" id="saleTotal">$0.00</span>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Método de Pago *</label>
+              <select id="salePaymentMethod" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+                <option value="">Seleccionar</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="transferencia">Transferencia</option>
+              </select>
+            </div>
+
+            <div id="saleFormError" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p class="text-sm text-red-600"></p>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button type="button" data-close-modal class="flex-1 px-4 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
+              <button type="submit" class="btn-success flex-1 px-4 py-3 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Registrar Venta</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="saleDetailModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" data-close-modal></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto z-10 animate-scale-in overflow-hidden">
+        <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Detalle de Venta</p>
+              <p class="text-xl font-bold text-white font-mono mt-0.5" id="detailSaleId">#------</p>
+            </div>
+            <button data-close-modal class="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors touch-target">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-slate-50 rounded-xl p-3">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</p>
+              <p class="text-sm font-semibold text-slate-800 mt-1" id="detailSaleDate">--</p>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-3">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Método de Pago</p>
+              <p class="text-sm font-semibold text-slate-800 mt-1 capitalize" id="detailSalePayment">--</p>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Productos</p>
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+              <div id="detailSaleItems" class="divide-y divide-slate-100">
+                <div class="p-4 text-center text-sm text-slate-400">Cargando...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-xl p-4 border border-emerald-200/50">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-medium text-emerald-700 uppercase tracking-wider">Total Venta</p>
+                <p class="text-2xl font-bold text-emerald-800 mt-0.5" id="detailSaleTotal">$0.00</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button data-close-modal class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors touch-target">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-6 right-6 z-[60] max-w-sm animate-slide-up">
+    <div class="flex items-center gap-3 px-5 py-4 rounded-xl shadow-lg border">
+      <span id="toastIcon"></span>
+      <p id="toastMessage" class="text-sm font-medium"></p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
