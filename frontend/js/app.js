@@ -355,8 +355,22 @@ async function loadDashboard() {
     console.log('[Dashboard] Ultimos movimientos:', recentMovs.length);
 
     if (recentMovs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin movimientos registrados</td></tr>';
-      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin movimientos registrados</p>';
+      var emptyRecent = '<tr><td colspan="5" class="px-6 py-12 text-center">'
+        + '<div class="flex flex-col items-center gap-2">'
+        + '<div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">'
+        + '<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>'
+        + '</div>'
+        + '<p class="text-sm font-medium text-slate-600">Sin movimientos recientes</p>'
+        + '<p class="text-xs text-slate-400">Las entradas y salidas aparecenaqui</p>'
+        + '</div></td></tr>';
+      tbody.innerHTML = emptyRecent;
+      cards.innerHTML = '<div class="flex flex-col items-center gap-2 py-8">'
+        + '<div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">'
+        + '<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>'
+        + '</div>'
+        + '<p class="text-sm font-medium text-slate-600">Sin movimientos recientes</p>'
+        + '<p class="text-xs text-slate-400">Las entradas y salidas aparecenaqui</p>'
+        + '</div>';
     } else {
       tbody.innerHTML = recentMovs.map(function (m) {
         var tipoBadge = m.movimiento === 'entrada'
@@ -413,15 +427,41 @@ function renderCategoryChart(movimientos, products) {
   var data = Object.values(prodMap);
   var colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899'];
 
-  var ctx = $('#categoryChart');
-  if (categoryChart) categoryChart.destroy();
+  var canvas = $('#categoryChart');
+  if (!canvas) return;
+  if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
+
+  var container = canvas.parentElement;
+  if (!container) return;
+
+  // Restaurar canvas si fue removido
+  if (!document.getElementById('categoryChart')) {
+    container.innerHTML = '<canvas id="categoryChart"></canvas>';
+    canvas = $('#categoryChart');
+  }
 
   if (labels.length === 0) {
-    ctx.parentElement.innerHTML = '<p class="text-sm text-slate-400 text-center py-20">Sin datos de salidas</p>';
+    if (canvas) canvas.style.display = 'none';
+    var empty = container.querySelector('.chart-empty');
+    if (!empty) {
+      var div = document.createElement('div');
+      div.className = 'chart-empty flex flex-col items-center justify-center h-full py-12 text-center';
+      div.innerHTML = '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-3">'
+        + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>'
+        + '</div>'
+        + '<p class="text-sm font-medium text-slate-600">Sin salidas registradas</p>'
+        + '<p class="text-xs text-slate-400 mt-1">Las salidas de hoy aparecenaqui</p>';
+      container.appendChild(div);
+    }
     return;
   }
 
-  categoryChart = new Chart(ctx, {
+  // Hay datos: ocultar empty state y mostrar canvas
+  if (canvas) canvas.style.display = '';
+  var existingEmpty = container.querySelector('.chart-empty');
+  if (existingEmpty) existingEmpty.remove();
+
+  categoryChart = new Chart(canvas, {
     type: 'doughnut',
     data: { labels: labels, datasets: [{ data: data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } } } },
@@ -783,8 +823,23 @@ function renderSalesTable() {
   var cards = $('#salesCards');
 
   if (state.sales.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron salidas</p></td></tr>';
-    cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">No se encontraron salidas</p>';
+    var emptySales = '<tr><td colspan="7" class="px-6 py-16 text-center">'
+      + '<div class="flex flex-col items-center gap-3">'
+      + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
+      + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>'
+      + '</div>'
+      + '<p class="text-sm font-medium text-slate-600">No se encontraron salidas</p>'
+      + '<p class="text-xs text-slate-400">Ajusta los filtros o registra una nueva salida</p>'
+      + '</div></td></tr>';
+    tbody.innerHTML = emptySales;
+    var emptySalesMobile = '<div class="flex flex-col items-center gap-3 py-16">'
+      + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
+      + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>'
+      + '</div>'
+      + '<p class="text-sm font-medium text-slate-600">No se encontraron salidas</p>'
+      + '<p class="text-xs text-slate-400">Ajusta los filtros o registra una nueva salida</p>'
+      + '</div>';
+    cards.innerHTML = emptySalesMobile;
     return;
   }
 
@@ -1293,8 +1348,22 @@ async function loadCompras() {
     var cards = $('#comprasCards');
 
     if (compras.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Sin entradas registradas</td></tr>';
-      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin entradas registradas</p>';
+      var emptyComprasHtml = '<tr><td colspan="6" class="px-6 py-16 text-center">'
+        + '<div class="flex flex-col items-center gap-3">'
+        + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
+        + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>'
+        + '</div>'
+        + '<p class="text-sm font-medium text-slate-600">No hay entradas registradas</p>'
+        + '<p class="text-xs text-slate-400">Ajusta los filtros o registra una nueva entrada</p>'
+        + '</div></td></tr>';
+      tbody.innerHTML = emptyComprasHtml;
+      cards.innerHTML = '<div class="flex flex-col items-center gap-3 py-16">'
+        + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
+        + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>'
+        + '</div>'
+        + '<p class="text-sm font-medium text-slate-600">No hay entradas registradas</p>'
+        + '<p class="text-xs text-slate-400">Ajusta los filtros o registra una nueva entrada</p>'
+        + '</div>';
       return;
     }
 
@@ -1353,8 +1422,22 @@ async function loadMovimientos() {
     var cards = $('#movimientosCards');
 
     if (movs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-sm text-slate-400">Sin movimientos registrados</td></tr>';
-      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin movimientos registrados</p>';
+      var emptyMovsHtml = '<tr><td colspan="8" class="px-6 py-16 text-center">'
+        + '<div class="flex flex-col items-center gap-3">'
+        + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
+        + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>'
+        + '</div>'
+        + '<p class="text-sm font-medium text-slate-600">No hay movimientos registrados</p>'
+        + '<p class="text-xs text-slate-400">Ajusta los filtros o registra una entrada o salida</p>'
+        + '</div></td></tr>';
+      tbody.innerHTML = emptyMovsHtml;
+      cards.innerHTML = '<div class="flex flex-col items-center gap-3 py-16">'
+        + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
+        + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>'
+        + '</div>'
+        + '<p class="text-sm font-medium text-slate-600">No hay movimientos registrados</p>'
+        + '<p class="text-xs text-slate-400">Ajusta los filtros o registra una entrada o salida</p>'
+        + '</div>';
       return;
     }
 

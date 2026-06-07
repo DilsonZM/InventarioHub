@@ -1,12 +1,4 @@
--- ============================================================================
--- Soporte para unidad de presentacion en ventas y compras
--- ============================================================================
--- La cantidad base sigue siendo la unidad del producto (la que descuenta stock)
--- Adicionalmente guardamos: cantidad_presentacion, unidad_presentacion, factor_conversion
--- Ej: Aceite de 1L, "salieron 2 botellas de 3L" -> cantidad=6 (L base),
---   cantidad_presentacion=2, unidad_presentacion='botella', factor_conversion=3
--- ============================================================================
-
+-- Cast cantidad a NUMERIC en registrar_movimiento y redondear en procesar_venta
 DROP FUNCTION IF EXISTS procesar_venta(JSONB, VARCHAR, UUID, VARCHAR);
 CREATE OR REPLACE FUNCTION procesar_venta(
   p_items JSONB,
@@ -90,6 +82,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP FUNCTION IF EXISTS registrar_movimiento(UUID, VARCHAR, INTEGER, VARCHAR, UUID, UUID);
 DROP FUNCTION IF EXISTS registrar_movimiento(UUID, VARCHAR, NUMERIC, VARCHAR, UUID, UUID);
 CREATE OR REPLACE FUNCTION registrar_movimiento(
   p_producto_id UUID,
