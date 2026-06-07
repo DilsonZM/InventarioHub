@@ -177,13 +177,13 @@ function navigate(view) {
     link.classList.toggle('active', isActive);
   });
 
-  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Ventas', compras: 'Compras', movimientos: 'Movimientos', indicadores: 'Indicadores' };
+  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Salidas', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos', indicadores: 'Indicadores' };
   $('#pageTitle').textContent = titles[view] || 'InventarioApp';
 
   if (view === 'dashboard') loadDashboard();
   if (view === 'inventory') loadProducts();
   if (view === 'sales') loadSales();
-  if (view === 'compras') loadCompras();
+  if (view === 'compras' || view === 'entradas') loadCompras();
   if (view === 'movimientos') loadMovimientos();
   if (view === 'indicadores') loadIndicadores();
 
@@ -202,15 +202,15 @@ async function loadDashboard() {
     var results = await Promise.all([
       API.stats(),
       API.products.list(),
-      API.sales.list(),
+      API.reportes.movimientos({ limit: 10 }),
     ]);
     var statsRes = results[0];
     var productsRes = results[1];
-    var salesRes = results[2];
+    var movsRes = results[2];
 
     console.log('[Dashboard] Stats recibidas:', statsRes);
     console.log('[Dashboard] Productos recibidos:', (productsRes && productsRes.data) ? productsRes.data.length : 0);
-    console.log('[Dashboard] Ventas recibidas:', (salesRes && salesRes.data) ? salesRes.data.length : 0);
+    console.log('[Dashboard] Movimientos recibidos:', (movsRes && movsRes.data) ? movsRes.data.length : 0);
 
     var stats = statsRes.data;
     $('#stat-products').textContent = stats.totalProducts;
@@ -243,41 +243,51 @@ async function loadDashboard() {
       }).join('');
     }
 
-    var recentSales = salesRes.data.slice(0, 5);
+    var recentMovs = (movsRes.data || []).slice(0, 5);
     var tbody = $('#recentSalesTable');
     var cards = $('#recentSalesCards');
-    console.log('[Dashboard] Ventas recientes:', recentSales.length);
+    console.log('[Dashboard] Ultimos movimientos:', recentMovs.length);
 
-    if (recentSales.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin ventas registradas</td></tr>';
-      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin ventas registradas</p>';
+    if (recentMovs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin movimientos registrados</td></tr>';
+      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin movimientos registrados</p>';
     } else {
-      tbody.innerHTML = recentSales.map(function (s) {
+      tbody.innerHTML = recentMovs.map(function (m) {
+        var tipoBadge = m.movimiento === 'entrada'
+          ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Entrada</span>'
+          : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Salida</span>';
+        var cantText = m.movimiento === 'entrada' ? '+ ' + m.cantidad_entrada : '- ' + m.cantidad_salida;
+        var cantColor = m.movimiento === 'entrada' ? 'text-emerald-600' : 'text-red-600';
         return '<tr class="hover:bg-slate-50 transition-colors">'
-          + '<td class="px-6 py-3 text-sm font-mono text-slate-600">#' + s.id.slice(-6) + '</td>'
-          + '<td class="px-6 py-3 text-sm text-slate-700">' + s.items.length + ' producto(s)</td>'
-          + '<td class="px-6 py-3 text-sm font-semibold text-slate-800">' + formatCurrency(s.total) + '</td>'
-          + '<td class="px-6 py-3"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">' + escapeHtml(s.paymentMethod) + '</span></td>'
-          + '<td class="px-6 py-3 text-sm text-slate-500">' + formatDate(s.createdAt) + '</td>'
+          + '<td class="px-6 py-3 text-sm font-mono text-slate-600">' + formatDateShort(m.fecha) + '</td>'
+          + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(m.producto) + '</td>'
+          + '<td class="px-6 py-3">' + tipoBadge + '</td>'
+          + '<td class="px-6 py-3 text-sm font-semibold ' + cantColor + '">' + cantText + '</td>'
+          + '<td class="px-6 py-3 text-sm text-slate-500">Stock: ' + m.cantidad_stock + '</td>'
           + '</tr>';
       }).join('');
 
-      cards.innerHTML = recentSales.map(function (s) {
+      cards.innerHTML = recentMovs.map(function (m) {
+        var tipoBadge = m.movimiento === 'entrada'
+          ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Entrada</span>'
+          : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700">Salida</span>';
+        var cantText = m.movimiento === 'entrada' ? '+ ' + m.cantidad_entrada : '- ' + m.cantidad_salida;
+        var cantColor = m.movimiento === 'entrada' ? 'text-emerald-600' : 'text-red-600';
         return '<div class="bg-slate-50 rounded-xl p-4 space-y-2">'
           + '<div class="flex items-center justify-between">'
-          + '<span class="font-mono text-sm text-slate-500">#' + s.id.slice(-6) + '</span>'
-          + '<span class="text-lg font-bold text-slate-800">' + formatCurrency(s.total) + '</span>'
+          + '<div class="flex items-center gap-2">' + tipoBadge + '<span class="text-sm font-medium">' + escapeHtml(m.producto) + '</span></div>'
+          + '<span class="text-sm font-bold ' + cantColor + '">' + cantText + '</span>'
           + '</div>'
           + '<div class="flex items-center justify-between">'
-          + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">' + escapeHtml(s.paymentMethod) + '</span>'
-          + '<span class="text-xs text-slate-400">' + formatDate(s.createdAt) + '</span>'
+          + '<span class="text-xs text-slate-400">' + formatDate(m.fecha) + '</span>'
+          + '<span class="text-xs text-slate-500">Stock: ' + m.cantidad_stock + '</span>'
           + '</div>'
           + '</div>';
       }).join('');
     }
 
-    console.log('[Dashboard] Renderizando grafico de categorias...');
-    renderCategoryChart(salesRes.data, productsRes.data);
+    console.log('[Dashboard] Renderizando grafico de salidas...');
+    renderCategoryChart(movsRes.data || [], productsRes.data);
     console.log('[Dashboard] Dashboard cargado correctamente');
   } catch (err) {
     console.error('[Dashboard] Error al cargar dashboard:', err);
@@ -285,25 +295,23 @@ async function loadDashboard() {
   }
 }
 
-function renderCategoryChart(sales, products) {
-  var catMap = {};
-  sales.forEach(function (s) {
-    s.items.forEach(function (item) {
-      var product = products.find(function (p) { return p.id === item.productId; });
-      var cat = product ? product.category : 'Otros';
-      catMap[cat] = (catMap[cat] || 0) + item.subtotal;
-    });
+function renderCategoryChart(movimientos, products) {
+  var prodMap = {};
+  movimientos.forEach(function (m) {
+    if (m.movimiento === 'salida' && m.cantidad_salida > 0) {
+      prodMap[m.producto] = (prodMap[m.producto] || 0) + m.cantidad_salida;
+    }
   });
 
-  var labels = Object.keys(catMap);
-  var data = Object.values(catMap);
+  var labels = Object.keys(prodMap);
+  var data = Object.values(prodMap);
   var colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899'];
 
   var ctx = $('#categoryChart');
   if (categoryChart) categoryChart.destroy();
 
   if (labels.length === 0) {
-    ctx.parentElement.innerHTML = '<p class="text-sm text-slate-400 text-center py-20">Sin datos de ventas</p>';
+    ctx.parentElement.innerHTML = '<p class="text-sm text-slate-400 text-center py-20">Sin datos de salidas</p>';
     return;
   }
 
@@ -594,7 +602,7 @@ async function loadSales() {
     renderSalesTable();
     updateSalesSummary();
   } catch (err) {
-    showToast('Error al cargar ventas', 'error');
+    showToast('Error al cargar salidas', 'error');
   }
 }
 
@@ -616,8 +624,8 @@ function renderSalesTable() {
   var cards = $('#salesCards');
 
   if (state.sales.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron ventas</p></td></tr>';
-    cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">No se encontraron ventas</p>';
+    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron salidas</p></td></tr>';
+    cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">No se encontraron salidas</p>';
     return;
   }
 
@@ -688,7 +696,7 @@ window.viewSale = async function (id) {
     $('#detailSaleItems').innerHTML = itemsHtml;
     openModal('saleDetailModal');
   } catch (err) {
-    showToast('Error al cargar venta', 'error');
+    showToast('Error al cargar salida', 'error');
   }
 };
 
@@ -809,7 +817,7 @@ $('#saleForm').addEventListener('submit', async function (e) {
       paymentMethod: paymentMethod,
     });
     closeModal('saleModal');
-    showToast('Venta registrada correctamente');
+    showToast('Salida registrada correctamente');
     loadSales();
     if (state.currentView === 'dashboard') loadDashboard();
   } catch (err) {
@@ -832,7 +840,7 @@ function initModals() {
 }
 
 // ============================================
-// Compras
+// Entradas
 // ============================================
 
 function initCompras() {
@@ -879,7 +887,7 @@ $('#compraForm').addEventListener('submit', async function (e) {
   try {
     await API.compras.create({ producto_id: producto_id, cantidad: cantidad, valor_unitario: valor, fecha_compra: fecha || undefined });
     closeModal('compraModal');
-    showToast('Compra registrada correctamente');
+    showToast('Entrada registrada correctamente');
     loadCompras();
   } catch (err) {
     showError('compraFormError', err.message);
@@ -894,8 +902,8 @@ async function loadCompras() {
     var cards = $('#comprasCards');
 
     if (compras.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin compras registradas</td></tr>';
-      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin compras registradas</p>';
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin entradas registradas</td></tr>';
+      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin entradas registradas</p>';
       return;
     }
 
@@ -917,7 +925,7 @@ async function loadCompras() {
         + '</div>';
     }).join('');
   } catch (err) {
-    showToast('Error al cargar compras', 'error');
+    showToast('Error al cargar entradas', 'error');
   }
 }
 

@@ -492,15 +492,15 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
           </svg>
         </div>
-        <span class="sidebar-label">Ventas</span>
+        <span class="sidebar-label">Salidas</span>
       </a>
-      <a href="#compras" data-nav="compras" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
+      <a href="#entradas" data-nav="entradas" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
         <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
           <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
           </svg>
         </div>
-        <span class="sidebar-label">Compras</span>
+        <span class="sidebar-label">Entradas</span>
       </a>
       <a href="#movimientos" data-nav="movimientos" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
         <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
@@ -591,7 +591,7 @@
               </div>
             </div>
             <p class="text-2xl font-bold text-slate-800" id="stat-revenue">$0</p>
-            <p class="text-sm text-slate-500">Ventas hoy</p>
+            <p class="text-sm text-slate-500">Salidas hoy</p>
           </div>
           <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-amber-100 animate-stagger animate-stagger-3">
             <div class="flex items-center justify-between mb-3">
@@ -619,7 +619,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100/50">
-            <h3 class="text-base font-semibold text-slate-800 mb-4">Ventas por Categoría</h3>
+            <h3 class="text-base font-semibold text-slate-800 mb-4">Salidas por Producto</h3>
             <div class="relative h-64">
               <canvas id="categoryChart"></canvas>
             </div>
@@ -634,8 +634,8 @@
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 class="text-base font-semibold text-slate-800">Ventas Recientes</h3>
-            <a href="#sales" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Ver todas</a>
+            <h3 class="text-base font-semibold text-slate-800">Últimos Movimientos</h3>
+            <a href="#movimientos" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Ver todos</a>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full table-desktop">
@@ -740,7 +740,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span>Nueva Venta</span>
+                <span>Nueva Salida</span>
               </button>
             </div>
           </div>
@@ -748,7 +748,7 @@
 
         <div id="salesSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div class="bg-white rounded-xl p-4 border border-slate-100/50">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Ventas</p>
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Salidas</p>
             <p class="text-xl font-bold text-slate-800 mt-1" id="summaryCount">0</p>
           </div>
           <div class="bg-white rounded-xl p-4 border border-slate-100/50">
@@ -770,7 +770,7 @@
             <table class="w-full table-desktop">
               <thead class="bg-slate-50/50">
                 <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  <th class="px-6 py-3">ID Venta</th>
+                  <th class="px-6 py-3">ID Salida</th>
                   <th class="px-6 py-3">Productos</th>
                   <th class="px-6 py-3 text-right">Total</th>
                   <th class="px-6 py-3">Método Pago</th>
@@ -779,7 +779,7 @@
                 </tr>
               </thead>
               <tbody id="salesTable" class="divide-y divide-slate-100">
-                <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Cargando ventas...</td></tr>
+                <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Cargando salidas...</td></tr>
               </tbody>
             </table>
             <div id="salesCards" class="table-card-mobile p-4 space-y-3"></div>
@@ -787,15 +787,15 @@
         </div>
       </div>
 
-      <!-- Compras -->
-      <div id="view-compras" class="view-section hidden">
+      <!-- Entradas -->
+      <div id="view-entradas" class="view-section hidden">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <p class="text-sm text-slate-500">Registro de compras a proveedores</p>
+            <p class="text-sm text-slate-500">Registro de entradas de materia prima</p>
           </div>
           <button id="newCompraBtn" class="btn-primary inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-white rounded-xl shadow-md touch-target">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-            Nueva Compra
+            Nueva Entrada
           </button>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
@@ -808,7 +808,7 @@
               <th class="px-6 py-3 text-right">Vr. Total</th>
             </tr></thead>
             <tbody id="comprasTable" class="divide-y divide-slate-100">
-              <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Cargando compras...</td></tr>
+              <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Cargando entradas...</td></tr>
             </tbody>
           </table>
           <div id="comprasCards" class="table-card-mobile p-4 space-y-3"></div>
@@ -842,7 +842,7 @@
       <!-- Indicadores -->
       <div id="view-indicadores" class="view-section hidden">
         <div class="mb-6">
-          <p class="text-sm text-slate-500">Estado general del inventario: que comprar y que esta OK</p>
+          <p class="text-sm text-slate-500">Estado general del inventario: que reponer y que esta OK</p>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
           <table class="w-full table-desktop">
@@ -946,7 +946,7 @@
       <div class="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" data-close-modal></div>
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto z-10 animate-scale-in">
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h3 class="text-lg font-semibold text-slate-800">Nueva Venta</h3>
+          <h3 class="text-lg font-semibold text-slate-800">Nueva Salida</h3>
           <button data-close-modal class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors touch-target">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -1007,7 +1007,7 @@
 
             <div class="flex gap-3 pt-2">
               <button type="button" data-close-modal class="flex-1 px-4 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
-              <button type="submit" class="btn-success flex-1 px-4 py-3 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Registrar Venta</button>
+              <button type="submit" class="btn-success flex-1 px-4 py-3 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Registrar Salida</button>
             </div>
           </div>
         </form>
@@ -1022,7 +1022,7 @@
         <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-5">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Detalle de Venta</p>
+              <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Detalle de Salida</p>
               <p class="text-xl font-bold text-white font-mono mt-0.5" id="detailSaleId">#------</p>
             </div>
             <button data-close-modal class="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors touch-target">
@@ -1057,7 +1057,7 @@
           <div class="bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-xl p-4 border border-emerald-200/50">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-xs font-medium text-emerald-700 uppercase tracking-wider">Total Venta</p>
+                <p class="text-xs font-medium text-emerald-700 uppercase tracking-wider">Total</p>
                 <p class="text-2xl font-bold text-emerald-800 mt-0.5" id="detailSaleTotal">$0.00</p>
               </div>
               <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
@@ -1076,13 +1076,13 @@
     </div>
   </div>
 
-  <!-- Compra Modal -->
+  <!-- Entrada Modal -->
   <div id="compraModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
     <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
       <div class="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" data-close-modal></div>
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto z-10 animate-scale-in">
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h3 class="text-lg font-semibold text-slate-800">Nueva Compra</h3>
+          <h3 class="text-lg font-semibold text-slate-800">Nueva Entrada</h3>
           <button data-close-modal class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors touch-target">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
@@ -1115,7 +1115,7 @@
           </div>
           <div class="flex gap-3 pt-2">
             <button type="button" data-close-modal class="flex-1 px-5 py-3 text-sm font-medium text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors touch-target">Cancelar</button>
-            <button type="submit" class="flex-1 btn-primary px-5 py-3 text-sm font-semibold text-white rounded-xl shadow-md touch-target">Registrar Compra</button>
+            <button type="submit" class="flex-1 btn-primary px-5 py-3 text-sm font-semibold text-white rounded-xl shadow-md touch-target">Registrar Entrada</button>
           </div>
         </form>
       </div>
