@@ -32,7 +32,15 @@ function showToast(message, type = 'success') {
   setTimeout(function () { toast.classList.add('hidden'); }, 3500);
 }
 
-function openModal(id) { $('#' + id).classList.remove('hidden'); }
+function openModal(id) {
+  var sidebar = $('#sidebar');
+  var overlay = $('#sidebarOverlay');
+  if (sidebar && window.innerWidth < 1024 && !sidebar.classList.contains('-translate-x-full')) {
+    sidebar.classList.add('-translate-x-full');
+    if (overlay) overlay.classList.add('hidden');
+  }
+  $('#' + id).classList.remove('hidden');
+}
 function closeModal(id) { $('#' + id).classList.add('hidden'); }
 
 function showError(id, msg) {
@@ -208,7 +216,7 @@ function navigate(view) {
     link.classList.toggle('active', isActive);
   });
 
-  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Salidas', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos', indicadores: 'Indicadores' };
+  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Salidas', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos' };
   $('#pageTitle').textContent = titles[view] || 'InventarioApp';
 
   if (view === 'dashboard') loadDashboard();
@@ -216,7 +224,6 @@ function navigate(view) {
   if (view === 'sales') loadSales();
   if (view === 'compras' || view === 'entradas') loadCompras();
   if (view === 'movimientos') loadMovimientos();
-  if (view === 'indicadores') loadIndicadores();
 
   if (view === 'dashboard') startDashboardAutoRefresh();
   else stopDashboardAutoRefresh();
@@ -356,12 +363,59 @@ function renderCategoryChart(movimientos, products) {
   });
 }
 
+var UNIDADES_POR_CATEGORIA = {
+  'Carnes y Aves': ['kg', 'lb', 'g', 'porcion'],
+  'Verduras y Tuberculos': ['kg', 'lb', 'g', 'unidad'],
+  'Lacteos y Huevos': ['kg', 'L', 'paquete', 'docena', 'g', 'mL'],
+  'Salsas y Aderezos': ['L', 'mL', 'g', 'unidad', 'paquete'],
+  'Harinas y Panes': ['kg', 'g', 'unidad', 'paquete', 'lb'],
+  'Bebidas': ['L', 'mL', 'unidad', 'paquete', 'caja'],
+  'Empaques y Desechables': ['paquete', 'unidad', 'caja']
+};
+
+var UNIDAD_LABELS = {
+  unidad: 'Unidad', kg: 'Kilogramo (kg)', g: 'Gramo (g)', lb: 'Libra (lb)',
+  L: 'Litro (L)', mL: 'Mililitro (mL)', porcion: 'Porción',
+  paquete: 'Paquete', docena: 'Docena', caja: 'Caja'
+};
+
+function updateUnidadesByCategory() {
+  var cat = $('#productCategory').value;
+  var sel = $('#productUnidad');
+  var hint = $('#productUnidadHint');
+  var currentVal = sel.value;
+
+  if (!cat) {
+    hint.textContent = '';
+    Array.from(sel.options).forEach(function (opt) {
+      opt.hidden = false;
+    });
+    return;
+  }
+
+  var permitidas = UNIDADES_POR_CATEGORIA[cat] || [];
+  hint.textContent = 'sugeridas: ' + permitidas.map(function (u) { return UNIDAD_LABELS[u] || u; }).slice(0, 3).join(', ');
+
+  Array.from(sel.options).forEach(function (opt) {
+    if (!opt.value) return;
+    opt.hidden = permitidas.indexOf(opt.value) === -1;
+  });
+
+  if (currentVal && permitidas.indexOf(currentVal) !== -1) {
+    sel.value = currentVal;
+  } else if (permitidas.length > 0) {
+    sel.value = '';
+  }
+}
+
 async function initInventory() {
   try {
     var catRes = await API.products.categories();
     state.categories = catRes.data;
     populateCategoryFilters();
   } catch (e) {}
+
+  $('#productCategory').addEventListener('change', updateUnidadesByCategory);
 
   $('#searchProducts').addEventListener('input', debounce(function () { loadProducts(); }, 300));
   $('#filterCategory').addEventListener('change', function () { loadProducts(); });
@@ -399,7 +453,7 @@ function renderProductsTable() {
   var cards = $('#productsCards');
 
   if (state.products.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron productos</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron productos</p></td></tr>';
     cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">No se encontraron productos</p>';
     return;
   }
@@ -430,6 +484,8 @@ function renderProductsTable() {
       + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">' + escapeHtml(p.category) + '</span></td>'
       + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + formatCurrency(p.price) + '</td>'
       + '<td class="px-6 py-4 text-center"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ' + stockClass + '">' + p.stock + '</span></td>'
+      + '<td class="px-6 py-4 text-center text-sm text-slate-500">' + p.minStock + '</td>'
+      + '<td class="px-6 py-4 text-sm text-slate-600"><span class="inline-flex px-2 py-0.5 rounded-md text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200">' + escapeHtml(p.unidad || 'unidad') + '</span></td>'
       + '<td class="px-6 py-4 text-center">' + statusBadge + '</td>'
       + '<td class="px-6 py-4 text-right">'
       + (isAdmin ? '<div class="flex items-center justify-end gap-1">'
@@ -459,12 +515,13 @@ function renderProductsTable() {
       + '<p class="text-xs font-mono text-slate-400">' + escapeHtml(p.sku) + '</p>'
       + '</div>'
       + '</div>'
-      + '<span class="text-lg font-bold ' + stockColor + '">' + p.stock + '</span>'
+      + '<span class="text-lg font-bold ' + stockColor + '">' + p.stock + '<span class="text-xs text-slate-400 font-normal ml-1">' + escapeHtml(p.unidad || 'unidad') + '</span></span>'
       + '</div>'
       + '<div class="flex items-center gap-2 flex-wrap">'
       + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">' + escapeHtml(p.category) + '</span>'
       + '<span class="text-sm font-semibold text-slate-800">' + formatCurrency(p.price) + '</span>'
       + '</div>'
+      + '<div class="text-xs text-slate-500">Stock min.: ' + p.minStock + ' ' + escapeHtml(p.unidad || 'unidad') + '</div>'
       + (isAdmin ? '<div class="flex gap-2 pt-2 border-t border-slate-100">'
         + '<button onclick="window.editProduct(\'' + p.id + '\')" class="flex-1 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors touch-target">Editar</button>'
         + '<button onclick="window.deleteProduct(\'' + p.id + '\')" class="flex-1 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors touch-target">Eliminar</button>'
@@ -481,6 +538,7 @@ function openProductModal(product) {
   $('#productId').value = '';
   $('#productModalTitle').textContent = product ? 'Editar Producto' : 'Nuevo Producto';
   $('#productFormError').classList.add('hidden');
+  updateUnidadesByCategory();
 
   if (product) {
     $('#productId').value = product.id;
@@ -531,11 +589,11 @@ $('#productForm').addEventListener('submit', async function (e) {
     cost: parseFloat($('#productCost').value),
     stock: parseInt($('#productStock').value),
     minStock: parseInt($('#productMinStock').value) || 0,
-    unidad: $('#productUnidad').value || 'unidad',
+    unidad: $('#productUnidad').value,
     description: $('#productDescription').value.trim(),
   };
 
-  if (!payload.name || !payload.sku || !payload.category || isNaN(payload.price) || isNaN(payload.cost) || isNaN(payload.stock)) {
+  if (!payload.name || !payload.sku || !payload.category || isNaN(payload.price) || isNaN(payload.cost) || isNaN(payload.stock) || !payload.unidad) {
     var errEl = $('#productFormError');
     errEl.classList.remove('hidden');
     errEl.querySelector('p').textContent = 'Completa todos los campos requeridos';
@@ -874,7 +932,10 @@ function initModals() {
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      $$('.fixed.z-50').forEach(function (m) { m.classList.add('hidden'); });
+      $$('.fixed.z-50').forEach(function (m) {
+        if (m.id === 'sidebar' || m.id === 'sidebarOverlay') return;
+        m.classList.add('hidden');
+      });
     }
   });
 }
@@ -892,16 +953,23 @@ async function openCompraModal() {
   $('#compraFecha').value = new Date().toISOString().split('T')[0];
   $('#compraTotal').textContent = '$0.00';
   $('#compraFormError').classList.add('hidden');
+  $('#compraUnidadLabel').textContent = '';
 
   try {
     var res = await API.products.list();
     var all = res.data || [];
     $('#compraProducto').innerHTML = '<option value="">Seleccionar producto</option>' +
-      all.map(function (p) { return '<option value="' + p.id + '">' + escapeHtml(p.name) + ' (' + escapeHtml(p.sku) + ')</option>'; }).join('');
+      all.map(function (p) { return '<option value="' + p.id + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">' + escapeHtml(p.name) + ' (' + escapeHtml(p.sku) + ' - ' + escapeHtml(p.unidad || 'unidad') + ')</option>'; }).join('');
   } catch (e) {}
 
   openModal('compraModal');
 }
+
+$('#compraProducto').addEventListener('change', function () {
+  var opt = this.options[this.selectedIndex];
+  var unidad = opt.dataset.unidad || 'unidad';
+  $('#compraUnidadLabel').textContent = '(' + unidad + ')';
+});
 
 $('#compraCantidad').addEventListener('input', updateCompraTotal);
 $('#compraValor').addEventListener('input', updateCompraTotal);
@@ -1017,53 +1085,4 @@ async function loadMovimientos() {
 }
 
 // ============================================
-// Indicadores
-// ============================================
-
-async function loadIndicadores() {
-  try {
-    var res = await API.reportes.indicadores();
-    var inds = res.data || [];
-    var tbody = $('#indicadoresTable');
-    var cards = $('#indicadoresCards');
-
-    if (inds.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin productos registrados</td></tr>';
-      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin productos registrados</p>';
-      return;
-    }
-
-    tbody.innerHTML = inds.map(function (i) {
-      var estadoBadge = i.estado === 'OK'
-        ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">OK</span>'
-        : i.estado === 'Agotado'
-          ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Agotado</span>'
-          : i.estado === 'Comprar'
-            ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Comprar</span>'
-            : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Por comprar</span>';
-      var stockColor = i.stock_actual === 0 ? 'text-red-600' : i.stock_actual <= i.stock_minimo ? 'text-amber-600' : 'text-emerald-600';
-      return '<tr class="hover:bg-slate-50 transition-colors">'
-        + '<td class="px-6 py-3 text-sm font-medium text-slate-700">' + escapeHtml(i.producto) + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center font-bold ' + stockColor + '">' + i.stock_actual + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center text-slate-500">' + i.stock_minimo + '</td>'
-        + '<td class="px-6 py-3 text-sm text-slate-500">' + escapeHtml(i.unidad_medida) + '</td>'
-        + '<td class="px-6 py-3">' + estadoBadge + '</td>'
-        + '</tr>';
-    }).join('');
-
-    cards.innerHTML = inds.map(function (i) {
-      var estadoColor = i.estado === 'OK' ? 'border-emerald-200' : 'border-red-200';
-      var stockColor = i.stock_actual === 0 ? 'text-red-600' : i.stock_actual <= i.stock_minimo ? 'text-amber-600' : 'text-emerald-600';
-      return '<div class="bg-white border ' + estadoColor + ' rounded-xl p-4 space-y-2">'
-        + '<div class="flex justify-between items-start">'
-        + '<div><p class="font-semibold text-slate-800">' + escapeHtml(i.producto) + '</p><p class="text-xs text-slate-400">' + escapeHtml(i.unidad_medida) + '</p></div>'
-        + '<span class="text-lg font-bold ' + stockColor + '">' + i.stock_actual + '</span>'
-        + '</div>'
-        + '<div class="flex justify-between items-center"><span class="text-xs text-slate-500">Minimo: ' + i.stock_minimo + '</span>'
-        + (i.estado === 'OK' ? '<span class="text-xs font-medium text-emerald-600">OK</span>' : i.estado === 'Agotado' ? '<span class="text-xs font-medium text-red-600">Agotado</span>' : '<span class="text-xs font-medium text-red-600">Comprar</span>')
-        + '</div></div>';
-    }).join('');
-  } catch (err) {
-    showToast('Error al cargar indicadores', 'error');
-  }
-}
+// Indicadores removido: stock_minimo ahora en vista Inventario
