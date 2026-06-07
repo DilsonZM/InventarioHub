@@ -45,6 +45,9 @@ router.get('/', async (req, res) => {
       cantidad: c.cantidad,
       valor_unitario: c.valor_unitario,
       valor_total: c.valor_total,
+      cantidad_presentacion: c.cantidad_presentacion,
+      unidad_presentacion: c.unidad_presentacion,
+      factor_conversion: c.factor_conversion,
       proveedor_nombre: c.proveedores?.nombre || '',
       usuario_id: c.usuario_id,
       usuario_nombre: c.perfiles?.nombre_completo || c.perfiles?.username || '',
@@ -69,7 +72,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas } = req.body;
+    const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion } = req.body;
 
     if (!producto_id || !cantidad || cantidad <= 0 || !valor_unitario || valor_unitario <= 0) {
       return res.status(400).json({ success: false, message: 'Producto, cantidad y valor unitario requeridos' });
@@ -86,7 +89,10 @@ router.post('/', async (req, res) => {
         fecha_compra: fecha,
         proveedor_id: proveedor_id || null,
         usuario_id: req.user ? req.user.id : null,
-        notas: notas || null
+        notas: notas || null,
+        cantidad_presentacion: cantidad_presentacion || null,
+        unidad_presentacion: unidad_presentacion || null,
+        factor_conversion: factor_conversion || 1
       })
       .select('*, productos(nombre, sku), proveedores(nombre), perfiles(username, nombre_completo)')
       .single();

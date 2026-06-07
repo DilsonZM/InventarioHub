@@ -59,7 +59,10 @@ router.get('/', async (req, res) => {
         productName: item.producto_nombre,
         quantity: item.cantidad,
         unitPrice: item.precio_unitario,
-        subtotal: item.subtotal
+        subtotal: item.subtotal,
+        cantidadPresentacion: item.cantidad_presentacion,
+        unidadPresentacion: item.unidad_presentacion,
+        factorConversion: item.factor_conversion
       }))
     }));
 
@@ -106,7 +109,10 @@ router.get('/:id', async (req, res) => {
         productName: item.producto_nombre,
         quantity: item.cantidad,
         unitPrice: item.precio_unitario,
-        subtotal: item.subtotal
+        subtotal: item.subtotal,
+        cantidadPresentacion: item.cantidad_presentacion,
+        unidadPresentacion: item.unidad_presentacion,
+        factorConversion: item.factor_conversion
       }))
     };
 
@@ -136,7 +142,13 @@ router.post('/', async (req, res) => {
     }
 
     const { data: saleId, error } = await supabase.rpc('procesar_venta', {
-      p_items: items.map(item => ({ producto_id: item.productId, cantidad: item.quantity })),
+      p_items: items.map(item => ({
+        producto_id: item.productId,
+        cantidad: item.quantity,
+        cantidad_presentacion: item.cantidadPresentacion || null,
+        unidad_presentacion: item.unidadPresentacion || null,
+        factor_conversion: item.factorConversion || 1
+      })),
       p_metodo_pago: paymentMethod,
       p_usuario_id: req.user.id || null,
       p_cliente_nombre: clienteNombre || null
@@ -170,7 +182,10 @@ router.post('/', async (req, res) => {
         productName: item.producto_nombre,
         quantity: item.cantidad,
         unitPrice: item.precio_unitario,
-        subtotal: item.subtotal
+        subtotal: item.subtotal,
+        cantidadPresentacion: item.cantidad_presentacion,
+        unidadPresentacion: item.unidad_presentacion,
+        factorConversion: item.factor_conversion
       }))
     };
 

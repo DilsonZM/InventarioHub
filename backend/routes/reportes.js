@@ -4,7 +4,7 @@ const supabase = require('../lib/supabase');
 
 router.get('/movimientos', async (req, res) => {
   try {
-    const { page, limit, from, to, tipo } = req.query;
+    const { page, limit, from, to, tipo, productoId, cocina, search } = req.query;
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
     const offset = (pageNum - 1) * limitNum;
@@ -16,6 +16,7 @@ router.get('/movimientos', async (req, res) => {
     if (from) countQuery = countQuery.gte('creado_en', from);
     if (to) countQuery = countQuery.lte('creado_en', to + 'T23:59:59');
     if (tipo) countQuery = countQuery.eq('tipo', tipo);
+    if (productoId) countQuery = countQuery.eq('producto_id', productoId);
 
     const { count, error: countError } = await countQuery;
     if (countError) throw countError;
@@ -29,11 +30,31 @@ router.get('/movimientos', async (req, res) => {
     if (from) query = query.gte('creado_en', from);
     if (to) query = query.lte('creado_en', to + 'T23:59:59');
     if (tipo) query = query.eq('tipo', tipo);
+    if (productoId) query = query.eq('producto_id', productoId);
 
     const { data, error } = await query;
     if (error) throw error;
 
-    const movimientos = (data || []).map(m => ({
+    // Filtros en memoria
+    const searchLower = (search || '').toString().toLowerCase().trim();
+    let filtered = data || [];
+    if (searchLower) {
+      filtered = filtered.filter(function (m) {
+        return (m.productos && m.productos.nombre && m.productos.nombre.toLowerCase().includes(searchLower))
+          || (m.productos && m.productos.sku && m.productos.sku.toLowerCase().includes(searchLower));
+      });
+    }
+    if (cocina) {
+      // Filtrar por cocina en motivo (formato "Venta V-..." o "Compra ...")
+      filtered = filtered.filter(function (m) {
+        if (m.motivo && m.motivo.startsWith('Venta ') && cocina) {
+          return true;
+        }
+        return false;
+      });
+    }
+
+    const movimientos = filtered.map(m => ({
       id: m.id,
       fecha: m.creado_en,
       movimiento: m.tipo,

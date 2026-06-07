@@ -38,7 +38,7 @@ app.use('/api/reportes', authMiddleware, reportesRoutes);
 
 app.get('/api/stats', authMiddleware, async (req, res) => {
   try {
-    const { from, to } = req.query;
+    const { from, to, cocina } = req.query;
 
     const { count: totalProducts } = await supabase
       .from('productos')
@@ -72,9 +72,16 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
     if (to) {
       ventasQuery = ventasQuery.lte('creado_en', to + 'T23:59:59');
     }
+    if (cocina) {
+      ventasQuery = ventasQuery.eq('metodo_pago', cocina);
+    }
     const { data: periodSales } = await ventasQuery;
     const periodSalesCount = periodSales ? periodSales.length : 0;
     const periodRevenue = periodSales ? periodSales.reduce((sum, s) => sum + parseFloat(s.total), 0) : 0;
+
+    let label = 'Hoy';
+    if (from && to) label = 'Periodo';
+    else if (from) label = 'Desde ' + from;
 
     res.json({
       success: true,
@@ -85,7 +92,7 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
         lowStockCount,
         periodSales: periodSalesCount,
         periodRevenue,
-        periodLabel: from ? 'Periodo' : 'Hoy'
+        periodLabel: label
       }
     });
   } catch (err) {
