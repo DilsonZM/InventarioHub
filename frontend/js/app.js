@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initInventory();
   initSales();
   initCompras();
+  initMovimientos();
   initLogout();
   setCurrentDate();
   var initialView = location.hash.slice(1) || 'dashboard';
@@ -619,68 +620,71 @@ $('#productForm').addEventListener('submit', async function (e) {
 
 async function initSales() {
   $('#newSaleBtn').addEventListener('click', function () { openSaleModal(); });
-  $('#filterDateFrom').addEventListener('change', function () { $('#filterQuickPeriod').value = ''; loadSales(); });
-  $('#filterDateTo').addEventListener('change', function () { $('#filterQuickPeriod').value = ''; loadSales(); });
-  $('#filterPaymentMethod').addEventListener('change', function () { loadSales(); });
-  $('#filterQuickPeriod').addEventListener('change', handleQuickPeriod);
-  $('#clearFiltersBtn').addEventListener('click', clearSalesFilters);
+  initFilters('sales');
 }
 
-function handleQuickPeriod() {
-  var period = $('#filterQuickPeriod').value;
-  if (!period) return;
+function initFilters(view) {
+  var prefix = view === 'sales' ? '' : (view === 'entradas' ? 'Entradas' : 'Mov');
+  var ids = {
+    dateFrom: '#filterDateFrom' + prefix,
+    dateTo: '#filterDateTo' + prefix,
+    period: '#filterQuickPeriod' + prefix,
+    product: '#filterProductSearch' + prefix,
+    clear: '#clearFiltersBtn' + prefix,
+    extra: view === 'sales' ? '#filterCocina' : (view === 'movimientos' ? '#filterTipoMov' : null)
+  };
+  var loader = view === 'sales' ? loadSales : (view === 'entradas' ? loadCompras : loadMovimientos);
 
+  $(ids.dateFrom).addEventListener('change', function () { $(ids.period).value = ''; loader(); });
+  $(ids.dateTo).addEventListener('change', function () { $(ids.period).value = ''; loader(); });
+  $(ids.period).addEventListener('change', function () { applyQuickPeriod(ids, loader); });
+  if (ids.extra) {
+    $(ids.extra).addEventListener('change', loader);
+  }
+  if ($(ids.product).tagName === 'INPUT') {
+    $(ids.product).addEventListener('input', debounce(loader, 350));
+  }
+  $(ids.clear).addEventListener('click', function () { clearFilters(ids, loader); });
+}
+
+function applyQuickPeriod(ids, loader) {
+  var period = $(ids.period).value;
+  if (!period) return;
   var now = new Date();
   var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   var from, to;
-
   switch (period) {
-    case 'today':
-      from = today;
-      to = now;
-      break;
-    case 'week':
-      var dayOfWeek = today.getDay();
-      from = new Date(today);
-      from.setDate(today.getDate() - dayOfWeek);
-      to = now;
-      break;
-    case 'month':
-      from = new Date(now.getFullYear(), now.getMonth(), 1);
-      to = now;
-      break;
-    case 'quarter':
-      var quarter = Math.floor(now.getMonth() / 3);
-      from = new Date(now.getFullYear(), quarter * 3, 1);
-      to = now;
-      break;
-    case 'year':
-      from = new Date(now.getFullYear(), 0, 1);
-      to = now;
-      break;
+    case 'today': from = today; to = now; break;
+    case 'week': var dow = today.getDay(); from = new Date(today); from.setDate(today.getDate() - dow); to = now; break;
+    case 'month': from = new Date(now.getFullYear(), now.getMonth(), 1); to = now; break;
+    case 'quarter': var q = Math.floor(now.getMonth() / 3); from = new Date(now.getFullYear(), q * 3, 1); to = now; break;
+    case 'year': from = new Date(now.getFullYear(), 0, 1); to = now; break;
   }
-
-  $('#filterDateFrom').value = from.toISOString().split('T')[0];
-  $('#filterDateTo').value = to.toISOString().split('T')[0];
-  loadSales();
+  if (from) $(ids.dateFrom).value = from.toISOString().split('T')[0];
+  if (to) $(ids.dateTo).value = to.toISOString().split('T')[0];
+  loader();
 }
 
-function clearSalesFilters() {
-  $('#filterDateFrom').value = '';
-  $('#filterDateTo').value = '';
-  $('#filterPaymentMethod').value = '';
-  $('#filterQuickPeriod').value = '';
-  loadSales();
+function clearFilters(ids, loader) {
+  $(ids.dateFrom).value = '';
+  $(ids.dateTo).value = '';
+  $(ids.period).value = 'today';
+  if ($(ids.product)) $(ids.product).value = '';
+  if (ids.extra) $(ids.extra).value = '';
+  loader();
 }
 
 async function loadSales() {
   var params = {};
   var from = $('#filterDateFrom').value;
   var to = $('#filterDateTo').value;
-  var paymentMethod = $('#filterPaymentMethod').value;
+  var cocina = $('#filterCocina').value;
+  var search = ($('#filterProductSearch').value || '').trim();
 
   if (from) params.from = from;
   if (to) params.to = to;
+  if (cocina) params.cocina = cocina;
+  if (search) params.search = search;
 
   try {
     var res = await API.sales.list(params);
@@ -716,7 +720,7 @@ function renderSalesTable() {
   var cards = $('#salesCards');
 
   if (state.sales.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron salidas</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron salidas</p></td></tr>';
     cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">No se encontraron salidas</p>';
     return;
   }
@@ -730,6 +734,7 @@ function renderSalesTable() {
       + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + s.items.reduce(function (sum, i) { return sum + i.quantity; }, 0) + ' unid.</td>'
       + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">' + escapeHtml(s.paymentMethod) + '</span></td>'
       + '<td class="px-6 py-4 text-sm text-slate-500">' + formatDate(s.createdAt) + '</td>'
+      + '<td class="px-6 py-4 text-sm text-slate-600"><div class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(s.usuario_nombre || '') + '</div></td>'
       + '<td class="px-6 py-4 text-right">'
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Ver detalle">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
@@ -752,9 +757,10 @@ function renderSalesTable() {
       }).join('')
       + '</div>'
       + '<div class="flex items-center justify-between pt-2 border-t border-slate-100">'
-      + '<div class="flex items-center gap-2">'
+      + '<div class="flex items-center gap-2 flex-wrap">'
       + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">' + escapeHtml(s.paymentMethod) + '</span>'
       + '<span class="text-xs text-slate-400">' + formatDate(s.createdAt) + '</span>'
+      + '<span class="text-xs text-slate-500 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(s.usuario_nombre || '') + '</span>'
       + '</div>'
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors touch-target">'
       + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
@@ -946,6 +952,7 @@ function initModals() {
 
 function initCompras() {
   $('#newCompraBtn').addEventListener('click', function () { openCompraModal(); });
+  initFilters('entradas');
 }
 
 async function openCompraModal() {
@@ -1005,13 +1012,21 @@ $('#compraForm').addEventListener('submit', async function (e) {
 
 async function loadCompras() {
   try {
-    var res = await API.compras.list();
+    var params = {};
+    var from = $('#filterDateFromEntradas').value;
+    var to = $('#filterDateToEntradas').value;
+    var search = ($('#filterProductSearchEntradas').value || '').trim();
+    if (from) params.from = from;
+    if (to) params.to = to;
+    if (search) params.search = search;
+
+    var res = await API.compras.list(params);
     var compras = res.data || [];
     var tbody = $('#comprasTable');
     var cards = $('#comprasCards');
 
     if (compras.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin entradas registradas</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Sin entradas registradas</td></tr>';
       cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin entradas registradas</p>';
       return;
     }
@@ -1023,6 +1038,7 @@ async function loadCompras() {
         + '<td class="px-6 py-3 text-sm text-center">' + c.cantidad + '</td>'
         + '<td class="px-6 py-3 text-sm text-right">' + formatCurrency(c.valor_unitario) + '</td>'
         + '<td class="px-6 py-3 text-sm font-semibold text-right">' + formatCurrency(c.valor_total) + '</td>'
+        + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(c.usuario_nombre || '') + '</td>'
         + '</tr>';
     }).join('');
 
@@ -1031,6 +1047,7 @@ async function loadCompras() {
         + '<div class="flex justify-between"><span class="text-xs text-slate-500">' + (c.fecha_compra || '') + '</span><span class="text-lg font-bold">' + formatCurrency(c.valor_total) + '</span></div>'
         + '<p class="text-sm font-medium">' + escapeHtml(c.producto_nombre) + '</p>'
         + '<div class="flex gap-3 text-xs text-slate-500"><span>' + c.cantidad + ' unid</span><span>' + formatCurrency(c.valor_unitario) + ' c/u</span></div>'
+        + '<div class="flex items-center gap-1.5 text-xs text-slate-500"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(c.usuario_nombre || '') + '</div>'
         + '</div>';
     }).join('');
   } catch (err) {
@@ -1044,13 +1061,23 @@ async function loadCompras() {
 
 async function loadMovimientos() {
   try {
-    var res = await API.reportes.movimientos();
+    var params = {};
+    var from = $('#filterDateFromMov').value;
+    var to = $('#filterDateToMov').value;
+    var tipo = $('#filterTipoMov').value;
+    var search = ($('#filterProductSearchMov').value || '').trim();
+    if (from) params.from = from;
+    if (to) params.to = to;
+    if (tipo) params.tipo = tipo;
+    if (search) params.search = search;
+
+    var res = await API.reportes.movimientos(params);
     var movs = res.data || [];
     var tbody = $('#movimientosTable');
     var cards = $('#movimientosCards');
 
     if (movs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Sin movimientos registrados</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-sm text-slate-400">Sin movimientos registrados</td></tr>';
       cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin movimientos registrados</p>';
       return;
     }
@@ -1067,6 +1094,7 @@ async function loadMovimientos() {
         + '<td class="px-6 py-3 text-sm text-center text-emerald-600 font-medium">' + (m.cantidad_entrada || '-') + '</td>'
         + '<td class="px-6 py-3 text-sm text-center text-red-600 font-medium">' + (m.cantidad_salida || '-') + '</td>'
         + '<td class="px-6 py-3 text-sm text-center font-semibold">' + m.cantidad_stock + '</td>'
+        + '<td class="px-6 py-3 text-sm text-slate-600"><div class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(m.usuario_nombre || '') + '</div></td>'
         + '</tr>';
     }).join('');
 
@@ -1077,11 +1105,16 @@ async function loadMovimientos() {
         + '</div>'
         + '<p class="text-sm font-medium">' + escapeHtml(m.producto) + '</p>'
         + '<div class="flex justify-between text-xs text-slate-500"><span>' + escapeHtml(m.codigo) + '</span><span>Stock: ' + m.cantidad_stock + '</span></div>'
+        + '<div class="flex items-center gap-1.5 text-xs text-slate-500"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(m.usuario_nombre || '') + '</div>'
         + '</div>';
     }).join('');
   } catch (err) {
     showToast('Error al cargar movimientos', 'error');
   }
+}
+
+function initMovimientos() {
+  initFilters('movimientos');
 }
 
 // ============================================

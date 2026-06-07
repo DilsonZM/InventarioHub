@@ -699,18 +699,28 @@
       <div id="view-sales" class="view-section hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 p-4 mb-6">
           <div class="flex flex-col lg:flex-row lg:items-end gap-4">
-            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Desde</label>
-                <input type="date" id="filterDateFrom" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
+                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all">
+                  <input type="date" id="filterDateFrom" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
+                  <div class="w-px bg-slate-200 self-stretch"></div>
+                  <input type="date" id="filterDateTo" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
+                </div>
               </div>
               <div>
-                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Hasta</label>
-                <input type="date" id="filterDateTo" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
+                <select id="filterQuickPeriod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                  <option value="today">Hoy</option>
+                  <option value="week">Esta semana</option>
+                  <option value="month">Este mes</option>
+                  <option value="quarter">Este trimestre</option>
+                  <option value="year">Este ano</option>
+                </select>
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Cocina</label>
-                <select id="filterPaymentMethod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                <select id="filterCocina" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
                   <option value="">Todas</option>
                   <option value="Cocina 1">Cocina 1</option>
                   <option value="Cocina 2">Cocina 2</option>
@@ -719,15 +729,11 @@
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Período Rápido</label>
-                <select id="filterQuickPeriod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
-                  <option value="">Personalizado</option>
-                  <option value="today">Hoy</option>
-                  <option value="week">Esta semana</option>
-                  <option value="month">Este mes</option>
-                  <option value="quarter">Este trimestre</option>
-                  <option value="year">Este año</option>
-                </select>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Producto</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                  <input type="text" id="filterProductSearch" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                </div>
               </div>
             </div>
             <div class="flex gap-2">
@@ -771,11 +777,12 @@
                   <th class="px-6 py-3 text-right">Total</th>
                   <th class="px-6 py-3">Cocina</th>
                   <th class="px-6 py-3">Fecha</th>
+                  <th class="px-6 py-3">Usuario</th>
                   <th class="px-6 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody id="salesTable" class="divide-y divide-slate-100">
-                <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Cargando salidas...</td></tr>
+                <tr><td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Cargando salidas...</td></tr>
               </tbody>
             </table>
             <div id="salesCards" class="table-card-mobile p-4 space-y-3"></div>
@@ -785,14 +792,43 @@
 
       <!-- Entradas -->
       <div id="view-entradas" class="view-section hidden">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <p class="text-sm text-slate-500">Registro de entradas de materia prima</p>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 p-4 mb-6">
+          <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
+                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all">
+                  <input type="date" id="filterDateFromEntradas" data-view="entradas" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
+                  <div class="w-px bg-slate-200 self-stretch"></div>
+                  <input type="date" id="filterDateToEntradas" data-view="entradas" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
+                <select id="filterQuickPeriodEntradas" data-view="entradas" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                  <option value="today">Hoy</option>
+                  <option value="week">Esta semana</option>
+                  <option value="month">Este mes</option>
+                  <option value="quarter">Este trimestre</option>
+                  <option value="year">Este ano</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Producto</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                  <input type="text" id="filterProductSearchEntradas" data-view="entradas" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button id="clearFiltersBtnEntradas" data-view="entradas" class="px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Limpiar</button>
+              <button id="newCompraBtn" class="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-xl shadow-sm touch-target">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Nueva Entrada
+              </button>
+            </div>
           </div>
-          <button id="newCompraBtn" class="btn-primary inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-white rounded-xl shadow-md touch-target">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-            Nueva Entrada
-          </button>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
           <table class="w-full table-desktop">
@@ -802,9 +838,10 @@
               <th class="px-6 py-3 text-center">Cantidad</th>
               <th class="px-6 py-3 text-right">Vr. Unitario</th>
               <th class="px-6 py-3 text-right">Vr. Total</th>
+              <th class="px-6 py-3 text-left">Usuario</th>
             </tr></thead>
             <tbody id="comprasTable" class="divide-y divide-slate-100">
-              <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Cargando entradas...</td></tr>
+              <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Cargando entradas...</td></tr>
             </tbody>
           </table>
           <div id="comprasCards" class="table-card-mobile p-4 space-y-3"></div>
@@ -813,8 +850,49 @@
 
       <!-- Movimientos -->
       <div id="view-movimientos" class="view-section hidden">
-        <div class="mb-6">
-          <p class="text-sm text-slate-500">Historial de entradas, salidas y ajustes de inventario</p>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 p-4 mb-6">
+          <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
+                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all">
+                  <input type="date" id="filterDateFromMov" data-view="movimientos" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
+                  <div class="w-px bg-slate-200 self-stretch"></div>
+                  <input type="date" id="filterDateToMov" data-view="movimientos" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
+                <select id="filterQuickPeriodMov" data-view="movimientos" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                  <option value="today">Hoy</option>
+                  <option value="week">Esta semana</option>
+                  <option value="month">Este mes</option>
+                  <option value="quarter">Este trimestre</option>
+                  <option value="year">Este ano</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Tipo</label>
+                <select id="filterTipoMov" data-view="movimientos" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+
+                  <option value="">Todos</option>
+                  <option value="entrada">Entradas</option>
+                  <option value="salida">Salidas</option>
+                  <option value="ajuste">Ajustes</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Producto</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                  <input type="text" id="filterProductSearchMov" data-view="movimientos" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
+                </div>
+              </div>
+            </div>
+            <div>
+              <button id="clearFiltersBtnMov" data-view="movimientos" class="px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Limpiar</button>
+            </div>
+          </div>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
           <table class="w-full table-desktop">
@@ -826,9 +904,10 @@
               <th class="px-6 py-3 text-center">Entrada</th>
               <th class="px-6 py-3 text-center">Salida</th>
               <th class="px-6 py-3 text-center">Stock</th>
+              <th class="px-6 py-3 text-left">Usuario</th>
             </tr></thead>
             <tbody id="movimientosTable" class="divide-y divide-slate-100">
-              <tr><td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Cargando movimientos...</td></tr>
+              <tr><td colspan="8" class="px-6 py-8 text-center text-sm text-slate-400">Cargando movimientos...</td></tr>
             </tbody>
           </table>
           <div id="movimientosCards" class="table-card-mobile p-4 space-y-3"></div>

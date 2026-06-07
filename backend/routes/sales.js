@@ -4,7 +4,7 @@ const supabase = require('../lib/supabase');
 
 router.get('/', async (req, res) => {
   try {
-    const { from, to, page, limit } = req.query;
+    const { from, to, page, limit, cocina, search } = req.query;
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
     const offset = (pageNum - 1) * limitNum;
@@ -15,23 +15,33 @@ router.get('/', async (req, res) => {
 
     if (from) countQuery = countQuery.gte('creado_en', from);
     if (to) countQuery = countQuery.lte('creado_en', to);
+    if (cocina) countQuery = countQuery.eq('metodo_pago', cocina);
 
     const { count, error: countError } = await countQuery;
     if (countError) throw countError;
 
     let query = supabase
       .from('ventas')
-      .select('*, venta_detalles(*), perfiles(username)')
+      .select('*, venta_detalles(*), perfiles(username, nombre_completo)')
       .order('creado_en', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
     if (from) query = query.gte('creado_en', from);
     if (to) query = query.lte('creado_en', to);
+    if (cocina) query = query.eq('metodo_pago', cocina);
 
     const { data, error } = await query;
     if (error) throw error;
 
-    const sales = (data || []).map(sale => ({
+    const searchLower = (search || '').toString().toLowerCase().trim();
+    const filtered = (data || []).filter(sale => {
+      if (!searchLower) return true;
+      return sale.venta_detalles && sale.venta_detalles.some(function (it) {
+        return (it.producto_nombre || '').toLowerCase().includes(searchLower);
+      });
+    });
+
+    const sales = filtered.map(sale => ({
       id: sale.id,
       numero_venta: sale.numero_venta,
       total: sale.total,
@@ -41,6 +51,7 @@ router.get('/', async (req, res) => {
       estado: sale.estado,
       userId: sale.usuario_id,
       username: sale.perfiles?.username || 'Desconocido',
+      usuario_nombre: sale.perfiles?.nombre_completo || sale.perfiles?.username || 'Desconocido',
       clienteNombre: sale.cliente_nombre,
       createdAt: sale.creado_en,
       items: (sale.venta_detalles || []).map(item => ({
@@ -55,10 +66,10 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       data: sales,
-      total: count || 0,
+      total: searchLower ? filtered.length : (count || 0),
       page: pageNum,
       limit: limitNum,
-      totalPages: Math.ceil((count || 0) / limitNum)
+      totalPages: Math.ceil((searchLower ? filtered.length : (count || 0)) / limitNum)
     });
   } catch (err) {
     console.error('Sales list error:', err);
@@ -70,7 +81,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('ventas')
-      .select('*, venta_detalles(*), perfiles(username)')
+      .select('*, venta_detalles(*), perfiles(username, nombre_completo)')
       .eq('id', req.params.id)
       .single();
 

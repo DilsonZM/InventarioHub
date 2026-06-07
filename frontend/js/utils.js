@@ -8,7 +8,13 @@ const formatCache = new Map();
 function formatCurrency(n) {
   const key = `currency:${n}`;
   if (formatCache.has(key)) return formatCache.get(key);
-  const result = '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const num = Number(n);
+  let result;
+  if (Number.isFinite(num) && Number.isInteger(num)) {
+    result = '$' + num.toLocaleString('en-US');
+  } else {
+    result = '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
   formatCache.set(key, result);
   if (formatCache.size > 1000) {
     const firstKey = formatCache.keys().next().value;

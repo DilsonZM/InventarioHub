@@ -4,7 +4,7 @@ const supabase = require('../lib/supabase');
 
 router.get('/', async (req, res) => {
   try {
-    const { from, to, page, limit } = req.query;
+    const { from, to, page, limit, search } = req.query;
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
     const offset = (pageNum - 1) * limitNum;
@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('compras')
-      .select('*, productos(nombre, sku), proveedores(nombre)')
+      .select('*, productos(nombre, sku), proveedores(nombre), perfiles(username, nombre_completo)')
       .order('creado_en', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
@@ -28,7 +28,15 @@ router.get('/', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    const compras = (data || []).map(c => ({
+    const searchLower = (search || '').toString().toLowerCase().trim();
+    const filtered = (data || []).filter(c => {
+      if (!searchLower) return true;
+      const pname = (c.productos && c.productos.nombre) || '';
+      const sku = (c.productos && c.productos.sku) || '';
+      return pname.toLowerCase().includes(searchLower) || sku.toLowerCase().includes(searchLower);
+    });
+
+    const compras = filtered.map(c => ({
       id: c.id,
       fecha_compra: c.fecha_compra,
       producto_id: c.producto_id,
@@ -38,6 +46,9 @@ router.get('/', async (req, res) => {
       valor_unitario: c.valor_unitario,
       valor_total: c.valor_total,
       proveedor_nombre: c.proveedores?.nombre || '',
+      usuario_id: c.usuario_id,
+      usuario_nombre: c.perfiles?.nombre_completo || c.perfiles?.username || '',
+      usuario_username: c.perfiles?.username || '',
       notas: c.notas,
       creado_en: c.creado_en
     }));
@@ -45,10 +56,10 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       data: compras,
-      total: count || 0,
+      total: searchLower ? filtered.length : (count || 0),
       page: pageNum,
       limit: limitNum,
-      totalPages: Math.ceil((count || 0) / limitNum)
+      totalPages: Math.ceil((searchLower ? filtered.length : (count || 0)) / limitNum)
     });
   } catch (err) {
     console.error('Compras list error:', err);
@@ -77,7 +88,7 @@ router.post('/', async (req, res) => {
         usuario_id: req.user ? req.user.id : null,
         notas: notas || null
       })
-      .select('*, productos(nombre, sku), proveedores(nombre)')
+      .select('*, productos(nombre, sku), proveedores(nombre), perfiles(username, nombre_completo)')
       .single();
 
     if (error) throw error;
