@@ -75,7 +75,8 @@ document.addEventListener('DOMContentLoaded', function () {
   initCompras();
   initLogout();
   setCurrentDate();
-  navigate('dashboard');
+  var initialView = location.hash.slice(1) || 'dashboard';
+  navigate(initialView);
 
   console.log('[App] Aplicacion inicializada correctamente');
 });
@@ -158,6 +159,16 @@ function initNavigation() {
   window.addEventListener('hashchange', function () {
     var hash = location.hash.slice(1) || 'dashboard';
     navigate(hash);
+  });
+
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('a[data-nav]');
+    if (!link) return;
+    var targetView = link.dataset.nav;
+    if (state.currentView === targetView) {
+      e.preventDefault();
+      navigate(targetView);
+    }
   });
 }
 
