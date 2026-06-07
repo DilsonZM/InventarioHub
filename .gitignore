@@ -27,3 +27,6 @@ build/
 
 # Vercel
 .vercel
+
+# Supabase CLI cache (metadata local del proyecto, no se commitea)
+supabase/.temp/
