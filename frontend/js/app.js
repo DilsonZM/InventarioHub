@@ -14,13 +14,11 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-function formatCurrency(n) {
-  return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+const formatCurrency = Utils.formatCurrency;
+const formatDate = Utils.formatDate;
+const formatDateShort = Utils.formatDateShort;
+const escapeHtml = Utils.escapeHtml;
+const debounce = Utils.debounce;
 
 function showToast(message, type = 'success') {
   const toast = $('#toast');
@@ -738,9 +736,4 @@ function showError(id, msg) {
   const el = $(`#${id}`);
   el.classList.remove('hidden');
   el.querySelector('p').textContent = msg;
-}
-
-function debounce(fn, ms) {
-  let t;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }

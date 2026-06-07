@@ -1,29 +1,41 @@
 const API = (() => {
   const BASE = '/api';
+  const STORAGE_VERSION = 'v1';
 
   function getToken() {
-    return localStorage.getItem('token');
+    try {
+      return localStorage.getItem(`token:${STORAGE_VERSION}`);
+    } catch {
+      return null;
+    }
   }
 
   function setToken(token) {
-    localStorage.setItem('token', token);
+    try {
+      localStorage.setItem(`token:${STORAGE_VERSION}`, token);
+    } catch {}
   }
 
   function setUser(user) {
-    localStorage.setItem('user', JSON.stringify(user));
+    try {
+      localStorage.setItem(`user:${STORAGE_VERSION}`, JSON.stringify(user));
+    } catch {}
   }
 
   function getUser() {
     try {
-      return JSON.parse(localStorage.getItem('user'));
+      const raw = localStorage.getItem(`user:${STORAGE_VERSION}`);
+      return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
     }
   }
 
   function clearAuth() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    try {
+      localStorage.removeItem(`token:${STORAGE_VERSION}`);
+      localStorage.removeItem(`user:${STORAGE_VERSION}`);
+    } catch {}
   }
 
   function isAuthenticated() {
