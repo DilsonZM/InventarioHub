@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
+const { requirePermission } = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
   try {
@@ -70,7 +71,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => {
   try {
     const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion } = req.body;
 
@@ -123,6 +124,132 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     console.error('Compra create error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
+// PUT /api/compras/:id - editar entrada con recalculo de stock
+router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) => {
+  try {
+    const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion } = req.body;
+
+    if (!producto_id || !cantidad || cantidad <= 0 || !valor_unitario || valor_unitario <= 0) {
+      return res.status(400).json({ success: false, message: 'Producto, cantidad y valor unitario requeridos' });
+    }
+
+    const { data: original, error: origError } = await supabase
+      .from('compras')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    if (origError || !original) {
+      return res.status(404).json({ success: false, message: 'Entrada no encontrada' });
+    }
+
+    // Revertir la entrada original
+    if (original.producto_id === producto_id) {
+      // Mismo producto: ajustar diferencia
+      const diff = original.cantidad - cantidad;
+      if (diff > 0) {
+        // Se desconto de mas: devolver
+        await supabase.rpc('registrar_movimiento', {
+          p_producto_id: producto_id,
+          p_tipo: 'salida',
+          p_cantidad: diff,
+          p_motivo: 'Ajuste por edicion de compra',
+          p_usuario_id: req.user ? req.user.id : null
+        });
+      } else if (diff < 0) {
+        // Falta: agregar
+        await supabase.rpc('registrar_movimiento', {
+          p_producto_id: producto_id,
+          p_tipo: 'entrada',
+          p_cantidad: -diff,
+          p_motivo: 'Ajuste por edicion de compra',
+          p_usuario_id: req.user ? req.user.id : null
+        });
+      }
+    } else {
+      // Producto distinto: revertir viejo, aplicar nuevo
+      await supabase.rpc('registrar_movimiento', {
+        p_producto_id: original.producto_id,
+        p_tipo: 'salida',
+        p_cantidad: original.cantidad,
+        p_motivo: 'Revertir compra por edicion',
+        p_usuario_id: req.user ? req.user.id : null
+      });
+      await supabase.rpc('registrar_movimiento', {
+        p_producto_id: producto_id,
+        p_tipo: 'entrada',
+        p_cantidad: cantidad,
+        p_motivo: 'Ajuste por edicion de compra',
+        p_usuario_id: req.user ? req.user.id : null
+      });
+    }
+
+    const fecha = fecha_compra || new Date().toISOString().split('T')[0];
+    const { data: updated, error: updateError } = await supabase
+      .from('compras')
+      .update({
+        producto_id,
+        cantidad,
+        valor_unitario,
+        fecha_compra: fecha,
+        proveedor_id: proveedor_id || null,
+        notas: notas || null,
+        cantidad_presentacion: cantidad_presentacion || null,
+        unidad_presentacion: unidad_presentacion || null,
+        factor_conversion: factor_conversion || 1
+      })
+      .eq('id', req.params.id)
+      .select('*, productos(nombre, sku), proveedores(nombre), perfiles(username, nombre_completo)')
+      .single();
+    if (updateError) throw updateError;
+
+    res.json({ success: true, data: {
+      id: updated.id,
+      fecha_compra: updated.fecha_compra,
+      producto_nombre: updated.productos?.nombre || '',
+      producto_sku: updated.productos?.sku || '',
+      cantidad: updated.cantidad,
+      valor_unitario: updated.valor_unitario,
+      valor_total: updated.valor_total,
+      proveedor_nombre: updated.proveedores?.nombre || '',
+      usuario_nombre: updated.perfiles?.nombre_completo || updated.perfiles?.username || ''
+    }});
+  } catch (err) {
+    console.error('Compra update error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Error del servidor' });
+  }
+});
+
+// DELETE /api/compras/:id - eliminar entrada y revertir stock
+router.delete('/:id', requirePermission('puede_eliminar_entradas'), async (req, res) => {
+  try {
+    const { data: original, error: origError } = await supabase
+      .from('compras')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    if (origError || !original) {
+      return res.status(404).json({ success: false, message: 'Entrada no encontrada' });
+    }
+
+    // Revertir la entrada: descontar del stock
+    await supabase.rpc('registrar_movimiento', {
+      p_producto_id: original.producto_id,
+      p_tipo: 'salida',
+      p_cantidad: original.cantidad,
+      p_motivo: 'Eliminacion de compra',
+      p_usuario_id: req.user ? req.user.id : null
+    });
+
+    const { error: delError } = await supabase.from('compras').delete().eq('id', req.params.id);
+    if (delError) throw delError;
+
+    res.json({ success: true, message: 'Entrada eliminada' });
+  } catch (err) {
+    console.error('Compra delete error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });
   }
 });

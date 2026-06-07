@@ -29,6 +29,28 @@ function adminOnly(req, res, next) {
   next();
 }
 
+// Middleware granular: chequea un flag de permiso especifico
+function requirePermission(perm) {
+  return async (req, res, next) => {
+    try {
+      const supabase = require('../lib/supabase');
+      const { data, error } = await supabase
+        .from('perfiles')
+        .select(perm)
+        .eq('id', req.user.id)
+        .single();
+      if (error) throw error;
+      if (!data || !data[perm]) {
+        return res.status(403).json({ success: false, message: 'No tienes permiso para esta accion' });
+      }
+      next();
+    } catch (err) {
+      console.error('Permission check error:', err);
+      res.status(500).json({ success: false, message: 'Error del servidor' });
+    }
+  };
+}
+
 function generateToken(user) {
   if (!JWT_SECRET) {
     throw new Error('JWT_SECRET no configurado');
@@ -40,4 +62,4 @@ function generateToken(user) {
   );
 }
 
-module.exports = { authMiddleware, adminOnly, generateToken, JWT_SECRET };
+module.exports = { authMiddleware, adminOnly, requirePermission, generateToken, JWT_SECRET };

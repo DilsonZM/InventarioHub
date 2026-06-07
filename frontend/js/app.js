@@ -6,9 +6,19 @@ const state = {
   saleItems: [],
   currentView: 'dashboard',
   user: null,
+  editingSaleId: null,
+  editingCompraId: null,
+  modoPublico: false,
+  activeFilters: []
 };
 
 let categoryChart = null;
+
+// Helper de permisos
+window.can = function (perm) {
+  if (!state.user || !state.user.permisos) return false;
+  return !!state.user.permisos[perm];
+};
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -49,7 +59,7 @@ function showError(id, msg) {
   el.querySelector('p').textContent = msg;
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
   console.log('[App] Inicializando InventarioApp...');
 
   if (typeof API === 'undefined') {
@@ -57,21 +67,56 @@ document.addEventListener('DOMContentLoaded', function () {
     return;
   }
 
+  // Verificar modo publico (sin auth)
   if (!API.isAuthenticated()) {
-    console.log('[App] Usuario no autenticado, redirigiendo a login...');
-    window.location.href = '/views/login.html';
-    return;
+    try {
+      const cfg = await API.config.get();
+      if (cfg.data && cfg.data.modoPublico) {
+        state.modoPublico = true;
+        state.user = {
+          username: 'visitante',
+          role: 'visitante',
+          permisos: {
+            puedeVerDashboard: true,
+            puedeVerInventario: true,
+            puedeVerMovimientos: false,
+            puedeCrearProductos: false,
+            puedeEditarProductos: false,
+            puedeEliminarProductos: false,
+            puedeCrearSalidas: false,
+            puedeEditarSalidas: false,
+            puedeEliminarSalidas: false,
+            puedeCrearEntradas: false,
+            puedeEditarEntradas: false,
+            puedeEliminarEntradas: false,
+            puedeGestionarUsuarios: false
+          }
+        };
+        console.log('[App] Modo publico activo, entrando como visitante');
+      } else {
+        console.log('[App] Modo privado, redirigiendo a login...');
+        window.location.href = '/views/login.html';
+        return;
+      }
+    } catch (e) {
+      window.location.href = '/views/login.html';
+      return;
+    }
+  } else {
+    state.user = API.getUser();
+    // Refrescar permisos del servidor
+    try {
+      const me = await API.auth.me();
+      state.user = me.data;
+      API.setUser(state.user);
+    } catch (e) {}
+    console.log('[App] Usuario cargado:', state.user);
   }
 
   if (typeof Utils === 'undefined') {
     console.error('[App] Utils no esta definido. Verifica que utils.js se cargo correctamente.');
     return;
   }
-
-  console.log('[App] Usuario autenticado, cargando aplicacion...');
-
-  state.user = API.getUser();
-  console.log('[App] Usuario cargado:', state.user);
 
   initUser();
   initNavigation();
@@ -82,13 +127,62 @@ document.addEventListener('DOMContentLoaded', function () {
   initSales();
   initCompras();
   initMovimientos();
+  initUsers();
+
+  // Modal de filtros mobile
+  var applyBtn = $('#mobileFiltersApply');
+  var clearBtnM = $('#mobileFiltersClear');
+  if (applyBtn) applyBtn.addEventListener('click', function () {
+    var view = applyBtn.getAttribute('data-view') || 'sales';
+    applyMobileFilters(view);
+  });
+  if (clearBtnM) clearBtnM.addEventListener('click', function () {
+    $('#mobileFiltersContent').querySelectorAll('input, select').forEach(function (el) { el.value = ''; });
+  });
+
+  // Permitir que el boton Aplicar sepa en que vista esta
+  var openMobileBtns = document.querySelectorAll('[data-open-filters]');
+  openMobileBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var v = btn.getAttribute('data-open-filters');
+      if (applyBtn) applyBtn.setAttribute('data-view', v);
+    });
+  });
+  initUsers();
   initLogout();
+  applyPermissionsToUI();
   setCurrentDate();
   var initialView = location.hash.slice(1) || 'dashboard';
   navigate(initialView);
+  startAutoRefresh();
 
   console.log('[App] Aplicacion inicializada correctamente');
 });
+
+function applyPermissionsToUI() {
+  // Sidebar: ocultar items que el usuario no puede ver
+  var navItems = {
+    'dashboard': 'puedeVerDashboard',
+    'inventory': 'puedeVerInventario',
+    'sales': 'puedeVerMovimientos',
+    'entradas': 'puedeVerMovimientos',
+    'movimientos': 'puedeVerMovimientos',
+    'users': 'puedeGestionarUsuarios'
+  };
+  Object.keys(navItems).forEach(function (view) {
+    var link = document.querySelector('a[data-nav="' + view + '"]');
+    if (link) {
+      var canSee = window.can(navItems[view]);
+      link.style.display = canSee ? '' : 'none';
+    }
+  });
+
+  // Botones: ocultar/mostrar segun permiso
+  document.querySelectorAll('[data-requires-permission]').forEach(function (el) {
+    var perm = el.getAttribute('data-requires-permission');
+    el.style.display = window.can(perm) ? '' : 'none';
+  });
+}
 
 function setCurrentDate() {
   var el = $('#currentDate');
@@ -98,9 +192,22 @@ function setCurrentDate() {
 function initUser() {
   var user = state.user;
   if (!user) return;
-  $('#userName').textContent = user.username;
-  $('#userRole').textContent = user.role === 'admin' ? 'Administrador' : 'Vendedor';
-  $('#userInitial').textContent = user.username.charAt(0).toUpperCase();
+  $('#userName').textContent = user.username === 'visitante' ? 'Visitante' : user.username;
+  if (user.role === 'admin') $('#userRole').textContent = 'Administrador';
+  else if (user.role === 'vendedor') $('#userRole').textContent = 'Vendedor';
+  else if (user.role === 'visitante') $('#userRole').textContent = 'Modo lectura';
+  else $('#userRole').textContent = user.role;
+  $('#userInitial').textContent = (user.username || 'V').charAt(0).toUpperCase();
+  // Visitante: ocultar logout, mostrar boton de login
+  var logoutBtn = $('#logoutBtn');
+  var loginLink = $('#loginLink');
+  if (user.username === 'visitante') {
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (loginLink) loginLink.classList.remove('hidden');
+  } else {
+    if (logoutBtn) logoutBtn.style.display = '';
+    if (loginLink) loginLink.classList.add('hidden');
+  }
 }
 
 function initLogout() {
@@ -217,7 +324,7 @@ function navigate(view) {
     link.classList.toggle('active', isActive);
   });
 
-  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Salidas', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos' };
+  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Salidas', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos', users: 'Usuarios', config: 'Configuracion' };
   $('#pageTitle').textContent = titles[view] || 'InventarioApp';
 
   if (view === 'dashboard') loadDashboard();
@@ -225,6 +332,8 @@ function navigate(view) {
   if (view === 'sales') loadSales();
   if (view === 'compras' || view === 'entradas') loadCompras();
   if (view === 'movimientos') loadMovimientos();
+  if (view === 'users') loadUsers();
+  if (view === 'config') loadConfig();
 
   if (view === 'dashboard') startDashboardAutoRefresh();
   else stopDashboardAutoRefresh();
@@ -285,6 +394,175 @@ function updateClearBtn(ids) {
   } else {
     btn.classList.remove('active');
   }
+  updateFilterChips(ids);
+}
+
+// Chips: muestra cada filtro activo como pill removible
+function updateFilterChips(ids) {
+  var view = ids.view || 'sales';
+  var chipsContainer = document.querySelector('[data-chips="' + view + '"]');
+  if (!chipsContainer) return;
+  var chips = [];
+
+  var dateFrom = $(ids.dateFrom) ? $(ids.dateFrom).value : '';
+  var dateTo = $(ids.dateTo) ? $(ids.dateTo).value : '';
+  if (dateFrom && dateTo) {
+    chips.push({ label: 'Fechas: ' + dateFrom + ' - ' + dateTo, clear: function () { $(ids.dateFrom).value = ''; $(ids.dateTo).value = ''; } });
+  } else if (dateFrom) {
+    chips.push({ label: 'Desde: ' + dateFrom, clear: function () { $(ids.dateFrom).value = ''; } });
+  } else if (dateTo) {
+    chips.push({ label: 'Hasta: ' + dateTo, clear: function () { $(ids.dateTo).value = ''; } });
+  }
+
+  var period = $(ids.period) ? $(ids.period).value : '';
+  if (period) {
+    var periodLabels = { today: 'Hoy', week: 'Esta semana', month: 'Este mes', quarter: 'Este trimestre', year: 'Este ano' };
+    chips.push({ label: 'Periodo: ' + (periodLabels[period] || period), clear: function () { $(ids.period).value = ''; } });
+  }
+
+  if ($(ids.cocina) && $(ids.cocina).value) {
+    chips.push({ label: 'Cocina: ' + $(ids.cocina).value, clear: function () { $(ids.cocina).value = ''; } });
+  }
+  if ($(ids.product) && $(ids.product).value) {
+    var pEl = $(ids.product);
+    var pText = pEl.options[pEl.selectedIndex] ? pEl.options[pEl.selectedIndex].textContent : '';
+    chips.push({ label: 'Producto: ' + pText, clear: function () { $(ids.product).value = ''; } });
+  }
+  if (ids.extra && $(ids.extra) && $(ids.extra).value) {
+    var exEl = $(ids.extra);
+    var exText = exEl.options[exEl.selectedIndex] ? exEl.options[exEl.selectedIndex].textContent : $(ids.extra).value;
+    chips.push({ label: exText, clear: function () { $(ids.extra).value = ''; } });
+  }
+
+  // Badge en el boton mobile
+  var countSpan = document.querySelector('[data-open-filters="' + view + '"] .mobile-filters-count');
+  if (countSpan) {
+    if (chips.length > 0) {
+      countSpan.textContent = chips.length;
+      countSpan.classList.remove('hidden');
+    } else {
+      countSpan.classList.add('hidden');
+    }
+  }
+
+  chipsContainer.innerHTML = chips.map(function (chip, idx) {
+    return '<button class="filter-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors" data-chip-idx="' + idx + '">'
+      + '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+      + '<span>' + escapeHtml(chip.label) + '</span>'
+      + '</button>';
+  }).join('');
+
+  // Click handlers
+  chipsContainer.querySelectorAll('.filter-chip').forEach(function (btn, idx) {
+    btn.addEventListener('click', function () {
+      chips[idx].clear();
+      // Disparar el loader segun la vista
+      var loader = view === 'dashboard' ? loadDashboard :
+                   view === 'sales' ? loadSales :
+                   view === 'entradas' ? loadCompras :
+                   view === 'movimientos' ? loadMovimientos : null;
+      if (loader) loader();
+    });
+  });
+}
+
+// Modal de filtros para mobile
+function openMobileFiltersModal(view) {
+  var prefix = view === 'sales' ? '' : (view === 'entradas' ? 'Entradas' : (view === 'movimientos' ? 'Mov' : 'Dash'));
+  var content = $('#mobileFiltersContent');
+  if (!content) return;
+
+  var dateFromId = '#filterDateFrom' + prefix;
+  var dateToId = '#filterDateTo' + prefix;
+  var periodId = '#filterQuickPeriod' + prefix;
+  var productId = view === 'dashboard' ? '#filterProductDash' : (view === 'movimientos' ? '#filterProductSearchMov' : (view === 'entradas' ? '#filterProductSearchEntradas' : '#filterProductSearch'));
+  var cocinaId = view === 'sales' ? '#filterCocina' : (view === 'dashboard' ? '#filterCocinaDash' : null);
+  var tipoId = view === 'movimientos' ? '#filterTipoMov' : null;
+
+  var html = '<div>'
+    + '<label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Rango de fechas</label>'
+    + '<div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50">'
+    + '<input type="date" id="mfDateFrom" data-view="' + view + '" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none focus:bg-white border-0" value="' + ($(dateFromId) ? $(dateFromId).value : '') + '">'
+    + '<div class="w-px bg-slate-200 self-stretch"></div>'
+    + '<input type="date" id="mfDateTo" data-view="' + view + '" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none focus:bg-white border-0" value="' + ($(dateToId) ? $(dateToId).value : '') + '">'
+    + '</div></div>';
+
+  html += '<div>'
+    + '<label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 mt-4">Periodo rapido</label>'
+    + '<select id="mfPeriod" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white">'
+    + '<option value="">Sin periodo</option>'
+    + '<option value="today">Hoy</option>'
+    + '<option value="week">Esta semana</option>'
+    + '<option value="month">Este mes</option>'
+    + '<option value="quarter">Este trimestre</option>'
+    + '<option value="year">Este ano</option>'
+    + '</select></div>';
+  setTimeout(function () { var el = $('#mfPeriod'); if (el && $(periodId)) el.value = $(periodId).value; }, 0);
+
+  if (cocinaId && $(cocinaId)) {
+    html += '<div class="mt-4"><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Cocina</label>'
+      + '<select id="mfCocina" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white">'
+      + '<option value="">Todas</option>'
+      + '<option value="Cocina 1">Cocina 1</option><option value="Cocina 2">Cocina 2</option><option value="Cocina 3">Cocina 3</option><option value="Cocina 4">Cocina 4</option>'
+      + '</select></div>';
+    setTimeout(function () { var el = $('#mfCocina'); if (el && $(cocinaId)) el.value = $(cocinaId).value; }, 0);
+  }
+
+  if (tipoId && $(tipoId)) {
+    html += '<div class="mt-4"><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Tipo</label>'
+      + '<select id="mfTipo" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white">'
+      + '<option value="">Todos</option><option value="entrada">Entradas</option><option value="salida">Salidas</option>'
+      + '</select></div>';
+    setTimeout(function () { var el = $('#mfTipo'); if (el && $(tipoId)) el.value = $(tipoId).value; }, 0);
+  }
+
+  if ($(productId)) {
+    var isSelect = $(productId).tagName === 'SELECT';
+    if (isSelect) {
+      var opts = Array.from($(productId).options).map(function (o) {
+        return '<option value="' + o.value + '"' + (o.selected ? ' selected' : '') + '>' + escapeHtml(o.textContent) + '</option>';
+      }).join('');
+      html += '<div class="mt-4"><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Producto</label>'
+        + '<select id="mfProduct" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white">'
+        + '<option value="">Todos los productos</option>' + opts + '</select></div>';
+    } else {
+      html += '<div class="mt-4"><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Buscar producto</label>'
+        + '<input type="text" id="mfProduct" data-view="' + view + '" placeholder="Nombre o SKU" value="' + escapeHtml($(productId).value || '') + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white">'
+        + '</div>';
+    }
+  }
+
+  content.innerHTML = html;
+  openModal('mobileFiltersModal');
+}
+
+function applyMobileFilters(view) {
+  var prefix = view === 'sales' ? '' : (view === 'entradas' ? 'Entradas' : (view === 'movimientos' ? 'Mov' : 'Dash'));
+  var dateFromId = '#filterDateFrom' + prefix;
+  var dateToId = '#filterDateTo' + prefix;
+  var periodId = '#filterQuickPeriod' + prefix;
+  var productId = view === 'dashboard' ? '#filterProductDash' : (view === 'movimientos' ? '#filterProductSearchMov' : (view === 'entradas' ? '#filterProductSearchEntradas' : '#filterProductSearch'));
+  var cocinaId = view === 'sales' ? '#filterCocina' : (view === 'dashboard' ? '#filterCocinaDash' : null);
+  var tipoId = view === 'movimientos' ? '#filterTipoMov' : null;
+
+  if ($(dateFromId) && $('#mfDateFrom')) $(dateFromId).value = $('#mfDateFrom').value;
+  if ($(dateToId) && $('#mfDateTo')) $(dateToId).value = $('#mfDateTo').value;
+  if ($(periodId) && $('#mfPeriod')) {
+    $(periodId).value = $('#mfPeriod').value;
+    if ($('#mfPeriod').value) applyQuickPeriod({
+      dateFrom: dateFromId, dateTo: dateToId, period: periodId, product: productId, clear: '#clearFiltersBtn' + prefix, view: view
+    }, function () { return; });
+  }
+  if (cocinaId && $(cocinaId) && $('#mfCocina')) $(cocinaId).value = $('#mfCocina').value;
+  if (tipoId && $(tipoId) && $('#mfTipo')) $(tipoId).value = $('#mfTipo').value;
+  if ($(productId) && $('#mfProduct')) $(productId).value = $('#mfProduct').value;
+
+  closeModal('mobileFiltersModal');
+  var loader = view === 'dashboard' ? loadDashboard :
+               view === 'sales' ? loadSales :
+               view === 'entradas' ? loadCompras :
+               view === 'movimientos' ? loadMovimientos : null;
+  if (loader) loader();
 }
 
 async function loadDashboard() {
@@ -727,9 +1005,108 @@ async function initSales() {
   initFilters('sales');
 }
 
+window.openSaleModal = openSaleModal;
+window.openCompraModal = openCompraModal;
+window.editSale = async function (id) {
+  if (!window.can('puedeEditarSalidas')) {
+    showToast('No tienes permiso para editar salidas', 'error');
+    return;
+  }
+  try {
+    var res = await API.sales.get(id);
+    var sale = res.data;
+    state.editingSaleId = id;
+    state.saleItems = sale.items.map(function (it) {
+      return {
+        productId: it.productId,
+        productName: it.productName,
+        cantidadPresentacion: it.cantidadPresentacion || it.quantity,
+        cantidadBase: it.quantity,
+        unidadBase: 'unidad',
+        unidadPresentacion: it.unidadPresentacion || null,
+        unidadPresentacionLabel: it.unidadPresentacion || null,
+        factorConversion: it.factorConversion || 1
+      };
+    });
+    // Setear la cocina ANTES de abrir
+    var pmEl = $('#salePaymentMethod');
+    if (pmEl) pmEl.value = sale.paymentMethod || '';
+    var titleEl = document.querySelector('#saleModal h3');
+    if (titleEl) titleEl.textContent = 'Editar Salida #' + sale.id.slice(-6);
+    openSaleModal();
+  } catch (err) {
+    showToast('Error al cargar salida: ' + err.message, 'error');
+  }
+};
+
+window.editCompra = async function (id) {
+  if (!window.can('puedeEditarEntradas')) {
+    showToast('No tienes permiso para editar entradas', 'error');
+    return;
+  }
+  try {
+    var res = await API.compras.get(id);
+    var compra = res.data;
+    state.editingCompraId = id;
+    var titleEl = document.querySelector('#compraModal h3');
+    if (titleEl) titleEl.textContent = 'Editar Entrada';
+    // Setear valores
+    $('#compraProducto').value = compra.producto_id;
+    var opt = $('#compraProducto').options[$('#compraProducto').selectedIndex];
+    var unidad = opt ? (opt.dataset.unidad || 'unidad') : 'unidad';
+    var pres = window.getPresentaciones(unidad);
+    $('#compraUnidadPresentacion').innerHTML = pres.map(function (p) {
+      return '<option value="' + p.value + '" data-factor="' + p.factor + '">' + escapeHtml(p.label) + '</option>';
+    }).join('');
+    if (compra.unidad_presentacion) {
+      $('#compraUnidadPresentacion').value = compra.unidad_presentacion;
+    }
+    $('#compraCantidad').value = compra.cantidad_presentacion || compra.cantidad;
+    $('#compraValor').value = compra.valor_unitario;
+    if (compra.fecha_compra) $('#compraFecha').value = compra.fecha_compra;
+    updateCompraTotal();
+    openModal('compraModal');
+  } catch (err) {
+    showToast('Error al cargar entrada: ' + err.message, 'error');
+  }
+};
+
+window.deleteSale = async function (id) {
+  if (!window.can('puedeEliminarSalidas')) {
+    showToast('No tienes permiso para eliminar salidas', 'error');
+    return;
+  }
+  if (!confirm('¿Eliminar esta salida? El stock se devolvera al inventario.')) return;
+  try {
+    await API.sales.delete(id);
+    showToast('Salida eliminada y stock devuelto', 'success');
+    loadSales();
+    loadDashboard();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+};
+
+window.deleteCompra = async function (id) {
+  if (!window.can('puedeEliminarEntradas')) {
+    showToast('No tienes permiso para eliminar entradas', 'error');
+    return;
+  }
+  if (!confirm('¿Eliminar esta entrada? El stock se descontara del inventario.')) return;
+  try {
+    await API.compras.delete(id);
+    showToast('Entrada eliminada y stock descontado', 'success');
+    loadCompras();
+    loadDashboard();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+};
+
 function initFilters(view) {
   var prefix = view === 'sales' ? '' : (view === 'entradas' ? 'Entradas' : 'Mov');
   var ids = {
+    view: view,
     dateFrom: '#filterDateFrom' + prefix,
     dateTo: '#filterDateTo' + prefix,
     period: '#filterQuickPeriod' + prefix,
@@ -749,6 +1126,13 @@ function initFilters(view) {
     $(ids.product).addEventListener('input', debounce(function () { updateClearBtn(ids); loader(); }, 350));
   }
   $(ids.clear).addEventListener('click', function () { clearFilters(ids, loader); });
+
+  // Mobile: boton Filtros y limpiar
+  var openBtn = document.querySelector('[data-open-filters="' + view + '"]');
+  if (openBtn) openBtn.addEventListener('click', function () { openMobileFiltersModal(view); });
+  var clearMobile = document.getElementById('clearFiltersBtn' + (view === 'sales' ? 'Mobile' : (view === 'entradas' ? 'EntradasMobile' : (view === 'movimientos' ? 'MovMobile' : 'DashMobile'))));
+  if (clearMobile) clearMobile.addEventListener('click', function () { clearFilters(ids, loader); });
+
   updateClearBtn(ids);
 }
 
@@ -860,9 +1244,19 @@ function renderSalesTable() {
       + '<td class="px-6 py-4 text-sm text-slate-500">' + formatDate(s.createdAt) + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-600"><div class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(s.usuario_nombre || '') + '</div></td>'
       + '<td class="px-6 py-4 text-right">'
+      + '<div class="flex items-center justify-end gap-1">'
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Ver detalle">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
+      + (window.can && window.can('puedeEditarSalidas') ?
+        '<button onclick="window.editSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Editar">'
+        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
+        + '</button>' : '')
+      + (window.can && window.can('puedeEliminarSalidas') ?
+        '<button onclick="window.deleteSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors touch-target" title="Eliminar">'
+        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+        + '</button>' : '')
+      + '</div>'
       + '</td>'
       + '</tr>';
   }).join('');
@@ -891,10 +1285,19 @@ function renderSalesTable() {
       + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">' + escapeHtml(s.paymentMethod) + '</span>'
       + '<span class="text-xs text-slate-400">' + formatDate(s.createdAt) + '</span>'
       + '<span class="text-xs text-slate-500 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(s.usuario_nombre || '') + '</span>'
-      + '</div>'
-      + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors touch-target">'
+      + '<div class="flex items-center gap-1">'
+      + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Ver">'
       + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
+      + (window.can && window.can('puedeEditarSalidas') ?
+        '<button onclick="window.editSale(\'' + s.id + '\')" class="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Editar">'
+        + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
+        + '</button>' : '')
+      + (window.can && window.can('puedeEliminarSalidas') ?
+        '<button onclick="window.deleteSale(\'' + s.id + '\')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors touch-target" title="Eliminar">'
+        + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+        + '</button>' : '')
+      + '</div>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -934,17 +1337,31 @@ window.viewSale = async function (id) {
 };
 
 async function openSaleModal() {
-  state.saleItems = [];
+  var isEditing = !!state.editingSaleId;
+  if (!isEditing) state.saleItems = [];
   $('#saleForm').reset();
   $('#saleQuantity').removeAttribute('max');
   $('#saleTotal').textContent = '0 unid.';
   $('#saleFormError').classList.add('hidden');
   $('#saleConversionPreview').classList.add('hidden');
+
+  if (!isEditing) {
+    var titleEl = document.querySelector('#saleModal h3');
+    if (titleEl) titleEl.textContent = 'Nueva Salida';
+  }
   renderSaleItems();
 
   try {
     var res = await API.products.list();
     state.allAvailableProducts = (res.data || []).filter(function (p) { return p.stock > 0; });
+    // Si es edicion, incluir el producto original aunque su stock sea 0
+    if (isEditing) {
+      var editingProdIds = state.saleItems.map(function (i) { return i.productId; });
+      var missing = (res.data || []).filter(function (p) {
+        return editingProdIds.indexOf(p.id) !== -1 && p.stock <= 0;
+      });
+      state.allAvailableProducts = state.allAvailableProducts.concat(missing);
+    }
     refreshSaleProductOptions();
   } catch (e) {
     state.allAvailableProducts = [];
@@ -1197,21 +1614,29 @@ $('#saleForm').addEventListener('submit', async function (e) {
     return;
   }
 
+  var payload = {
+    items: state.saleItems.map(function (i) {
+      return {
+        productId: i.productId,
+        quantity: i.cantidadBase,
+        cantidadPresentacion: i.unidadPresentacion ? i.cantidadPresentacion : null,
+        unidadPresentacion: i.unidadPresentacion || null,
+        factorConversion: i.factorConversion || 1
+      };
+    }),
+    paymentMethod: paymentMethod,
+  };
+
   try {
-    await API.sales.create({
-      items: state.saleItems.map(function (i) {
-        return {
-          productId: i.productId,
-          quantity: i.cantidadBase,
-          cantidadPresentacion: i.unidadPresentacion ? i.cantidadPresentacion : null,
-          unidadPresentacion: i.unidadPresentacion || null,
-          factorConversion: i.factorConversion || 1
-        };
-      }),
-      paymentMethod: paymentMethod,
-    });
+    if (state.editingSaleId) {
+      await API.sales.update(state.editingSaleId, payload);
+      showToast('Salida actualizada correctamente');
+      state.editingSaleId = null;
+    } else {
+      await API.sales.create(payload);
+      showToast('Salida registrada correctamente');
+    }
     closeModal('saleModal');
-    showToast('Salida registrada correctamente');
     loadSales();
     loadDashboard();
   } catch (err) {
@@ -1246,7 +1671,13 @@ function initCompras() {
 }
 
 async function openCompraModal() {
-  $('#compraForm').reset();
+  var isEditing = !!state.editingCompraId;
+  if (!isEditing) {
+    $('#compraForm').reset();
+    state.editingCompraId = null;
+    var titleEl = document.querySelector('#compraModal h3');
+    if (titleEl) titleEl.textContent = 'Nueva Entrada';
+  }
   $('#compraFecha').value = new Date().toISOString().split('T')[0];
   $('#compraCantidad').value = 1;
   if ($('#compraTotal')) $('#compraTotal').textContent = '$0.00';
@@ -1341,18 +1772,26 @@ $('#compraForm').addEventListener('submit', async function (e) {
     return;
   }
 
+  var payload = {
+    producto_id: producto_id,
+    cantidad: cantidad,
+    valor_unitario: valor,
+    fecha_compra: fecha || undefined,
+    cantidad_presentacion: unidadPres ? cantPres : null,
+    unidad_presentacion: unidadPres,
+    factor_conversion: factor
+  };
+
   try {
-    await API.compras.create({
-      producto_id: producto_id,
-      cantidad: cantidad,
-      valor_unitario: valor,
-      fecha_compra: fecha || undefined,
-      cantidad_presentacion: unidadPres ? cantPres : null,
-      unidad_presentacion: unidadPres,
-      factor_conversion: factor
-    });
+    if (state.editingCompraId) {
+      await API.compras.update(state.editingCompraId, payload);
+      showToast('Entrada actualizada correctamente');
+      state.editingCompraId = null;
+    } else {
+      await API.compras.create(payload);
+      showToast('Entrada registrada correctamente');
+    }
     closeModal('compraModal');
-    showToast('Entrada registrada correctamente');
     loadCompras();
     loadDashboard();
   } catch (err) {
@@ -1376,7 +1815,7 @@ async function loadCompras() {
     var cards = $('#comprasCards');
 
     if (compras.length === 0) {
-      var emptyComprasHtml = '<tr><td colspan="6" class="px-6 py-16 text-center">'
+      var emptyComprasHtml = '<tr><td colspan="7" class="px-6 py-16 text-center">'
         + '<div class="flex flex-col items-center gap-3">'
         + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
         + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>'
@@ -1408,6 +1847,18 @@ async function loadCompras() {
         + '<td class="px-6 py-3 text-sm text-right">' + formatCurrency(c.valor_unitario) + '</td>'
         + '<td class="px-6 py-3 text-sm font-semibold text-right">' + formatCurrency(c.valor_total) + '</td>'
         + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(c.usuario_nombre || '') + '</td>'
+        + '<td class="px-6 py-3 text-right">'
+        + '<div class="flex items-center justify-end gap-1">'
+        + (window.can && window.can('puedeEditarEntradas') ?
+          '<button onclick="window.editCompra(\'' + c.id + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Editar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
+          + '</button>' : '')
+        + (window.can && window.can('puedeEliminarEntradas') ?
+          '<button onclick="window.deleteCompra(\'' + c.id + '\')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors touch-target" title="Eliminar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+          + '</button>' : '')
+        + '</div>'
+        + '</td>'
         + '</tr>';
     }).join('');
 
@@ -1416,11 +1867,24 @@ async function loadCompras() {
       if (c.cantidad_presentacion && c.factor_conversion && c.factor_conversion !== 1) {
         cantHtml = c.cantidad_presentacion + ' ' + escapeHtml(c.unidad_presentacion || '') + ' = ' + c.cantidad + ' base';
       }
+      var actionsHtml = '<div class="flex items-center gap-1">'
+        + (window.can && window.can('puedeEditarEntradas') ?
+          '<button onclick="window.editCompra(\'' + c.id + '\')" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Editar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
+          + '</button>' : '')
+        + (window.can && window.can('puedeEliminarEntradas') ?
+          '<button onclick="window.deleteCompra(\'' + c.id + '\')" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors touch-target" title="Eliminar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+          + '</button>' : '')
+        + '</div>';
       return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
         + '<div class="flex justify-between"><span class="text-xs text-slate-500">' + (c.fecha_compra || '') + '</span><span class="text-lg font-bold">' + formatCurrency(c.valor_total) + '</span></div>'
         + '<p class="text-sm font-medium">' + escapeHtml(c.producto_nombre) + '</p>'
         + '<div class="flex gap-3 text-xs text-slate-500"><span>' + cantHtml + '</span><span>' + formatCurrency(c.valor_unitario) + ' c/u</span></div>'
+        + '<div class="flex items-center justify-between">'
         + '<div class="flex items-center gap-1.5 text-xs text-slate-500"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(c.usuario_nombre || '') + '</div>'
+        + actionsHtml
+        + '</div>'
         + '</div>';
     }).join('');
   } catch (err) {
@@ -1502,6 +1966,270 @@ async function loadMovimientos() {
 
 function initMovimientos() {
   initFilters('movimientos');
+}
+
+// ============================================
+// Usuarios
+// ============================================
+
+var PERM_LABELS = {
+  puedeCrearProductos: 'Crear productos',
+  puedeEditarProductos: 'Editar productos',
+  puedeEliminarProductos: 'Eliminar productos',
+  puedeCrearSalidas: 'Crear salidas',
+  puedeEditarSalidas: 'Editar salidas',
+  puedeEliminarSalidas: 'Eliminar salidas',
+  puedeCrearEntradas: 'Crear entradas',
+  puedeEditarEntradas: 'Editar entradas',
+  puedeEliminarEntradas: 'Eliminar entradas',
+  puedeGestionarUsuarios: 'Gestionar usuarios',
+  puedeVerInventario: 'Ver inventario',
+  puedeVerMovimientos: 'Ver movimientos',
+  puedeVerDashboard: 'Ver dashboard'
+};
+
+function buildPermsObj(perms) {
+  return {
+    puede_crear_productos: !!perms.puedeCrearProductos,
+    puede_editar_productos: !!perms.puedeEditarProductos,
+    puede_eliminar_productos: !!perms.puedeEliminarProductos,
+    puede_crear_salidas: !!perms.puedeCrearSalidas,
+    puede_editar_salidas: !!perms.puedeEditarSalidas,
+    puede_eliminar_salidas: !!perms.puedeEliminarSalidas,
+    puede_crear_entradas: !!perms.puedeCrearEntradas,
+    puede_editar_entradas: !!perms.puedeEditarEntradas,
+    puede_eliminar_entradas: !!perms.puedeEliminarEntradas,
+    puede_gestionar_usuarios: !!perms.puedeGestionarUsuarios,
+    puede_ver_inventario: !!perms.puedeVerInventario,
+    puede_ver_movimientos: !!perms.puedeVerMovimientos,
+    puede_ver_dashboard: !!perms.puedeVerDashboard
+  };
+}
+
+function plantillaPorRolFrontend(role) {
+  if (role === 'admin') {
+    return {
+      puedeCrearProductos: true, puedeEditarProductos: true, puedeEliminarProductos: true,
+      puedeCrearSalidas: true, puedeEditarSalidas: true, puedeEliminarSalidas: true,
+      puedeCrearEntradas: true, puedeEditarEntradas: true, puedeEliminarEntradas: true,
+      puedeGestionarUsuarios: true, puedeVerInventario: true, puedeVerMovimientos: true, puedeVerDashboard: true
+    };
+  }
+  return {
+    puedeCrearSalidas: true, puedeEditarSalidas: false, puedeEliminarSalidas: false,
+    puedeCrearEntradas: false, puedeEditarEntradas: false, puedeEliminarEntradas: false,
+    puedeGestionarUsuarios: false, puedeVerInventario: true, puedeVerMovimientos: true, puedeVerDashboard: true
+  };
+}
+
+function initUsers() {
+  var newBtn = $('#newUserBtn');
+  if (newBtn) newBtn.addEventListener('click', function () { openUserModal(); });
+  var form = $('#userForm');
+  if (form) form.addEventListener('submit', saveUser);
+  var roleSel = $('#userRole');
+  if (roleSel) roleSel.addEventListener('change', function () {
+    var perms = plantillaPorRolFrontend(this.value);
+    Object.keys(perms).forEach(function (k) {
+      var cb = $('#perm_' + k);
+      if (cb) cb.checked = perms[k];
+    });
+  });
+  var allBtn = $('#permAllBtn');
+  if (allBtn) allBtn.addEventListener('click', function () {
+    $$('#permGrid input[type=checkbox]').forEach(function (cb) { cb.checked = true; });
+  });
+  var noneBtn = $('#permNoneBtn');
+  if (noneBtn) noneBtn.addEventListener('click', function () {
+    $$('#permGrid input[type=checkbox]').forEach(function (cb) { cb.checked = false; });
+  });
+
+  // Construir grid de permisos
+  var grid = $('#permGrid');
+  if (grid) {
+    grid.innerHTML = Object.keys(PERM_LABELS).map(function (k) {
+      return '<label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:bg-white p-1.5 rounded-lg transition-colors">'
+        + '<input type="checkbox" id="perm_' + k + '" data-perm="' + k + '" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">'
+        + '<span>' + PERM_LABELS[k] + '</span>'
+        + '</label>';
+    }).join('');
+  }
+
+  // Config
+  var saveConfigBtn = $('#saveConfigBtn');
+  if (saveConfigBtn) saveConfigBtn.addEventListener('click', saveConfig);
+}
+
+async function loadUsers() {
+  if (!window.can('puedeGestionarUsuarios')) return;
+  try {
+    var res = await API.users.list();
+    var users = res.data || [];
+    var tbody = $('#usersTable');
+    var cards = $('#usersCards');
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">No hay usuarios</td></tr>';
+      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">No hay usuarios</p>';
+      return;
+    }
+    tbody.innerHTML = users.map(function (u) {
+      var activeCount = Object.values(u.permisos).filter(Boolean).length;
+      return '<tr class="hover:bg-slate-50 transition-colors">'
+        + '<td class="px-6 py-3"><div class="text-sm font-medium text-slate-800">' + escapeHtml(u.username) + '</div><div class="text-xs text-slate-400">' + escapeHtml(u.email || '') + '</div></td>'
+        + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(u.nombreCompleto || '-') + '</td>'
+        + '<td class="px-6 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700') + '">' + u.role + '</span></td>'
+        + '<td class="px-6 py-3 text-center"><span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">' + activeCount + '/13</span></td>'
+        + '<td class="px-6 py-3">' + (u.activo === false ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Inactivo</span>' : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Activo</span>') + '</td>'
+        + '<td class="px-6 py-3 text-right">'
+        + '<div class="flex items-center justify-end gap-1">'
+        + '<button onclick="window.editUser(\'' + u.id + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Editar">'
+        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>'
+        + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors touch-target" title="Eliminar">'
+        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>'
+        + '</div></td>'
+        + '</tr>';
+    }).join('');
+    cards.innerHTML = users.map(function (u) {
+      var activeCount = Object.values(u.permisos).filter(Boolean).length;
+      return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
+        + '<div class="flex items-start justify-between"><div><p class="text-sm font-semibold text-slate-800">' + escapeHtml(u.username) + '</p><p class="text-xs text-slate-500">' + escapeHtml(u.email || '') + '</p></div>'
+        + '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700') + '">' + u.role + '</span></div>'
+        + '<p class="text-xs text-slate-500">' + escapeHtml(u.nombreCompleto || '-') + '</p>'
+        + '<div class="flex items-center justify-between text-xs">'
+        + '<span class="text-slate-500">Permisos: ' + activeCount + '/13</span>'
+        + (u.activo === false ? '<span class="text-red-600 font-medium">Inactivo</span>' : '<span class="text-emerald-600 font-medium">Activo</span>')
+        + '</div>'
+        + '<div class="flex gap-1 pt-2 border-t border-slate-100">'
+        + '<button onclick="window.editUser(\'' + u.id + '\')" class="flex-1 p-2 text-amber-600 bg-amber-50 rounded-lg text-sm font-medium touch-target">Editar</button>'
+        + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-red-600 bg-red-50 rounded-lg text-sm font-medium touch-target">Eliminar</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  } catch (err) {
+    showToast('Error al cargar usuarios: ' + err.message, 'error');
+  }
+}
+
+window.openUserModal = function () {
+  $('#userModalTitle').textContent = 'Nuevo Usuario';
+  $('#userForm').reset();
+  $('#userFormError').classList.add('hidden');
+  $('#userPassHint').textContent = '(requerido)';
+  $('#userPassword').setAttribute('required', 'required');
+  state.editingUserId = null;
+  // Aplicar plantilla de vendedor por defecto
+  var perms = plantillaPorRolFrontend('vendedor');
+  Object.keys(perms).forEach(function (k) {
+    var cb = $('#perm_' + k);
+    if (cb) cb.checked = perms[k];
+  });
+  openModal('userModal');
+};
+
+window.editUser = async function (id) {
+  try {
+    var res = await API.users.list();
+    var user = (res.data || []).find(function (u) { return u.id === id; });
+    if (!user) return;
+    state.editingUserId = id;
+    $('#userModalTitle').textContent = 'Editar Usuario: ' + user.username;
+    $('#userUsername').value = user.username;
+    $('#userUsername').disabled = true;
+    $('#userPassword').value = '';
+    $('#userPassword').removeAttribute('required');
+    $('#userPassHint').textContent = '(dejar vacio para no cambiar)';
+    $('#userNombreCompleto').value = user.nombreCompleto || '';
+    $('#userEmail').value = user.email || '';
+    $('#userRole').value = user.role;
+    Object.keys(user.permisos).forEach(function (k) {
+      var cb = $('#perm_' + k);
+      if (cb) cb.checked = user.permisos[k];
+    });
+    $('#userFormError').classList.add('hidden');
+    openModal('userModal');
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+};
+
+window.deleteUser = async function (id, username) {
+  if (!confirm('¿Desactivar al usuario "' + username + '"?')) return;
+  try {
+    await API.users.delete(id);
+    showToast('Usuario desactivado', 'success');
+    loadUsers();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+};
+
+async function saveUser(e) {
+  e.preventDefault();
+  var username = $('#userUsername').value.trim();
+  var password = $('#userPassword').value;
+  var nombreCompleto = $('#userNombreCompleto').value.trim();
+  var email = $('#userEmail').value.trim();
+  var role = $('#userRole').value;
+  var perms = {};
+  $$('#permGrid input[type=checkbox]').forEach(function (cb) {
+    perms[cb.getAttribute('data-perm')] = cb.checked;
+  });
+  var permsSnake = buildPermsObj(perms);
+
+  if (!state.editingUserId && !password) {
+    showError('userFormError', 'La contrasena es requerida para nuevos usuarios');
+    return;
+  }
+  if (password && password.length < 6) {
+    showError('userFormError', 'La contrasena debe tener al menos 6 caracteres');
+    return;
+  }
+
+  var payload = {
+    username: username,
+    nombreCompleto: nombreCompleto,
+    email: email,
+    role: role,
+    permisos: permsSnake
+  };
+  if (password) payload.password = password;
+
+  try {
+    if (state.editingUserId) {
+      await API.users.update(state.editingUserId, payload);
+      showToast('Usuario actualizado', 'success');
+    } else {
+      payload.password = password;
+      await API.users.create(payload);
+      showToast('Usuario creado', 'success');
+    }
+    closeModal('userModal');
+    $('#userUsername').disabled = false;
+    state.editingUserId = null;
+    loadUsers();
+  } catch (err) {
+    showError('userFormError', err.message);
+  }
+}
+
+async function loadConfig() {
+  if (!window.can('puedeGestionarUsuarios')) return;
+  try {
+    var res = await API.config.get();
+    $('#modoPublicoCheck').checked = !!res.data.modoPublico;
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+}
+
+async function saveConfig() {
+  var modoPublico = $('#modoPublicoCheck').checked;
+  try {
+    await API.config.update({ modoPublico: modoPublico });
+    showToast('Configuracion guardada. ' + (modoPublico ? 'Los visitantes ya pueden entrar.' : 'Acceso publico deshabilitado.'), 'success');
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
 }
 
 // ============================================

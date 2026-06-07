@@ -1,8 +1,17 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (API.isAuthenticated()) {
     window.location.href = '/index.html';
     return;
   }
+
+  // Mostrar link de visitante si modo publico esta activo
+  try {
+    const cfg = await API.config.get();
+    if (cfg.data && cfg.data.modoPublico) {
+      const visitorLink = document.getElementById('visitorLink');
+      if (visitorLink) visitorLink.classList.remove('hidden');
+    }
+  } catch (e) {}
 
   const tabLogin = document.getElementById('tabLogin');
   const tabRegister = document.getElementById('tabRegister');

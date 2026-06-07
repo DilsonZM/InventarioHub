@@ -8,7 +8,9 @@ const salesRoutes = require('./routes/sales');
 const authRoutes = require('./routes/auth');
 const comprasRoutes = require('./routes/compras');
 const reportesRoutes = require('./routes/reportes');
-const { authMiddleware } = require('./middleware/auth');
+const usersRoutes = require('./routes/users');
+const configRoutes = require('./routes/config');
+const { authMiddleware, requirePermission } = require('./middleware/auth');
 const supabase = require('./lib/supabase');
 
 const app = express();
@@ -31,6 +33,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/config', configRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/products', authMiddleware, productRoutes);
 app.use('/api/sales', authMiddleware, salesRoutes);
 app.use('/api/compras', authMiddleware, comprasRoutes);

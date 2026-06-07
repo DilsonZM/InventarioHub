@@ -42,6 +42,25 @@ const API = (() => {
     return !!getToken();
   }
 
+  // request sin auth (para /api/config y login)
+  async function publicRequest(endpoint, options = {}) {
+    const url = `${BASE}${endpoint}`;
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+      const res = await fetch(url, { ...options, headers: { ...headers, ...options.headers } });
+      const data = await res.json();
+      if (!res.ok) {
+        const error = new Error(data.message || 'Error del servidor');
+        error.status = res.status;
+        error.data = data;
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
   async function request(endpoint, options = {}) {
     const url = `${BASE}${endpoint}`;
     const headers = { 'Content-Type': 'application/json' };
@@ -78,6 +97,18 @@ const API = (() => {
       me: () => request('/auth/me'),
     },
 
+    config: {
+      get: () => publicRequest('/config'),
+      update: (data) => request('/config', { method: 'PUT', body: JSON.stringify(data) }),
+    },
+
+    users: {
+      list: () => request('/users'),
+      create: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+    },
+
     products: {
       list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
@@ -91,6 +122,7 @@ const API = (() => {
       delete: (id) =>
         request(`/products/${id}`, { method: 'DELETE' }),
       categories: () => request('/products/categories/list'),
+      suppliers: () => request('/products/suppliers/list'),
     },
 
     sales: {
@@ -101,6 +133,10 @@ const API = (() => {
       get: (id) => request(`/sales/${id}`),
       create: (sale) =>
         request('/sales', { method: 'POST', body: JSON.stringify(sale) }),
+      update: (id, sale) =>
+        request(`/sales/${id}`, { method: 'PUT', body: JSON.stringify(sale) }),
+      delete: (id) =>
+        request(`/sales/${id}`, { method: 'DELETE' }),
     },
 
     stats: (params = {}) => {
@@ -113,8 +149,13 @@ const API = (() => {
         const qs = new URLSearchParams(params).toString();
         return request(`/compras${qs ? '?' + qs : ''}`);
       },
+      get: (id) => request(`/compras/${id}`),
       create: (compra) =>
         request('/compras', { method: 'POST', body: JSON.stringify(compra) }),
+      update: (id, compra) =>
+        request(`/compras/${id}`, { method: 'PUT', body: JSON.stringify(compra) }),
+      delete: (id) =>
+        request(`/compras/${id}`, { method: 'DELETE' }),
     },
 
     reportes: {

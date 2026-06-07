@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
-const { adminOnly } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/auth');
 
 router.get('/categories/list', async (req, res) => {
   try {
@@ -155,7 +155,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', adminOnly, async (req, res) => {
+router.post('/', requirePermission('puede_crear_productos'), async (req, res) => {
   try {
     const { name, sku, category, price, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
 
@@ -215,7 +215,7 @@ router.post('/', adminOnly, async (req, res) => {
   }
 });
 
-router.put('/:id', adminOnly, async (req, res) => {
+router.put('/:id', requirePermission('puede_editar_productos'), async (req, res) => {
   try {
     const { name, sku, category, price, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
 
@@ -281,7 +281,7 @@ router.put('/:id', adminOnly, async (req, res) => {
   }
 });
 
-router.delete('/:id', adminOnly, async (req, res) => {
+router.delete('/:id', requirePermission('puede_eliminar_productos'), async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('productos')

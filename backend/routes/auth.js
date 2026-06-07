@@ -6,6 +6,13 @@ const { generateToken, authMiddleware } = require('../middleware/auth');
 
 const SALT_ROUNDS = 10;
 
+const PERMISSION_COLS = `
+  puede_crear_productos, puede_editar_productos, puede_eliminar_productos,
+  puede_crear_salidas, puede_editar_salidas, puede_eliminar_salidas,
+  puede_crear_entradas, puede_editar_entradas, puede_eliminar_entradas,
+  puede_gestionar_usuarios, puede_ver_inventario, puede_ver_movimientos, puede_ver_dashboard
+`.replace(/\s+/g, ' ').trim();
+
 async function hashPassword(password) {
   return bcrypt.hash(password, SALT_ROUNDS);
 }
@@ -24,6 +31,31 @@ async function comparePassword(password, storedHash) {
   return { match, upgradedHash: null };
 }
 
+function userResponse(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    email: user.email,
+    nombreCompleto: user.nombre_completo,
+    permisos: {
+      puedeCrearProductos: !!user.puede_crear_productos,
+      puedeEditarProductos: !!user.puede_editar_productos,
+      puedeEliminarProductos: !!user.puede_eliminar_productos,
+      puedeCrearSalidas: !!user.puede_crear_salidas,
+      puedeEditarSalidas: !!user.puede_editar_salidas,
+      puedeEliminarSalidas: !!user.puede_eliminar_salidas,
+      puedeCrearEntradas: !!user.puede_crear_entradas,
+      puedeEditarEntradas: !!user.puede_editar_entradas,
+      puedeEliminarEntradas: !!user.puede_eliminar_entradas,
+      puedeGestionarUsuarios: !!user.puede_gestionar_usuarios,
+      puedeVerInventario: !!user.puede_ver_inventario,
+      puedeVerMovimientos: !!user.puede_ver_movimientos,
+      puedeVerDashboard: !!user.puede_ver_dashboard
+    }
+  };
+}
+
 router.post('/register', async (req, res) => {
   try {
     const { username, password, role } = req.body;
@@ -31,11 +63,9 @@ router.post('/register', async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Usuario y contrasena requeridos' });
     }
-
     if (username.length < 3) {
       return res.status(400).json({ success: false, message: 'El usuario debe tener al menos 3 caracteres' });
     }
-
     if (password.length < 6) {
       return res.status(400).json({ success: false, message: 'La contrasena debe tener al menos 6 caracteres' });
     }
@@ -55,14 +85,22 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await hashPassword(password);
 
+    // Plantilla de permisos segun rol
+    const plantilla = userRole === 'admin' ? {
+      puede_crear_productos: true, puede_editar_productos: true, puede_eliminar_productos: true,
+      puede_crear_salidas: true, puede_editar_salidas: true, puede_eliminar_salidas: true,
+      puede_crear_entradas: true, puede_editar_entradas: true, puede_eliminar_entradas: true,
+      puede_gestionar_usuarios: true, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true
+    } : {
+      puede_crear_salidas: true, puede_editar_salidas: false, puede_eliminar_salidas: false,
+      puede_crear_entradas: false, puede_editar_entradas: false, puede_eliminar_entradas: false,
+      puede_gestionar_usuarios: false, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true
+    };
+
     const { data: user, error } = await supabase
       .from('perfiles')
-      .insert({
-        username,
-        password_hash: passwordHash,
-        role: userRole
-      })
-      .select('id, username, role')
+      .insert({ username, password_hash: passwordHash, role: userRole, ...plantilla })
+      .select('id, username, role, email, nombre_completo, ' + PERMISSION_COLS)
       .single();
 
     if (error) throw error;
@@ -71,7 +109,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      data: { token, user: { id: user.id, username: user.username, role: user.role } }
+      data: { token, user: userResponse(user) }
     });
   } catch (err) {
     console.error('Register error:', err);
@@ -89,7 +127,7 @@ router.post('/login', async (req, res) => {
 
     const { data: user, error } = await supabase
       .from('perfiles')
-      .select('id, username, password_hash, role')
+      .select('id, username, password_hash, role, email, nombre_completo, ' + PERMISSION_COLS)
       .eq('username', username)
       .eq('activo', true)
       .single();
@@ -99,22 +137,19 @@ router.post('/login', async (req, res) => {
     }
 
     const { match, upgradedHash } = await comparePassword(password, user.password_hash);
-
     if (!match) {
       return res.status(401).json({ success: false, message: 'Credenciales invalidas' });
     }
-
     if (upgradedHash) {
       await supabase.from('perfiles').update({ password_hash: upgradedHash }).eq('id', user.id);
     }
-
     await supabase.from('perfiles').update({ ultimo_acceso: new Date().toISOString() }).eq('id', user.id);
 
     const token = generateToken(user);
 
     res.json({
       success: true,
-      data: { token, user: { id: user.id, username: user.username, role: user.role } }
+      data: { token, user: userResponse(user) }
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -122,8 +157,21 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/me', authMiddleware, (req, res) => {
-  res.json({ success: true, data: { id: req.user.id, username: req.user.username, role: req.user.role } });
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('perfiles')
+      .select('id, username, role, email, nombre_completo, ' + PERMISSION_COLS)
+      .eq('id', req.user.id)
+      .single();
+    if (error || !user) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    res.json({ success: true, data: userResponse(user) });
+  } catch (err) {
+    console.error('Me error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
 });
 
 module.exports = router;
