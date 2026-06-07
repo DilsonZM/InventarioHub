@@ -6,6 +6,8 @@ require('dotenv').config();
 const productRoutes = require('./routes/products');
 const salesRoutes = require('./routes/sales');
 const authRoutes = require('./routes/auth');
+const comprasRoutes = require('./routes/compras');
+const reportesRoutes = require('./routes/reportes');
 const { authMiddleware } = require('./middleware/auth');
 const supabase = require('./lib/supabase');
 
@@ -31,6 +33,8 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/api/auth', authRoutes);
 app.use('/api/products', authMiddleware, productRoutes);
 app.use('/api/sales', authMiddleware, salesRoutes);
+app.use('/api/compras', authMiddleware, comprasRoutes);
+app.use('/api/reportes', authMiddleware, reportesRoutes);
 
 app.get('/api/stats', authMiddleware, async (req, res) => {
   try {

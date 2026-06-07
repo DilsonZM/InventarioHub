@@ -75,6 +75,7 @@ router.get('/', async (req, res) => {
       cost: p.precio_compra,
       stock: p.stock_actual,
       minStock: p.stock_minimo,
+      unidad: p.unidad_medida || 'unidad',
       category: p.categorias?.nombre || 'Sin categoria',
       category_id: p.categoria_id,
       proveedor_id: p.proveedor_id,
@@ -138,7 +139,8 @@ router.get('/:id', async (req, res) => {
       cost: data.precio_compra,
       stock: data.stock_actual,
       minStock: data.stock_minimo,
-      category: data.categorias?.nombre || 'Sin categoría',
+      unidad: data.unidad_medida || 'unidad',
+      category: data.categorias?.nombre || 'Sin categoria',
       category_id: data.categoria_id,
       proveedor_id: data.proveedor_id,
       active: data.activo,
@@ -155,7 +157,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', adminOnly, async (req, res) => {
   try {
-    const { name, sku, category, price, cost, stock, minStock, description, codigo_barras } = req.body;
+    const { name, sku, category, price, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
 
     if (!name || !sku || !category || price === undefined || cost === undefined || stock === undefined) {
       return res.status(400).json({ success: false, message: 'Campos requeridos: name, sku, category, price, cost, stock' });
@@ -182,6 +184,7 @@ router.post('/', adminOnly, async (req, res) => {
         precio_compra: cost,
         stock_actual: stock,
         stock_minimo: minStock || 0,
+        unidad_medida: unidad || 'unidad',
         descripcion: description || ''
       })
       .select('*, categorias(nombre)')
@@ -198,7 +201,8 @@ router.post('/', adminOnly, async (req, res) => {
       cost: data.precio_compra,
       stock: data.stock_actual,
       minStock: data.stock_minimo,
-      category: data.categorias?.nombre || 'Sin categoría',
+      unidad: data.unidad_medida || 'unidad',
+      category: data.categorias?.nombre || 'Sin categoria',
       active: data.activo,
       createdAt: data.creado_en,
       updatedAt: data.actualizado_en
@@ -213,7 +217,7 @@ router.post('/', adminOnly, async (req, res) => {
 
 router.put('/:id', adminOnly, async (req, res) => {
   try {
-    const { name, sku, category, price, cost, stock, minStock, description, codigo_barras } = req.body;
+    const { name, sku, category, price, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
 
     const { data: existing } = await supabase.from('productos').select('id, sku').eq('id', req.params.id).single();
     if (!existing) {
@@ -243,6 +247,7 @@ router.put('/:id', adminOnly, async (req, res) => {
     if (stock !== undefined) updateData.stock_actual = stock;
     if (minStock !== undefined) updateData.stock_minimo = minStock;
     if (description !== undefined) updateData.descripcion = description;
+    if (unidad !== undefined) updateData.unidad_medida = unidad;
 
     const { data, error } = await supabase
       .from('productos')
@@ -262,7 +267,8 @@ router.put('/:id', adminOnly, async (req, res) => {
       cost: data.precio_compra,
       stock: data.stock_actual,
       minStock: data.stock_minimo,
-      category: data.categorias?.nombre || 'Sin categoría',
+      unidad: data.unidad_medida || 'unidad',
+      category: data.categorias?.nombre || 'Sin categoria',
       active: data.activo,
       createdAt: data.creado_en,
       updatedAt: data.actualizado_en

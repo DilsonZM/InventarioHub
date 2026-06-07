@@ -104,6 +104,23 @@ const API = (() => {
     },
 
     stats: () => request('/stats'),
+
+    compras: {
+      list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/compras${qs ? '?' + qs : ''}`);
+      },
+      create: (compra) =>
+        request('/compras', { method: 'POST', body: JSON.stringify(compra) }),
+    },
+
+    reportes: {
+      movimientos: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/reportes/movimientos${qs ? '?' + qs : ''}`);
+      },
+      indicadores: () => request('/reportes/indicadores'),
+    },
   };
 
   window.API = api;

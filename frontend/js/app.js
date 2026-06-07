@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initDashboard();
   initInventory();
   initSales();
+  initCompras();
   initLogout();
   setCurrentDate();
   navigate('dashboard');
@@ -176,12 +177,15 @@ function navigate(view) {
     link.classList.toggle('active', isActive);
   });
 
-  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Ventas' };
+  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Ventas', compras: 'Compras', movimientos: 'Movimientos', indicadores: 'Indicadores' };
   $('#pageTitle').textContent = titles[view] || 'InventarioApp';
 
   if (view === 'dashboard') loadDashboard();
   if (view === 'inventory') loadProducts();
   if (view === 'sales') loadSales();
+  if (view === 'compras') loadCompras();
+  if (view === 'movimientos') loadMovimientos();
+  if (view === 'indicadores') loadIndicadores();
 
   var sidebar = $('#sidebar');
   if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
@@ -445,6 +449,7 @@ function openProductModal(product) {
     $('#productCost').value = product.cost;
     $('#productStock').value = product.stock;
     $('#productMinStock').value = product.minStock;
+    $('#productUnidad').value = product.unidad || 'unidad';
     $('#productDescription').value = product.description || '';
   }
   openModal('productModal');
@@ -484,6 +489,7 @@ $('#productForm').addEventListener('submit', async function (e) {
     cost: parseFloat($('#productCost').value),
     stock: parseInt($('#productStock').value),
     minStock: parseInt($('#productMinStock').value) || 0,
+    unidad: $('#productUnidad').value || 'unidad',
     description: $('#productDescription').value.trim(),
   };
 
@@ -823,4 +829,192 @@ function initModals() {
       $$('.fixed.z-50').forEach(function (m) { m.classList.add('hidden'); });
     }
   });
+}
+
+// ============================================
+// Compras
+// ============================================
+
+function initCompras() {
+  $('#newCompraBtn').addEventListener('click', function () { openCompraModal(); });
+}
+
+async function openCompraModal() {
+  $('#compraForm').reset();
+  $('#compraFecha').value = new Date().toISOString().split('T')[0];
+  $('#compraTotal').textContent = '$0.00';
+  $('#compraFormError').classList.add('hidden');
+
+  try {
+    var res = await API.products.list();
+    var all = res.data || [];
+    $('#compraProducto').innerHTML = '<option value="">Seleccionar producto</option>' +
+      all.map(function (p) { return '<option value="' + p.id + '">' + escapeHtml(p.name) + ' (' + escapeHtml(p.sku) + ')</option>'; }).join('');
+  } catch (e) {}
+
+  openModal('compraModal');
+}
+
+$('#compraCantidad').addEventListener('input', updateCompraTotal);
+$('#compraValor').addEventListener('input', updateCompraTotal);
+
+function updateCompraTotal() {
+  var cant = parseFloat($('#compraCantidad').value) || 0;
+  var val = parseFloat($('#compraValor').value) || 0;
+  $('#compraTotal').textContent = formatCurrency(cant * val);
+}
+
+$('#compraForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  var producto_id = $('#compraProducto').value;
+  var cantidad = parseInt($('#compraCantidad').value);
+  var valor = parseFloat($('#compraValor').value);
+  var fecha = $('#compraFecha').value;
+
+  if (!producto_id || !cantidad || cantidad <= 0 || !valor || valor <= 0) {
+    showError('compraFormError', 'Completa todos los campos requeridos');
+    return;
+  }
+
+  try {
+    await API.compras.create({ producto_id: producto_id, cantidad: cantidad, valor_unitario: valor, fecha_compra: fecha || undefined });
+    closeModal('compraModal');
+    showToast('Compra registrada correctamente');
+    loadCompras();
+  } catch (err) {
+    showError('compraFormError', err.message);
+  }
+});
+
+async function loadCompras() {
+  try {
+    var res = await API.compras.list();
+    var compras = res.data || [];
+    var tbody = $('#comprasTable');
+    var cards = $('#comprasCards');
+
+    if (compras.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin compras registradas</td></tr>';
+      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin compras registradas</p>';
+      return;
+    }
+
+    tbody.innerHTML = compras.map(function (c) {
+      return '<tr class="hover:bg-slate-50 transition-colors">'
+        + '<td class="px-6 py-3 text-sm text-slate-600">' + (c.fecha_compra || '') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(c.producto_nombre) + ' <span class="text-xs text-slate-400">' + escapeHtml(c.producto_sku) + '</span></td>'
+        + '<td class="px-6 py-3 text-sm text-center">' + c.cantidad + '</td>'
+        + '<td class="px-6 py-3 text-sm text-right">' + formatCurrency(c.valor_unitario) + '</td>'
+        + '<td class="px-6 py-3 text-sm font-semibold text-right">' + formatCurrency(c.valor_total) + '</td>'
+        + '</tr>';
+    }).join('');
+
+    cards.innerHTML = compras.map(function (c) {
+      return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
+        + '<div class="flex justify-between"><span class="text-xs text-slate-500">' + (c.fecha_compra || '') + '</span><span class="text-lg font-bold">' + formatCurrency(c.valor_total) + '</span></div>'
+        + '<p class="text-sm font-medium">' + escapeHtml(c.producto_nombre) + '</p>'
+        + '<div class="flex gap-3 text-xs text-slate-500"><span>' + c.cantidad + ' unid</span><span>' + formatCurrency(c.valor_unitario) + ' c/u</span></div>'
+        + '</div>';
+    }).join('');
+  } catch (err) {
+    showToast('Error al cargar compras', 'error');
+  }
+}
+
+// ============================================
+// Movimientos
+// ============================================
+
+async function loadMovimientos() {
+  try {
+    var res = await API.reportes.movimientos();
+    var movs = res.data || [];
+    var tbody = $('#movimientosTable');
+    var cards = $('#movimientosCards');
+
+    if (movs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Sin movimientos registrados</td></tr>';
+      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin movimientos registrados</p>';
+      return;
+    }
+
+    tbody.innerHTML = movs.map(function (m) {
+      var tipoBadge = m.movimiento === 'entrada' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Entrada</span>'
+        : m.movimiento === 'salida' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Salida</span>'
+        : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Ajuste</span>';
+      return '<tr class="hover:bg-slate-50 transition-colors">'
+        + '<td class="px-6 py-3 text-sm text-slate-600">' + formatDate(m.fecha) + '</td>'
+        + '<td class="px-6 py-3">' + tipoBadge + '</td>'
+        + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(m.producto) + '</td>'
+        + '<td class="px-6 py-3 text-sm font-mono text-center text-slate-500">' + escapeHtml(m.codigo) + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center text-emerald-600 font-medium">' + (m.cantidad_entrada || '-') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center text-red-600 font-medium">' + (m.cantidad_salida || '-') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center font-semibold">' + m.cantidad_stock + '</td>'
+        + '</tr>';
+    }).join('');
+
+    cards.innerHTML = movs.map(function (m) {
+      return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
+        + '<div class="flex justify-between"><span class="text-xs text-slate-500">' + formatDate(m.fecha) + '</span>'
+        + (m.movimiento === 'entrada' ? '<span class="text-emerald-600 text-sm font-bold">+ ' + m.cantidad_entrada + '</span>' : m.movimiento === 'salida' ? '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + '</span>' : '<span class="text-amber-600 text-sm font-bold">Ajuste</span>')
+        + '</div>'
+        + '<p class="text-sm font-medium">' + escapeHtml(m.producto) + '</p>'
+        + '<div class="flex justify-between text-xs text-slate-500"><span>' + escapeHtml(m.codigo) + '</span><span>Stock: ' + m.cantidad_stock + '</span></div>'
+        + '</div>';
+    }).join('');
+  } catch (err) {
+    showToast('Error al cargar movimientos', 'error');
+  }
+}
+
+// ============================================
+// Indicadores
+// ============================================
+
+async function loadIndicadores() {
+  try {
+    var res = await API.reportes.indicadores();
+    var inds = res.data || [];
+    var tbody = $('#indicadoresTable');
+    var cards = $('#indicadoresCards');
+
+    if (inds.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin productos registrados</td></tr>';
+      cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin productos registrados</p>';
+      return;
+    }
+
+    tbody.innerHTML = inds.map(function (i) {
+      var estadoBadge = i.estado === 'OK'
+        ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">OK</span>'
+        : i.estado === 'Agotado'
+          ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Agotado</span>'
+          : i.estado === 'Comprar'
+            ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Comprar</span>'
+            : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Por comprar</span>';
+      var stockColor = i.stock_actual === 0 ? 'text-red-600' : i.stock_actual <= i.stock_minimo ? 'text-amber-600' : 'text-emerald-600';
+      return '<tr class="hover:bg-slate-50 transition-colors">'
+        + '<td class="px-6 py-3 text-sm font-medium text-slate-700">' + escapeHtml(i.producto) + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center font-bold ' + stockColor + '">' + i.stock_actual + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center text-slate-500">' + i.stock_minimo + '</td>'
+        + '<td class="px-6 py-3 text-sm text-slate-500">' + escapeHtml(i.unidad_medida) + '</td>'
+        + '<td class="px-6 py-3">' + estadoBadge + '</td>'
+        + '</tr>';
+    }).join('');
+
+    cards.innerHTML = inds.map(function (i) {
+      var estadoColor = i.estado === 'OK' ? 'border-emerald-200' : 'border-red-200';
+      var stockColor = i.stock_actual === 0 ? 'text-red-600' : i.stock_actual <= i.stock_minimo ? 'text-amber-600' : 'text-emerald-600';
+      return '<div class="bg-white border ' + estadoColor + ' rounded-xl p-4 space-y-2">'
+        + '<div class="flex justify-between items-start">'
+        + '<div><p class="font-semibold text-slate-800">' + escapeHtml(i.producto) + '</p><p class="text-xs text-slate-400">' + escapeHtml(i.unidad_medida) + '</p></div>'
+        + '<span class="text-lg font-bold ' + stockColor + '">' + i.stock_actual + '</span>'
+        + '</div>'
+        + '<div class="flex justify-between items-center"><span class="text-xs text-slate-500">Minimo: ' + i.stock_minimo + '</span>'
+        + (i.estado === 'OK' ? '<span class="text-xs font-medium text-emerald-600">OK</span>' : i.estado === 'Agotado' ? '<span class="text-xs font-medium text-red-600">Agotado</span>' : '<span class="text-xs font-medium text-red-600">Comprar</span>')
+        + '</div></div>';
+    }).join('');
+  } catch (err) {
+    showToast('Error al cargar indicadores', 'error');
+  }
 }
