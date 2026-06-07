@@ -609,14 +609,14 @@ async function loadSales() {
 function updateSalesSummary() {
   var sales = state.sales;
   var count = sales.length;
-  var total = sales.reduce(function (sum, s) { return sum + s.total; }, 0);
-  var avg = count > 0 ? total / count : 0;
-  var items = sales.reduce(function (sum, s) { return sum + s.items.reduce(function (iSum, i) { return iSum + i.quantity; }, 0); }, 0);
+  var totalQty = sales.reduce(function (sum, s) { return sum + s.items.reduce(function (iSum, i) { return iSum + i.quantity; }, 0); }, 0);
+  var avg = count > 0 ? Math.round(totalQty / count) : 0;
+  var distinctItems = sales.reduce(function (set, s) { s.items.forEach(function (i) { set.add(i.productId); }); return set; }, new Set()).size;
 
   $('#summaryCount').textContent = count;
-  $('#summaryTotal').textContent = formatCurrency(total);
-  $('#summaryAvg').textContent = formatCurrency(avg);
-  $('#summaryItems').textContent = items;
+  $('#summaryTotal').textContent = totalQty;
+  $('#summaryAvg').textContent = avg;
+  $('#summaryItems').textContent = distinctItems;
 }
 
 function renderSalesTable() {
@@ -635,8 +635,8 @@ function renderSalesTable() {
       + '<td class="px-6 py-4">'
       + '<div class="text-sm text-slate-700">' + escapeHtml(s.items.map(function (i) { return i.productName + ' x' + i.quantity; }).join(', ')) + '</div>'
       + '</td>'
-      + '<td class="px-6 py-4 text-sm font-bold text-slate-800 text-right">' + formatCurrency(s.total) + '</td>'
-      + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 capitalize">' + escapeHtml(s.paymentMethod) + '</span></td>'
+      + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + s.items.reduce(function (sum, i) { return sum + i.quantity; }, 0) + ' unid.</td>'
+      + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">' + escapeHtml(s.paymentMethod) + '</span></td>'
       + '<td class="px-6 py-4 text-sm text-slate-500">' + formatDate(s.createdAt) + '</td>'
       + '<td class="px-6 py-4 text-right">'
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Ver detalle">'
@@ -650,19 +650,18 @@ function renderSalesTable() {
     return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
       + '<div class="flex items-center justify-between">'
       + '<span class="font-mono text-sm text-slate-500">#' + s.id.slice(-6) + '</span>'
-      + '<span class="text-lg font-bold text-slate-800">' + formatCurrency(s.total) + '</span>'
+      + '<span class="text-lg font-bold text-slate-800">' + s.items.reduce(function (sum, i) { return sum + i.quantity; }, 0) + ' unid.</span>'
       + '</div>'
       + '<div class="space-y-1">'
       + s.items.map(function (i) {
         return '<div class="flex justify-between text-sm">'
           + '<span class="text-slate-600">' + escapeHtml(i.productName) + ' x' + i.quantity + '</span>'
-          + '<span class="text-slate-500">' + formatCurrency(i.subtotal) + '</span>'
           + '</div>';
       }).join('')
       + '</div>'
       + '<div class="flex items-center justify-between pt-2 border-t border-slate-100">'
       + '<div class="flex items-center gap-2">'
-      + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 capitalize">' + escapeHtml(s.paymentMethod) + '</span>'
+      + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">' + escapeHtml(s.paymentMethod) + '</span>'
       + '<span class="text-xs text-slate-400">' + formatDate(s.createdAt) + '</span>'
       + '</div>'
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors touch-target">'
@@ -681,15 +680,15 @@ window.viewSale = async function (id) {
     $('#detailSaleId').textContent = '#' + sale.id.slice(-6);
     $('#detailSaleDate').textContent = formatDate(sale.createdAt);
     $('#detailSalePayment').textContent = sale.paymentMethod;
-    $('#detailSaleTotal').textContent = formatCurrency(sale.total);
+    $('#detailSaleTotal').textContent = sale.items.reduce(function (s, i) { return s + i.quantity; }, 0) + ' unid.';
 
     var itemsHtml = sale.items.map(function (item) {
       return '<div class="flex items-center justify-between px-4 py-3">'
         + '<div class="flex-1 min-w-0">'
         + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.productName) + '</p>'
-        + '<p class="text-xs text-slate-500">' + item.quantity + ' x ' + formatCurrency(item.unitPrice) + '</p>'
+        + '<p class="text-xs text-slate-500">Cantidad: ' + item.quantity + '</p>'
         + '</div>'
-        + '<p class="text-sm font-semibold text-slate-800 ml-4">' + formatCurrency(item.subtotal) + '</p>'
+        + '<p class="text-sm font-semibold text-slate-800 ml-4">' + item.quantity + ' unid.</p>'
         + '</div>';
     }).join('');
 
@@ -712,7 +711,7 @@ async function openSaleModal() {
     var available = res.data.filter(function (p) { return p.stock > 0; });
     var sel = $('#saleProductSelect');
     sel.innerHTML = '<option value="">Seleccionar producto</option>'
-      + available.map(function (p) { return '<option value="' + p.id + '" data-stock="' + p.stock + '" data-price="' + p.price + '">' + escapeHtml(p.name) + ' (Stock: ' + p.stock + ') - ' + formatCurrency(p.price) + '</option>'; }).join('');
+      + available.map(function (p) { return '<option value="' + p.id + '" data-stock="' + p.stock + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">' + escapeHtml(p.name) + ' (Stock: ' + p.stock + ' ' + escapeHtml(p.unidad || 'unidad') + ')</option>'; }).join('');
   } catch (e) {}
 
   openModal('saleModal');
@@ -733,14 +732,12 @@ $('#addSaleItem').addEventListener('click', function () {
   if (existing) {
     if (existing.quantity + qty > stock) { showToast('Stock maximo: ' + stock, 'error'); return; }
     existing.quantity += qty;
-    existing.subtotal = existing.quantity * existing.unitPrice;
   } else {
     state.saleItems.push({
       productId: sel.value,
       productName: opt.textContent.split(' (')[0],
       quantity: qty,
-      unitPrice: parseFloat(opt.dataset.price),
-      subtotal: qty * parseFloat(opt.dataset.price),
+      unidad: opt.dataset.unidad || 'unidad'
     });
   }
 
@@ -764,8 +761,7 @@ function renderSaleItems() {
     return '<tr>'
       + '<td class="px-4 py-2 text-sm text-slate-700">' + escapeHtml(item.productName) + '</td>'
       + '<td class="px-4 py-2 text-sm text-center">' + item.quantity + '</td>'
-      + '<td class="px-4 py-2 text-sm text-right">' + formatCurrency(item.unitPrice) + '</td>'
-      + '<td class="px-4 py-2 text-sm text-right font-medium">' + formatCurrency(item.subtotal) + '</td>'
+      + '<td class="px-4 py-2 text-sm text-center text-slate-500">' + escapeHtml(item.unidad || 'unidad') + '</td>'
       + '<td class="px-4 py-2 text-right">'
       + '<button onclick="window.removeSaleItem(' + idx + ')" class="p-1 text-red-400 hover:text-red-600 transition-colors touch-target">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
@@ -778,19 +774,16 @@ function renderSaleItems() {
     return '<div class="flex items-center justify-between bg-slate-50 rounded-xl p-3">'
       + '<div class="flex-1 min-w-0">'
       + '<p class="text-sm font-medium text-slate-700 truncate">' + escapeHtml(item.productName) + '</p>'
-      + '<p class="text-xs text-slate-500">' + item.quantity + ' x ' + formatCurrency(item.unitPrice) + '</p>'
+      + '<p class="text-xs text-slate-500">' + item.quantity + ' ' + escapeHtml(item.unidad || 'unidad') + '</p>'
       + '</div>'
-      + '<div class="flex items-center gap-3">'
-      + '<span class="text-sm font-semibold text-slate-800">' + formatCurrency(item.subtotal) + '</span>'
       + '<button onclick="window.removeSaleItem(' + idx + ')" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors touch-target">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
       + '</button>'
-      + '</div>'
       + '</div>';
   }).join('');
 
-  var total = state.saleItems.reduce(function (sum, i) { return sum + i.subtotal; }, 0);
-  $('#saleTotal').textContent = formatCurrency(total);
+  var totalItems = state.saleItems.reduce(function (sum, i) { return sum + i.quantity; }, 0);
+  $('#saleTotal').textContent = totalItems + ' unid.';
 }
 
 window.removeSaleItem = function (idx) {
@@ -807,7 +800,7 @@ $('#saleForm').addEventListener('submit', async function (e) {
     return;
   }
   if (!paymentMethod) {
-    showError('saleFormError', 'Selecciona un metodo de pago');
+    showError('saleFormError', 'Selecciona una cocina');
     return;
   }
 

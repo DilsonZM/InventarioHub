@@ -641,11 +641,11 @@
             <table class="w-full table-desktop">
               <thead>
                 <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50/50">
-                  <th class="px-6 py-3">ID</th>
-                  <th class="px-6 py-3">Productos</th>
-                  <th class="px-6 py-3">Total</th>
-                  <th class="px-6 py-3">Pago</th>
                   <th class="px-6 py-3">Fecha</th>
+                  <th class="px-6 py-3">Producto</th>
+                  <th class="px-6 py-3">Tipo</th>
+                  <th class="px-6 py-3">Cant.</th>
+                  <th class="px-6 py-3">Stock</th>
                 </tr>
               </thead>
               <tbody id="recentSalesTable" class="divide-y divide-slate-100">
@@ -714,12 +714,13 @@
                 <input type="date" id="filterDateTo" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
               </div>
               <div>
-                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Método de Pago</label>
+                <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Cocina</label>
                 <select id="filterPaymentMethod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white transition-all touch-target">
-                  <option value="">Todos</option>
-                  <option value="efectivo">Efectivo</option>
-                  <option value="tarjeta">Tarjeta</option>
-                  <option value="transferencia">Transferencia</option>
+                  <option value="">Todas</option>
+                  <option value="Cocina 1">Cocina 1</option>
+                  <option value="Cocina 2">Cocina 2</option>
+                  <option value="Cocina 3">Cocina 3</option>
+                  <option value="Cocina 4">Cocina 4</option>
                 </select>
               </div>
               <div>
@@ -752,15 +753,15 @@
             <p class="text-xl font-bold text-slate-800 mt-1" id="summaryCount">0</p>
           </div>
           <div class="bg-white rounded-xl p-4 border border-slate-100/50">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Monto Total</p>
-            <p class="text-xl font-bold text-emerald-600 mt-1" id="summaryTotal">$0</p>
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Cantidad Usada</p>
+            <p class="text-xl font-bold text-emerald-600 mt-1" id="summaryTotal">0</p>
           </div>
           <div class="bg-white rounded-xl p-4 border border-slate-100/50">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Ticket Promedio</p>
-            <p class="text-xl font-bold text-blue-600 mt-1" id="summaryAvg">$0</p>
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Promedio x Salida</p>
+            <p class="text-xl font-bold text-blue-600 mt-1" id="summaryAvg">0</p>
           </div>
           <div class="bg-white rounded-xl p-4 border border-slate-100/50">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Productos Vendidos</p>
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Productos Usados</p>
             <p class="text-xl font-bold text-violet-600 mt-1" id="summaryItems">0</p>
           </div>
         </div>
@@ -773,7 +774,7 @@
                   <th class="px-6 py-3">ID Salida</th>
                   <th class="px-6 py-3">Productos</th>
                   <th class="px-6 py-3 text-right">Total</th>
-                  <th class="px-6 py-3">Método Pago</th>
+                  <th class="px-6 py-3">Cocina</th>
                   <th class="px-6 py-3">Fecha</th>
                   <th class="px-6 py-3 text-right">Acciones</th>
                 </tr>
@@ -972,32 +973,32 @@
               <table class="w-full text-sm table-desktop">
                 <thead class="bg-slate-50">
                   <tr class="text-left text-xs font-medium text-slate-500 uppercase">
-                    <th class="px-4 py-2">Producto</th>
-                    <th class="px-4 py-2 text-center">Cant.</th>
-                    <th class="px-4 py-2 text-right">Precio</th>
-                    <th class="px-4 py-2 text-right">Subtotal</th>
-                    <th class="px-4 py-2"></th>
+                     <th class="px-4 py-2">Producto</th>
+                     <th class="px-4 py-2 text-center">Cant.</th>
+                     <th class="px-4 py-2 text-center">Unidad</th>
+                     <th class="px-4 py-2"></th>
                   </tr>
                 </thead>
                 <tbody id="saleItemsTable" class="divide-y divide-slate-100">
-                  <tr><td colspan="5" class="px-4 py-6 text-center text-slate-400">Sin productos agregados</td></tr>
+                  <tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">Sin productos agregados</td></tr>
                 </tbody>
               </table>
               <div id="saleItemsCards" class="table-card-mobile p-4 space-y-3"></div>
             </div>
 
-            <div class="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl">
-              <span class="text-base font-semibold text-slate-700">Total:</span>
-              <span class="text-2xl font-bold text-slate-800" id="saleTotal">$0.00</span>
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+              <span class="text-base font-semibold text-slate-700">Total productos:</span>
+              <span class="text-2xl font-bold text-slate-800" id="saleTotal">0</span>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">Método de Pago *</label>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Cocina *</label>
               <select id="salePaymentMethod" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
                 <option value="">Seleccionar</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="transferencia">Transferencia</option>
+                <option value="Cocina 1">Cocina 1</option>
+                <option value="Cocina 2">Cocina 2</option>
+                <option value="Cocina 3">Cocina 3</option>
+                <option value="Cocina 4">Cocina 4</option>
               </select>
             </div>
 
@@ -1040,7 +1041,7 @@
               <p class="text-sm font-semibold text-slate-800 mt-1" id="detailSaleDate">--</p>
             </div>
             <div class="bg-slate-50 rounded-xl p-3">
-              <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Método de Pago</p>
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Cocina</p>
               <p class="text-sm font-semibold text-slate-800 mt-1 capitalize" id="detailSalePayment">--</p>
             </div>
           </div>
@@ -1054,11 +1055,11 @@
             </div>
           </div>
 
-          <div class="bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-xl p-4 border border-emerald-200/50">
+          <div class="bg-slate-100 rounded-xl p-4 border border-slate-200/50">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-xs font-medium text-emerald-700 uppercase tracking-wider">Total</p>
-                <p class="text-2xl font-bold text-emerald-800 mt-0.5" id="detailSaleTotal">$0.00</p>
+                <p class="text-xs font-medium text-slate-600 uppercase tracking-wider">Cantidad Total</p>
+                <p class="text-2xl font-bold text-slate-800 mt-0.5" id="detailSaleTotal">0</p>
               </div>
               <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
                 <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
