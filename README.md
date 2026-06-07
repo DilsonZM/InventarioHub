@@ -1,6 +1,6 @@
 # InventarioHub
 
-Sistema de gestión de inventario y ventas con control de stock, procesamiento atómico de ventas, y autenticación basada en roles.
+Sistema de gestión de inventario y salidas de materia prima para restaurantes de comida rápida, con control de stock atómico, registro por cocina, y autenticación basada en roles.
 
 **[InventarioHub en Producción](https://inventory-app-one-azure.vercel.app)**
 
@@ -18,37 +18,67 @@ Sistema de gestión de inventario y ventas con control de stock, procesamiento a
 - **Backend**: Node.js + Express
 - **Base de datos**: Supabase (PostgreSQL) — 7 tablas, 2 funciones RPC, 3 vistas
 - **Frontend**: Vanilla JavaScript (SPA con hash routing) + Tailwind CSS + Chart.js
-- **Autenticación**: JWT con bcrypt, roles admin/vendedor
+- **Autenticación**: JWT con bcrypt, roles `admin` / `vendedor`
 - **Deploy**: Vercel con `@vercel/node`
 
 ## Características
 
-- Dashboard con estadísticas en tiempo real (productos, ventas del día, stock bajo, valor de inventario)
-- CRUD completo de productos con búsqueda, filtro por categoría y paginación
-- Registro de ventas con procesamiento atómico (validación de stock, decremento, registro de movimientos)
-- Filtros de ventas por fecha, método de pago y períodos rápidos (hoy/semana/mes/trimestre/año)
-- Gráfico de distribución de ventas por categoría (Chart.js doughnut)
+### Inventario
+- CRUD completo de productos con búsqueda, filtro por categoría, filtro por unidad y paginación
+- Soft-delete de productos (`activo = false`)
+- Vista de stock bajo con alerta visual
+- Selector inteligente de unidad (cambia opciones según categoría)
+- Validación de stock máximo en salidas
+
+### Salidas (Ventas)
+- Registro de salidas con selección de cocina y productos
+- Procesamiento atómico vía `procesar_venta()` RPC: valida stock, descuenta, registra movimiento
+- Modal elegante para detalle de venta (no `alert`)
+- Filtros estandarizados: rango de fechas + periodo rápido + producto + cocina
+
+### Entradas (Compras)
+- Registro de entradas a inventario con proveedor
+- Procesamiento atómico vía `registrar_movimiento()` RPC
+- Filtros estandarizados: rango de fechas + periodo rápido + producto
+
+### Movimientos
+- Auditoría completa: entradas, salidas, ajustes
+- Filtros estandarizados: rango de fechas + periodo rápido + producto + tipo
+- Columna "Usuario" muestra el `nombre_completo` de quien registró el movimiento
+
+### Dashboard
+- Estadísticas en tiempo real (productos, salidas, stock bajo, valor de inventario)
+- Auto-refresh cada 30s
+- Barra de filtros: rango de fechas + periodo rápido (aplica a stats y movimientos recientes)
+- Gráfico de distribución de salidas por categoría (Chart.js doughnut)
+
+### UX/UI
 - Tema claro/oscuro con toggle persistente (localStorage + detección del sistema)
-- Diseño responsive: tablas en desktop, cards en móvil
+- Animaciones de login (fade/scale), dashboard (staggered fade-in)
+- Diseño responsive mobile-first: tablas en desktop, cards en móvil
 - Sidebar colapsable en móvil/tablet
-- Soft-delete de productos (activo=false)
+- Tipografía fluida (`clamp()`), unidades dinámicas (`dvh`)
+- Soporte para `prefers-reduced-motion`
+- Date inputs con estilo minimalista custom (oculta chrome nativo del navegador)
+- Filtros de fecha en formato "cápsula" (dos inputs visualmente conectados)
+- `formatCurrency` inteligente: omite `.00` en valores enteros
 
 ## Base de Datos
 
 ### Tablas
 | Tabla | Propósito |
 |-------|-----------|
-| `perfiles` | Usuarios (bcrypt password_hash, roles admin/vendedor) |
+| `perfiles` | Usuarios (bcrypt `password_hash`, `nombre_completo`, roles) |
 | `categorias` | Categorías de productos |
 | `proveedores` | Proveedores |
-| `productos` | Productos con stock, precios, SKU |
+| `productos` | Productos con stock, precios, SKU, unidad de medida |
 | `movimientos_inventario` | Auditoría de entradas/salidas/ajustes |
-| `ventas` | Cabecera de ventas |
-| `venta_detalles` | Items por venta |
+| `ventas` | Cabecera de salidas (con campo `metodo_pago` usado para "cocina") |
+| `venta_detalles` | Items por salida |
 
 ### Funciones RPC
 - `registrar_movimiento()` — Registra movimiento y actualiza stock
-- `procesar_venta()` — Venta atómica con validación de stock y cálculo de impuestos (19%)
+- `procesar_venta()` — Salida atómica con validación de stock y cálculo de impuestos
 
 ### Vistas
 - `vista_productos_completo` — Productos con categoría y proveedor
@@ -56,10 +86,10 @@ Sistema de gestión de inventario y ventas con control de stock, procesamiento a
 - `vista_ventas_resumen` — Ventas con vendedor y cantidad de items
 
 ### Datos Semilla
-- 3 usuarios (admin, vendedor1, vendedor2)
+- 2 usuarios (admin, vendedor1)
 - 5 categorías
-- 3 proveedores
-- 10 productos de ejemplo
+- 4 proveedores
+- 23 productos de materia prima para comida rápida (aceites, carnes, vegetales, lácteos, abarrotes)
 
 ## Demo
 
@@ -95,7 +125,7 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:5173  # opcional
 ```
 InventarioHub/
 ├── backend/
-│   ├── routes/           # auth.js, products.js, sales.js
+│   ├── routes/           # auth.js, products.js, sales.js, compras.js, reportes.js
 │   ├── middleware/       # auth.js (JWT + adminOnly)
 │   ├── lib/              # supabase.js (cliente)
 │   └── server.js         # Express (API + static files)
@@ -125,14 +155,18 @@ InventarioHub/
 | GET | `/api/products` | JWT | Listar productos (paginado) |
 | GET | `/api/products/:id` | JWT | Producto por ID |
 | GET | `/api/products/categories/list` | JWT | Categorías |
+| GET | `/api/products/suppliers/list` | JWT | Proveedores |
 | GET | `/api/products/low-stock` | JWT | Stock bajo |
 | POST | `/api/products` | Admin | Crear producto |
 | PUT | `/api/products/:id` | Admin | Actualizar producto |
 | DELETE | `/api/products/:id` | Admin | Soft-delete producto |
-| GET | `/api/sales` | JWT | Listar ventas (paginado) |
-| GET | `/api/sales/:id` | JWT | Venta por ID |
-| POST | `/api/sales` | JWT | Crear venta |
-| GET | `/api/stats` | JWT | Estadísticas dashboard |
+| GET | `/api/sales` | JWT | Listar salidas (paginado, filtros: `from`, `to`, `cocina`, `search`) |
+| GET | `/api/sales/:id` | JWT | Salida por ID con detalles |
+| POST | `/api/sales` | JWT | Crear salida (atómico vía RPC) |
+| GET | `/api/compras` | JWT | Listar entradas (filtros: `from`, `to`, `search`) |
+| POST | `/api/compras` | Admin | Crear entrada |
+| GET | `/api/reportes/movimientos` | JWT | Listar movimientos (filtros: `from`, `to`, `tipo`, `search`) |
+| GET | `/api/stats` | JWT | Estadísticas dashboard (filtros: `from`, `to`) |
 | GET | `/api/health` | No | Health check |
 
 ## Licencia
