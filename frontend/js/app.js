@@ -358,18 +358,18 @@ async function loadDashboard() {
       var emptyRecent = '<tr><td colspan="5" class="px-6 py-12 text-center">'
         + '<div class="flex flex-col items-center gap-2">'
         + '<div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">'
-        + '<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>'
+        + '<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
         + '</div>'
         + '<p class="text-sm font-medium text-slate-600">Sin movimientos recientes</p>'
-        + '<p class="text-xs text-slate-400">Las entradas y salidas aparecenaqui</p>'
+        + '<p class="text-xs text-slate-400">Aun no hay entradas ni salidas</p>'
         + '</div></td></tr>';
       tbody.innerHTML = emptyRecent;
       cards.innerHTML = '<div class="flex flex-col items-center gap-2 py-8">'
         + '<div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">'
-        + '<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>'
+        + '<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
         + '</div>'
         + '<p class="text-sm font-medium text-slate-600">Sin movimientos recientes</p>'
-        + '<p class="text-xs text-slate-400">Las entradas y salidas aparecenaqui</p>'
+        + '<p class="text-xs text-slate-400">Aun no hay entradas ni salidas</p>'
         + '</div>';
     } else {
       tbody.innerHTML = recentMovs.map(function (m) {
@@ -447,10 +447,10 @@ function renderCategoryChart(movimientos, products) {
       var div = document.createElement('div');
       div.className = 'chart-empty flex flex-col items-center justify-center h-full py-12 text-center';
       div.innerHTML = '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-3">'
-        + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>'
+        + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
         + '</div>'
         + '<p class="text-sm font-medium text-slate-600">Sin salidas registradas</p>'
-        + '<p class="text-xs text-slate-400 mt-1">Las salidas de hoy aparecenaqui</p>';
+        + '<p class="text-xs text-slate-400 mt-1">Aun no se han registrado salidas en el periodo</p>';
       container.appendChild(div);
     }
     return;
@@ -826,7 +826,7 @@ function renderSalesTable() {
     var emptySales = '<tr><td colspan="7" class="px-6 py-16 text-center">'
       + '<div class="flex flex-col items-center gap-3">'
       + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
-      + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>'
+      + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
       + '</div>'
       + '<p class="text-sm font-medium text-slate-600">No se encontraron salidas</p>'
       + '<p class="text-xs text-slate-400">Ajusta los filtros o registra una nueva salida</p>'
@@ -834,7 +834,7 @@ function renderSalesTable() {
     tbody.innerHTML = emptySales;
     var emptySalesMobile = '<div class="flex flex-col items-center gap-3 py-16">'
       + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
-      + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>'
+      + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
       + '</div>'
       + '<p class="text-sm font-medium text-slate-600">No se encontraron salidas</p>'
       + '<p class="text-xs text-slate-400">Ajusta los filtros o registra una nueva salida</p>'
@@ -1218,9 +1218,8 @@ async function openCompraModal() {
   $('#compraForm').reset();
   $('#compraFecha').value = new Date().toISOString().split('T')[0];
   $('#compraCantidad').value = 1;
-  $('#compraTotal').textContent = '$0.00';
+  if ($('#compraTotal')) $('#compraTotal').textContent = '$0.00';
   $('#compraFormError').classList.add('hidden');
-  $('#compraUnidadLabel').textContent = '';
   $('#compraConversionPreview').classList.add('hidden');
 
   try {
@@ -1242,13 +1241,11 @@ async function openCompraModal() {
 $('#compraProducto').addEventListener('change', function () {
   var opt = this.options[this.selectedIndex];
   if (!this.value) {
-    $('#compraUnidadLabel').textContent = '';
     $('#compraUnidadPresentacion').innerHTML = '<option value="">Misma unidad base</option>';
     $('#compraConversionPreview').classList.add('hidden');
     return;
   }
   var unidad = opt.dataset.unidad || 'unidad';
-  $('#compraUnidadLabel').textContent = '(' + unidad + ')';
   var pres = window.getPresentaciones(unidad);
   $('#compraUnidadPresentacion').innerHTML = pres.map(function (p) {
     return '<option value="' + p.value + '" data-factor="' + p.factor + '">' + escapeHtml(p.label) + '</option>';
