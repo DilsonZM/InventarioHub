@@ -21,16 +21,41 @@ router.get('/categories/list', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const { category, search, lowStock } = req.query;
+    const { category, search, lowStock, page, limit } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+    const offset = (pageNum - 1) * limitNum;
+
+    let categoryId = null;
+    if (category) {
+      const { data: catData } = await supabase.from('categorias').select('id').eq('nombre', category).single();
+      categoryId = catData ? catData.id : null;
+    }
+
+    let countQuery = supabase
+      .from('productos')
+      .select('*', { count: 'exact', head: true })
+      .eq('activo', true);
+
+    if (categoryId) {
+      countQuery = countQuery.eq('categoria_id', categoryId);
+    }
+    if (search) {
+      countQuery = countQuery.or(`nombre.ilike.%${search}%,sku.ilike.%${search}%`);
+    }
+
+    const { count, error: countError } = await countQuery;
+    if (countError) throw countError;
 
     let query = supabase
       .from('productos')
       .select('*, categorias(nombre)')
       .eq('activo', true)
-      .order('nombre');
+      .order('nombre')
+      .range(offset, offset + limitNum - 1);
 
-    if (category) {
-      query = query.eq('categorias.nombre', category);
+    if (categoryId) {
+      query = query.eq('categoria_id', categoryId);
     }
 
     if (search) {
@@ -40,7 +65,7 @@ router.get('/', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    let products = data.map(p => ({
+    let products = (data || []).map(p => ({
       id: p.id,
       name: p.nombre,
       description: p.descripcion,
@@ -50,7 +75,7 @@ router.get('/', async (req, res) => {
       cost: p.precio_compra,
       stock: p.stock_actual,
       minStock: p.stock_minimo,
-      category: p.categorias?.nombre || 'Sin categoría',
+      category: p.categorias?.nombre || 'Sin categoria',
       category_id: p.categoria_id,
       proveedor_id: p.proveedor_id,
       active: p.activo,
@@ -62,7 +87,14 @@ router.get('/', async (req, res) => {
       products = products.filter(p => p.stock <= p.minStock);
     }
 
-    res.json({ success: true, data: products, total: products.length });
+    res.json({
+      success: true,
+      data: products,
+      total: count || 0,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil((count || 0) / limitNum)
+    });
   } catch (err) {
     console.error('Products list error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });

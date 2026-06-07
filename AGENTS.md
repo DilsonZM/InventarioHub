@@ -14,13 +14,30 @@ No test, lint, typecheck, or build step exists. No frontend build — Tailwind a
 
 Single Express server (`backend/server.js`) serves both the API and the frontend as static files from `../frontend`. There is no separate frontend dev server.
 
-- **Persistence**: `backend/db.json` — read/written directly by `backend/models/db.js`. Mutations (product CRUD, sales) modify this file on disk. Reset by restoring from git.
-- **Auth**: JWT in `Authorization: Bearer <token>`. Passwords are SHA-256 hex digests (not bcrypt). Middleware in `backend/middleware/auth.js`.
+- **Persistence**: Supabase PostgreSQL (`https://zosuleqcmhwoivbjurew.supabase.co`). All CRUD operations use the `@supabase/supabase-js` client with service role key. The legacy `db.json` file has been removed.
+- **Auth**: JWT in `Authorization: Bearer <token>`. Passwords use bcrypt (bcryptjs). Middleware in `backend/middleware/auth.js`.
 - **Roles**: `admin` (full CRUD on products) and `vendedor` (read products, create sales). Product create/update/delete routes use `adminOnly` middleware.
 - **Frontend**: Vanilla JS (no framework). Single-page app with hash routing (`#dashboard`, `#inventory`, `#sales`). All JS files are plain scripts (not ES modules) loaded via `<script>` tags. Global `API` object in `js/api.js` wraps fetch calls.
 - **Styling**: Tailwind CSS via CDN (`<script src="https://cdn.tailwindcss.com">`). Font: DM Sans (body) + Space Mono (monospace) via Google Fonts.
 - **Responsive**: Mobile-first design with fluid typography (CSS clamp()), responsive tables (cards on mobile), touch targets 44x44px minimum, dynamic viewport units (dvh), and prefers-reduced-motion support.
 - **Design System**: See `.interface-design/system.md` for tokens, patterns, and conventions.
+
+## Database
+
+Schema managed via Supabase CLI migrations in `supabase/migrations/`. Tables:
+
+| Table | Purpose |
+|-------|---------|
+| `perfiles` | Users (username, bcrypt password_hash, role) |
+| `categorias` | Product categories |
+| `proveedores` | Suppliers |
+| `productos` | Products with stock, pricing, SKU |
+| `movimientos_inventario` | Inventory movement audit log |
+| `ventas` | Sales headers |
+| `venta_detalles` | Sale line items |
+
+Functions: `registrar_movimiento()` for stock operations, `procesar_venta()` for atomic sale creation.
+RLS enabled on all tables with permissive `Allow backend access` policies.
 
 ## Demo credentials
 
@@ -33,9 +50,20 @@ Single Express server (`backend/server.js`) serves both the API and the frontend
 
 - API responses: `{ success: boolean, data?: any, message?: string }`
 - API prefix: `/api` — auth (`/api/auth`), products (`/api/products`), sales (`/api/sales`), stats (`/api/stats`)
-- Product delete is soft-delete (sets `active: false`)
-- Sale creation atomically decrements stock; rejects if any item exceeds available stock
+- Product delete is soft-delete (sets `activo: false`)
+- Sale creation atomically decrements stock via `procesar_venta()` RPC
 - UI language is Spanish; keep user-facing strings in Spanish
+
+## Environment
+
+Create `backend/.env` from `backend/.env.example`:
+
+```env
+SUPABASE_URL=https://zosuleqcmhwoivbjurew.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+JWT_SECRET=<random-secret>
+PORT=3000
+```
 
 ## Design Skills Installed
 

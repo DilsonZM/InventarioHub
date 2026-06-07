@@ -4,12 +4,26 @@ const supabase = require('../lib/supabase');
 
 router.get('/', async (req, res) => {
   try {
-    const { from, to } = req.query;
+    const { from, to, page, limit } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+    const offset = (pageNum - 1) * limitNum;
+
+    let countQuery = supabase
+      .from('ventas')
+      .select('*', { count: 'exact', head: true });
+
+    if (from) countQuery = countQuery.gte('creado_en', from);
+    if (to) countQuery = countQuery.lte('creado_en', to);
+
+    const { count, error: countError } = await countQuery;
+    if (countError) throw countError;
 
     let query = supabase
       .from('ventas')
       .select('*, venta_detalles(*), perfiles(username)')
-      .order('creado_en', { ascending: false });
+      .order('creado_en', { ascending: false })
+      .range(offset, offset + limitNum - 1);
 
     if (from) query = query.gte('creado_en', from);
     if (to) query = query.lte('creado_en', to);
@@ -38,7 +52,14 @@ router.get('/', async (req, res) => {
       }))
     }));
 
-    res.json({ success: true, data: sales, total: sales.length });
+    res.json({
+      success: true,
+      data: sales,
+      total: count || 0,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil((count || 0) / limitNum)
+    });
   } catch (err) {
     console.error('Sales list error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });

@@ -12,7 +12,19 @@ const supabase = require('./lib/supabase');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: '*' }));
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:5173').split(',').map(s => s.trim());
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
@@ -31,14 +43,14 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
       .from('productos')
       .select('stock_actual, precio_compra')
       .eq('activo', true);
-    const totalStock = stockData?.reduce((sum, p) => sum + p.stock_actual, 0) || 0;
-    const inventoryValue = stockData?.reduce((sum, p) => sum + (p.stock_actual * parseFloat(p.precio_compra)), 0) || 0;
+    const totalStock = stockData ? stockData.reduce((sum, p) => sum + p.stock_actual, 0) : 0;
+    const inventoryValue = stockData ? stockData.reduce((sum, p) => sum + (p.stock_actual * parseFloat(p.precio_compra)), 0) : 0;
 
     const { data: lowStockData } = await supabase
       .from('productos')
       .select('id, stock_actual, stock_minimo')
       .eq('activo', true);
-    const lowStockCount = lowStockData?.filter(p => p.stock_actual <= p.stock_minimo).length || 0;
+    const lowStockCount = lowStockData ? lowStockData.filter(p => p.stock_actual <= p.stock_minimo).length : 0;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -47,8 +59,8 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
       .select('total')
       .eq('estado', 'completada')
       .gte('creado_en', today.toISOString());
-    const todaySalesCount = todaySales?.length || 0;
-    const todayRevenue = todaySales?.reduce((sum, s) => sum + parseFloat(s.total), 0) || 0;
+    const todaySalesCount = todaySales ? todaySales.length : 0;
+    const todayRevenue = todaySales ? todaySales.reduce((sum, s) => sum + parseFloat(s.total), 0) : 0;
 
     res.json({
       success: true,
@@ -77,5 +89,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`InventarioHub API corriendo en http://localhost:${PORT}`);
+  console.log('InventarioHub API corriendo en http://localhost:' + PORT);
 });

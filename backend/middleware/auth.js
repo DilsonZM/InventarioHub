@@ -1,8 +1,12 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'inventory-app-secret-key-2026';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function authMiddleware(req, res, next) {
+  if (!JWT_SECRET) {
+    return res.status(500).json({ success: false, message: 'JWT_SECRET no configurado' });
+  }
+
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'Token no proporcionado' });
@@ -14,7 +18,7 @@ function authMiddleware(req, res, next) {
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: 'Token inválido o expirado' });
+    return res.status(401).json({ success: false, message: 'Token invalido o expirado' });
   }
 }
 
@@ -26,6 +30,9 @@ function adminOnly(req, res, next) {
 }
 
 function generateToken(user) {
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET no configurado');
+  }
   return jwt.sign(
     { id: user.id, username: user.username, role: user.role },
     JWT_SECRET,
