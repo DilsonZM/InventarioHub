@@ -93,22 +93,63 @@ function initUser() {
 }
 
 function initLogout() {
-  $('#logoutBtn').addEventListener('click', function () {
+  function doLogout() {
     API.clearAuth();
     window.location.href = '/views/login.html';
-  });
+  }
+  $('#logoutBtn').addEventListener('click', doLogout);
+  var collapsedBtn = $('#logoutBtnCollapsed');
+  if (collapsedBtn) collapsedBtn.addEventListener('click', doLogout);
 }
 
 function initSidebar() {
   var sidebar = $('#sidebar');
   var overlay = $('#sidebarOverlay');
+  var body = document.body;
+  var STORAGE_KEY = 'sidebar:collapsed';
+
+  // Restaurar estado colapsado en desktop
+  try {
+    if (window.innerWidth >= 1024 && localStorage.getItem(STORAGE_KEY) === '1') {
+      sidebar.classList.add('collapsed');
+      body.classList.add('sidebar-collapsed');
+    }
+  } catch (e) {}
+
   $('#menuToggle').addEventListener('click', function () {
-    sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
+    if (window.innerWidth < 1024) {
+      // Mobile: drawer behaviour
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    } else {
+      // Desktop: colapsar/expandir
+      var willCollapse = !sidebar.classList.contains('collapsed');
+      sidebar.classList.toggle('collapsed', willCollapse);
+      body.classList.toggle('sidebar-collapsed', willCollapse);
+      try {
+        localStorage.setItem(STORAGE_KEY, willCollapse ? '1' : '0');
+      } catch (e) {}
+    }
   });
+
   overlay.addEventListener('click', function () {
     sidebar.classList.add('-translate-x-full');
     overlay.classList.add('hidden');
+  });
+
+  // Reset al cruzar breakpoint
+  window.addEventListener('resize', function () {
+    if (window.innerWidth >= 1024) {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.add('hidden');
+    } else {
+      sidebar.classList.remove('collapsed');
+      body.classList.remove('sidebar-collapsed');
+      // En móvil, si el sidebar no tiene la clase translate-x-full, mostrarlo
+      if (!sidebar.classList.contains('-translate-x-full')) {
+        overlay.classList.remove('hidden');
+      }
+    }
   });
 }
 
@@ -132,10 +173,7 @@ function navigate(view) {
 
   $$('.nav-link').forEach(function (link) {
     var isActive = link.dataset.nav === view;
-    link.classList.toggle('bg-white/10', isActive);
-    link.classList.toggle('text-white', isActive);
-    link.classList.toggle('shadow-lg', isActive);
-    link.classList.toggle('shadow-blue-500/10', isActive);
+    link.classList.toggle('active', isActive);
   });
 
   var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Ventas' };

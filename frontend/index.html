@@ -170,13 +170,14 @@
       --color-bg-surface: #ffffff;
       --color-bg-elevated: #ffffff;
       --color-bg-header: rgba(255, 255, 255, 0.8);
-      --color-bg-sidebar-from: #0f172a;
-      --color-bg-sidebar-to: #020617;
+      --color-bg-sidebar: #ffffff;
+      --color-bg-sidebar-accent: rgba(59, 130, 246, 0.08);
+      --color-bg-sidebar-hover: rgba(59, 130, 246, 0.06);
       --color-bg-input: #ffffff;
       --color-bg-hover: #f8fafc;
       --color-bg-stripe: #f8fafc;
 
-      --color-text-primary: #1e293b;
+      --color-text-primary: #0f172a;
       --color-text-secondary: #475569;
       --color-text-tertiary: #64748b;
       --color-text-muted: #94a3b8;
@@ -187,6 +188,7 @@
       --color-border-default: rgba(226, 232, 240, 0.8);
       --color-border-strong: #cbd5e1;
       --color-border-input: #e2e8f0;
+      --color-border-sidebar: #e2e8f0;
 
       --color-accent-blue: #3b82f6;
       --color-accent-emerald: #10b981;
@@ -203,8 +205,9 @@
       --color-bg-surface: #1e293b;
       --color-bg-elevated: #1e293b;
       --color-bg-header: rgba(15, 23, 42, 0.85);
-      --color-bg-sidebar-from: #020617;
-      --color-bg-sidebar-to: #0f172a;
+      --color-bg-sidebar: #111827;
+      --color-bg-sidebar-accent: rgba(96, 165, 250, 0.12);
+      --color-bg-sidebar-hover: rgba(96, 165, 250, 0.08);
       --color-bg-input: #1e293b;
       --color-bg-hover: #334155;
       --color-bg-stripe: #1e293b;
@@ -220,6 +223,7 @@
       --color-border-default: rgba(51, 65, 85, 0.8);
       --color-border-strong: #475569;
       --color-border-input: #334155;
+      --color-border-sidebar: rgba(51, 65, 85, 0.6);
 
       --color-accent-blue: #60a5fa;
       --color-accent-emerald: #34d399;
@@ -345,82 +349,188 @@
     [data-theme="dark"] #categoryChart {
       filter: invert(0.05);
     }
+
+    /* ============================================
+       Sidebar - Light/Adaptive theme
+       Conecta visualmente con el header vía borde
+       derecho y fondo del sistema
+       ============================================ */
+    #sidebar {
+      background-color: var(--color-bg-sidebar);
+      border-right: 1px solid var(--color-border-sidebar);
+    }
+
+    .sidebar-text-primary { color: var(--color-text-primary) !important; }
+    .sidebar-text-secondary { color: var(--color-text-secondary) !important; }
+    .sidebar-text-muted { color: var(--color-text-tertiary) !important; }
+    .sidebar-divider { border-color: var(--color-border-subtle) !important; }
+    .sidebar-icon-bg { background-color: var(--color-bg-sidebar-hover); }
+    .sidebar-user-bg {
+      background-color: rgba(248, 250, 252, 0.6);
+      border-top-color: var(--color-border-subtle) !important;
+    }
+    [data-theme="dark"] .sidebar-user-bg {
+      background-color: rgba(15, 23, 42, 0.4);
+    }
+
+    /* Nav links (sidebar) */
+    .nav-link {
+      color: var(--color-text-secondary);
+    }
+    .nav-link:hover {
+      background-color: var(--color-bg-sidebar-hover);
+      color: var(--color-text-primary);
+    }
+    .nav-link.active {
+      background-color: var(--color-bg-sidebar-accent);
+      color: var(--color-accent-blue);
+    }
+    .nav-link .nav-icon-bg {
+      background-color: var(--color-bg-sidebar-hover);
+    }
+    .nav-link:hover .nav-icon-bg {
+      background-color: var(--color-bg-sidebar-accent);
+    }
+    .nav-link .nav-icon {
+      color: var(--color-text-tertiary);
+    }
+    .nav-link:hover .nav-icon {
+      color: var(--color-accent-blue);
+    }
+    .nav-link.active .nav-icon {
+      color: var(--color-accent-blue);
+    }
+    .nav-link.active .nav-icon-bg {
+      background-color: var(--color-bg-sidebar-accent);
+    }
+
+    /* Sidebar collapse (desktop) */
+    @media (min-width: 1024px) {
+      #sidebar.collapsed {
+        width: 5rem; /* w-20 */
+      }
+      #sidebar.collapsed .sidebar-label,
+      #sidebar.collapsed .sidebar-user-info,
+      #sidebar.collapsed .sidebar-header-text {
+        display: none;
+      }
+      #sidebar.collapsed .sidebar-icon-bg {
+        margin: 0 auto;
+      }
+      #sidebar.collapsed .nav-link {
+        justify-content: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+      }
+      #sidebar.collapsed .sidebar-user-row {
+        justify-content: center;
+      }
+      #sidebar.collapsed #logoutBtn {
+        display: none;
+      }
+      #sidebar.collapsed .sidebar-collapsed-logout {
+        display: flex;
+      }
+    }
+    .sidebar-collapsed-logout {
+      display: none;
+    }
+    .sidebar-collapsed-logout.show {
+      display: flex;
+    }
+
+    /* Cuando el sidebar está colapsado, ajustar padding del main */
+    @media (min-width: 1024px) {
+      body.sidebar-collapsed .lg-sidebar-pad {
+        padding-left: 5rem !important;
+      }
+    }
+
+    /* Animación del sidebar colapsado */
+    #sidebar {
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
   </style>
 </head>
 <body class="h-full bg-slate-50 animate-fade-in">
 
   <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-fade-in"></div>
 
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-slate-900 to-slate-950 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-out shadow-2xl">
-    <div class="flex items-center gap-3 px-6 py-5 border-b border-white/5">
-      <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-out">
+    <div class="flex items-center gap-3 px-5 py-5 border-b sidebar-divider">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-md shadow-blue-500/25 shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
         </svg>
       </div>
-      <div>
-        <h1 class="text-lg font-bold text-white">InventarioApp</h1>
-        <p class="text-xs text-slate-400">Panel de control</p>
+      <div class="sidebar-header-text min-w-0">
+        <h1 class="text-base font-bold sidebar-text-primary tracking-tight">InventarioApp</h1>
+        <p class="text-xs sidebar-text-muted">Panel de control</p>
       </div>
     </div>
 
-    <nav class="px-4 py-6 space-y-1">
-      <a href="#dashboard" data-nav="dashboard" class="nav-link flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white group touch-target">
-        <div class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-          <svg class="w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <nav class="px-3 py-6 space-y-1">
+      <a href="#dashboard" data-nav="dashboard" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
+        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
           </svg>
         </div>
-        <span class="font-medium">Dashboard</span>
+        <span class="sidebar-label">Dashboard</span>
       </a>
-      <a href="#inventory" data-nav="inventory" class="nav-link flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white group touch-target">
-        <div class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-          <svg class="w-5 h-5 text-slate-400 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <a href="#inventory" data-nav="inventory" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
+        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
           </svg>
         </div>
-        <span class="font-medium">Inventario</span>
+        <span class="sidebar-label">Inventario</span>
       </a>
-      <a href="#sales" data-nav="sales" class="nav-link flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white group touch-target">
-        <div class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-          <svg class="w-5 h-5 text-slate-400 group-hover:text-violet-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <a href="#sales" data-nav="sales" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
+        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
           </svg>
         </div>
-        <span class="font-medium">Ventas</span>
+        <span class="sidebar-label">Ventas</span>
       </a>
     </nav>
 
-    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5 bg-slate-900/50 backdrop-blur-sm">
-      <div class="flex items-center gap-3 px-2">
-        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg">
-          <span class="text-sm font-bold text-white" id="userInitial">A</span>
+    <div class="absolute bottom-0 left-0 right-0 p-3 border-t sidebar-user-bg backdrop-blur-sm">
+      <div class="sidebar-user-row flex items-center gap-3 px-2 py-1">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-md shrink-0">
+          <span class="text-xs font-bold text-white" id="userInitial">A</span>
         </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-white truncate" id="userName">Admin</p>
-          <p class="text-xs text-slate-400" id="userRole">Administrador</p>
+        <div class="sidebar-user-info flex-1 min-w-0">
+          <p class="text-sm font-semibold sidebar-text-primary truncate" id="userName">Admin</p>
+          <p class="text-xs sidebar-text-muted" id="userRole">Administrador</p>
         </div>
-        <button id="logoutBtn" class="p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all touch-target" title="Cerrar sesión">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button id="logoutBtn" class="p-2 sidebar-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all touch-target" title="Cerrar sesión">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
           </svg>
         </button>
       </div>
+      <button id="logoutBtnCollapsed" class="sidebar-collapsed-logout w-full p-2 sidebar-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all touch-target items-center justify-center" title="Cerrar sesión">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+      </button>
     </div>
   </aside>
 
-  <div class="lg:pl-72 min-h-[100dvh]">
+  <div class="lg:pl-72 lg-sidebar-pad min-h-[100dvh] transition-all duration-300">
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
-      <div class="flex items-center justify-between px-4 py-3 sm:px-6">
-        <button id="menuToggle" class="lg:hidden p-2.5 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors touch-target">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex items-center justify-between px-4 py-3 sm:px-6 gap-3">
+        <button id="menuToggle" class="p-2.5 -ml-2 sidebar-text-secondary hover:bg-slate-100 rounded-xl transition-colors touch-target" title="Mostrar/ocultar menú" aria-label="Alternar menú">
+          <svg id="menuIconOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
         </button>
-        <div class="flex-1 lg:flex-none">
-          <h2 class="text-xl font-bold text-slate-800" id="pageTitle">Dashboard</h2>
+        <div class="flex-1 lg:flex-none min-w-0">
+          <h2 class="text-lg sm:text-xl font-bold sidebar-text-primary truncate" id="pageTitle">Dashboard</h2>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3">
           <button id="themeToggle" class="theme-toggle" aria-label="Cambiar modo" title="Modo oscuro">
             <svg class="w-5 h-5 theme-icon-sun hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -429,7 +539,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
             </svg>
           </button>
-          <span class="hidden sm:inline text-sm text-slate-500" id="currentDate"></span>
+          <span class="hidden sm:inline text-sm sidebar-text-muted" id="currentDate"></span>
         </div>
       </div>
     </header>
