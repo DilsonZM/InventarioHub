@@ -172,6 +172,26 @@ function initNavigation() {
   });
 }
 
+var dashboardAutoRefreshId = null;
+
+function startDashboardAutoRefresh() {
+  stopDashboardAutoRefresh();
+  dashboardAutoRefreshId = setInterval(function () {
+    if (state.currentView === 'dashboard') {
+      loadDashboard();
+    } else {
+      stopDashboardAutoRefresh();
+    }
+  }, 30000);
+}
+
+function stopDashboardAutoRefresh() {
+  if (dashboardAutoRefreshId !== null) {
+    clearInterval(dashboardAutoRefreshId);
+    dashboardAutoRefreshId = null;
+  }
+}
+
 function navigate(view) {
   state.currentView = view;
   $$('.view-section').forEach(function (el) { el.classList.add('hidden'); });
@@ -197,6 +217,9 @@ function navigate(view) {
   if (view === 'compras' || view === 'entradas') loadCompras();
   if (view === 'movimientos') loadMovimientos();
   if (view === 'indicadores') loadIndicadores();
+
+  if (view === 'dashboard') startDashboardAutoRefresh();
+  else stopDashboardAutoRefresh();
 
   var sidebar = $('#sidebar');
   if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
@@ -713,7 +736,8 @@ window.viewSale = async function (id) {
 async function openSaleModal() {
   state.saleItems = [];
   $('#saleForm').reset();
-  $('#saleTotal').textContent = '$0.00';
+  $('#saleQuantity').removeAttribute('max');
+  $('#saleTotal').textContent = '0 unid.';
   $('#saleFormError').classList.add('hidden');
   renderSaleItems();
 
@@ -727,6 +751,18 @@ async function openSaleModal() {
 
   openModal('saleModal');
 }
+
+$('#saleProductSelect').addEventListener('change', function () {
+  var opt = this.options[this.selectedIndex];
+  var stock = parseInt(opt.dataset.stock) || 0;
+  var qty = $('#saleQuantity');
+  qty.value = 1;
+  if (stock > 0) {
+    qty.max = stock;
+  } else {
+    qty.removeAttribute('max');
+  }
+});
 
 $('#addSaleItem').addEventListener('click', function () {
   var sel = $('#saleProductSelect');
@@ -823,7 +859,7 @@ $('#saleForm').addEventListener('submit', async function (e) {
     closeModal('saleModal');
     showToast('Salida registrada correctamente');
     loadSales();
-    if (state.currentView === 'dashboard') loadDashboard();
+    loadDashboard();
   } catch (err) {
     showError('saleFormError', err.message);
   }
@@ -893,6 +929,7 @@ $('#compraForm').addEventListener('submit', async function (e) {
     closeModal('compraModal');
     showToast('Entrada registrada correctamente');
     loadCompras();
+    loadDashboard();
   } catch (err) {
     showError('compraFormError', err.message);
   }
