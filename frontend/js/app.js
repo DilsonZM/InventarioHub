@@ -1,3 +1,22 @@
+// Estado global de la aplicación
+const state = {
+  products: [],
+  sales: [],
+  categories: [],
+  saleItems: [],
+  currentView: 'dashboard',
+  user: null,
+};
+
+// Variables globales
+let categoryChart = null;
+
+// Helpers
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+let formatCurrency, formatDate, formatDateShort, escapeHtml, debounce;
+
 // Esperar a que el DOM esté listo antes de ejecutar cualquier código
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[App] Inicializando InventarioApp...');
@@ -22,23 +41,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('[App] Usuario autenticado, cargando aplicación...');
 
-  const state = {
-    products: [],
-    sales: [],
-    categories: [],
-    saleItems: [],
-    currentView: 'dashboard',
-    user: API.getUser(),
-  };
+  // Inicializar helpers de Utils
+  formatCurrency = Utils.formatCurrency;
+  formatDate = Utils.formatDate;
+  formatDateShort = Utils.formatDateShort;
+  escapeHtml = Utils.escapeHtml;
+  debounce = Utils.debounce;
 
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => document.querySelectorAll(sel);
-
-  const formatCurrency = Utils.formatCurrency;
-  const formatDate = Utils.formatDate;
-  const formatDateShort = Utils.formatDateShort;
-  const escapeHtml = Utils.escapeHtml;
-  const debounce = Utils.debounce;
+  // Cargar usuario
+  state.user = API.getUser();
+  console.log('[App] Usuario cargado:', state.user);
 
 function showToast(message, type = 'success') {
   const toast = $('#toast');
@@ -146,17 +158,21 @@ function navigate(view) {
   }
 }
 
-let categoryChart = null;
-
 async function initDashboard() {}
 
 async function loadDashboard() {
+  console.log('[Dashboard] Cargando datos del dashboard...');
   try {
+    console.log('[Dashboard] Haciendo llamadas a API...');
     const [statsRes, productsRes, salesRes] = await Promise.all([
       API.stats(),
       API.products.list(),
       API.sales.list(),
     ]);
+
+    console.log('[Dashboard] Stats recibidas:', statsRes);
+    console.log('[Dashboard] Productos recibidos:', productsRes?.data?.length || 0);
+    console.log('[Dashboard] Ventas recibidas:', salesRes?.data?.length || 0);
 
     const stats = statsRes.data;
     $('#stat-products').textContent = stats.totalProducts;
@@ -164,8 +180,12 @@ async function loadDashboard() {
     $('#stat-lowstock').textContent = stats.lowStockCount;
     $('#stat-value').textContent = formatCurrency(stats.inventoryValue);
 
+    console.log('[Dashboard] Stats actualizadas en UI');
+
     const lowStockProducts = productsRes.data.filter(p => p.stock <= p.minStock).sort((a, b) => (a.stock / a.minStock) - (b.stock / b.minStock));
     const lowStockList = $('#lowStockList');
+    console.log('[Dashboard] Productos con stock bajo:', lowStockProducts.length);
+
     if (lowStockProducts.length === 0) {
       lowStockList.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">Todo el inventario tiene stock suficiente</p>';
     } else {
@@ -188,6 +208,8 @@ async function loadDashboard() {
     const recentSales = salesRes.data.slice(0, 5);
     const tbody = $('#recentSalesTable');
     const cards = $('#recentSalesCards');
+    console.log('[Dashboard] Ventas recientes:', recentSales.length);
+
     if (recentSales.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Sin ventas registradas</td></tr>';
       cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Sin ventas registradas</p>';
@@ -212,8 +234,11 @@ async function loadDashboard() {
       </div>`).join('');
     }
 
+    console.log('[Dashboard] Renderizando gráfico de categorías...');
     renderCategoryChart(salesRes.data, productsRes.data);
+    console.log('[Dashboard] Dashboard cargado correctamente');
   } catch (err) {
+    console.error('[Dashboard] Error al cargar dashboard:', err);
     showToast('Error al cargar dashboard: ' + err.message, 'error');
   }
 }
