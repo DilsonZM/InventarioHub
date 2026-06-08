@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
+const { applyBogotaDateFilter } = require('../lib/timezone');
 
 router.get('/movimientos', async (req, res) => {
   try {
@@ -13,8 +14,7 @@ router.get('/movimientos', async (req, res) => {
       .from('movimientos_inventario')
       .select('*', { count: 'exact', head: true });
 
-    if (from) countQuery = countQuery.gte('creado_en', from);
-    if (to) countQuery = countQuery.lte('creado_en', to + 'T23:59:59');
+    countQuery = applyBogotaDateFilter(countQuery, 'creado_en', from, to);
     if (tipo) countQuery = countQuery.eq('tipo', tipo);
     if (productoId) countQuery = countQuery.eq('producto_id', productoId);
 
@@ -27,8 +27,7 @@ router.get('/movimientos', async (req, res) => {
       .order('creado_en', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
-    if (from) query = query.gte('creado_en', from);
-    if (to) query = query.lte('creado_en', to + 'T23:59:59');
+    query = applyBogotaDateFilter(query, 'creado_en', from, to);
     if (tipo) query = query.eq('tipo', tipo);
     if (productoId) query = query.eq('producto_id', productoId);
 

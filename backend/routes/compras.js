@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
 const { requirePermission } = require('../middleware/auth');
+const { applyBogotaDateFilter } = require('../lib/timezone');
 
 router.get('/', async (req, res) => {
   try {
@@ -11,8 +12,7 @@ router.get('/', async (req, res) => {
     const offset = (pageNum - 1) * limitNum;
 
     let countQuery = supabase.from('compras').select('*', { count: 'exact', head: true });
-    if (from) countQuery = countQuery.gte('fecha_compra', from);
-    if (to) countQuery = countQuery.lte('fecha_compra', to);
+    countQuery = applyBogotaDateFilter(countQuery, 'fecha_compra', from, to);
 
     const { count, error: countError } = await countQuery;
     if (countError) throw countError;
@@ -23,8 +23,7 @@ router.get('/', async (req, res) => {
       .order('creado_en', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
-    if (from) query = query.gte('fecha_compra', from);
-    if (to) query = query.lte('fecha_compra', to);
+    query = applyBogotaDateFilter(query, 'fecha_compra', from, to);
 
     const { data, error } = await query;
     if (error) throw error;
