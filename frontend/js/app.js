@@ -361,7 +361,8 @@ function initDashboard() {
     period: '#filterQuickPeriodDash',
     cocina: '#filterCocinaDash',
     product: '#filterProductDash',
-    clear: '#clearFiltersBtnDash'
+    clear: '#clearFiltersBtnDash',
+    extra: '#filterCocinaDash'
   };
   var loader = loadDashboard;
   $(ids.dateFrom).addEventListener('change', function () { $(ids.period).value = ''; updateClearBtn(ids); loader(); });
@@ -370,6 +371,18 @@ function initDashboard() {
   $(ids.cocina).addEventListener('change', function () { updateClearBtn(ids); loader(); });
   $(ids.product).addEventListener('change', function () { updateClearBtn(ids); loader(); });
   $(ids.clear).addEventListener('click', function () { clearFilters(ids, loader); });
+
+  // Mobile: boton Filtros y limpiar
+  var openBtn = document.querySelector('[data-open-filters="dashboard"]');
+  if (openBtn) openBtn.addEventListener('click', function () { openMobileFiltersModal('dashboard'); });
+  var clearMobile = document.getElementById('clearFiltersBtnDashMobile');
+  if (clearMobile) clearMobile.addEventListener('click', function () { clearFilters(ids, loader); });
+
+  // Mobile: default periodo = Hoy
+  if (window.innerWidth < 1024 && $(ids.period) && !$(ids.period).value) {
+    $(ids.period).value = 'today';
+    applyQuickPeriod(ids, loader);
+  }
 
   // Cargar opciones de productos
   populateProductFilter('#filterProductDash').then(updateClearBtn.bind(null, ids));
@@ -1029,6 +1042,14 @@ $('#productForm').addEventListener('submit', async function (e) {
 async function initSales() {
   $('#newSaleBtn').addEventListener('click', function () { openSaleModal(); });
   initFilters('sales');
+  // Dirty tracking: cualquier cambio en el form marca el modal como sucio
+  var saleForm = $('#saleForm');
+  if (saleForm) {
+    saleForm.addEventListener('input', markSaleDirty);
+    saleForm.addEventListener('change', markSaleDirty);
+  }
+  var addSaleItemBtn = $('#addSaleItem');
+  if (addSaleItemBtn) addSaleItemBtn.addEventListener('click', markSaleDirty);
 }
 
 window.openSaleModal = openSaleModal;
@@ -1383,6 +1404,7 @@ window.viewSale = async function (id) {
 
 async function openSaleModal() {
   var isEditing = !!state.editingSaleId;
+  state.saleDirty = false; // reset al abrir
   if (!isEditing) state.saleItems = [];
   // En edicion no reseteamos el form (mantenemos la cocina pre-poblada)
   if (!isEditing) {
@@ -1757,6 +1779,7 @@ $('#saleForm').addEventListener('submit', async function (e) {
       showToast('Salida registrada correctamente');
     }
     closeModal('saleModal');
+    state.saleDirty = false;
     loadSales();
     loadDashboard();
   } catch (err) {
@@ -1764,11 +1787,47 @@ $('#saleForm').addEventListener('submit', async function (e) {
   }
 });
 
+function closeModalWithGuard(modalId) {
+  var isDirty = false;
+  if (modalId === 'saleModal' && state.saleDirty) isDirty = true;
+  if (modalId === 'compraModal' && state.compraDirty) isDirty = true;
+
+  if (isDirty) {
+    state._pendingCloseModal = modalId;
+    $('#confirmDiscardModal').classList.remove('hidden');
+  } else {
+    $('#' + modalId).classList.add('hidden');
+  }
+}
+
+function markSaleDirty() { state.saleDirty = true; }
+function markCompraDirty() { state.compraDirty = true; }
+
 function initModals() {
+  // Confirm discard: click afuera o "Seguir editando" cierra el confirm
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-confirm-cancel]')) {
+      $('#confirmDiscardModal').classList.add('hidden');
+    }
+  });
+  document.getElementById('confirmDiscardOk').addEventListener('click', function () {
+    var pendingModal = state._pendingCloseModal;
+    $('#confirmDiscardModal').classList.add('hidden');
+    if (pendingModal) {
+      // Reset dirty flag antes de cerrar
+      if (pendingModal === 'saleModal') state.saleDirty = false;
+      if (pendingModal === 'compraModal') state.compraDirty = false;
+      $('#' + pendingModal).classList.add('hidden');
+      state._pendingCloseModal = null;
+    }
+  });
+
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-close-modal]')) {
-      var modal = e.target.closest('.fixed');
-      if (modal) modal.classList.add('hidden');
+      var target = e.target.closest('[data-close-modal]');
+      var modal = target.closest('.fixed.z-50');
+      if (!modal) modal = target.parentElement && target.parentElement.closest('.fixed.z-50');
+      if (modal) closeModalWithGuard(modal.id);
     }
   });
   document.addEventListener('keydown', function (e) {
@@ -1788,10 +1847,17 @@ function initModals() {
 function initCompras() {
   $('#newCompraBtn').addEventListener('click', function () { openCompraModal(); });
   initFilters('entradas');
+  // Dirty tracking
+  var compraForm = $('#compraForm');
+  if (compraForm) {
+    compraForm.addEventListener('input', markCompraDirty);
+    compraForm.addEventListener('change', markCompraDirty);
+  }
 }
 
 async function openCompraModal() {
   var isEditing = !!state.editingCompraId;
+  state.compraDirty = false; // reset al abrir
   if (!isEditing) {
     $('#compraForm').reset();
     state.editingCompraId = null;
@@ -1912,6 +1978,7 @@ $('#compraForm').addEventListener('submit', async function (e) {
       showToast('Entrada registrada correctamente');
     }
     closeModal('compraModal');
+    state.compraDirty = false;
     loadCompras();
     loadDashboard();
   } catch (err) {
