@@ -38,6 +38,7 @@ function userResponse(user) {
     role: user.role,
     email: user.email,
     nombreCompleto: user.nombre_completo,
+    estadoAprobacion: user.estado_aprobacion || 'aprobado',
     permisos: {
       puedeCrearProductos: !!user.puede_crear_productos,
       puedeEditarProductos: !!user.puede_editar_productos,
@@ -58,7 +59,7 @@ function userResponse(user) {
 
 router.post('/register', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, nombreCompleto, email } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Usuario y contrasena requeridos' });
@@ -70,46 +71,58 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'La contrasena debe tener al menos 6 caracteres' });
     }
 
-    const validRoles = ['admin', 'vendedor'];
-    const userRole = role && validRoles.includes(role) ? role : 'vendedor';
-
     const { data: existing } = await supabase
       .from('perfiles')
-      .select('id')
+      .select('id, estado_aprobacion')
       .eq('username', username)
       .single();
 
     if (existing) {
-      return res.status(400).json({ success: false, message: 'El nombre de usuario ya existe' });
+      return res.status(400).json({
+        success: false,
+        message: existing.estado_aprobacion === 'pendiente'
+          ? 'Ya tienes una solicitud pendiente. Espera la aprobacion del administrador.'
+          : 'El nombre de usuario ya existe'
+      });
     }
 
     const passwordHash = await hashPassword(password);
 
-    // Plantilla de permisos segun rol
-    const plantilla = userRole === 'admin' ? {
-      puede_crear_productos: true, puede_editar_productos: true, puede_eliminar_productos: true,
-      puede_crear_salidas: true, puede_editar_salidas: true, puede_eliminar_salidas: true,
-      puede_crear_entradas: true, puede_editar_entradas: true, puede_eliminar_entradas: true,
-      puede_gestionar_usuarios: true, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true
-    } : {
-      puede_crear_salidas: true, puede_editar_salidas: false, puede_eliminar_salidas: false,
-      puede_crear_entradas: false, puede_editar_entradas: false, puede_eliminar_entradas: false,
-      puede_gestionar_usuarios: false, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true
-    };
-
+    // Los nuevos registros SIEMPRE quedan en estado 'pendiente' con rol 'vendedor' y permisos minimos.
+    // El admin debe aprobarlos desde el panel y asignar el rol/permisos finales.
     const { data: user, error } = await supabase
       .from('perfiles')
-      .insert({ username, password_hash: passwordHash, role: userRole, ...plantilla })
-      .select('id, username, role, email, nombre_completo, ' + PERMISSION_COLS)
+      .insert({
+        username,
+        password_hash: passwordHash,
+        role: 'vendedor',
+        email: email || null,
+        nombre_completo: nombreCompleto || null,
+        estado_aprobacion: 'pendiente',
+        solicitado_en: new Date().toISOString(),
+        puede_crear_salidas: true,
+        puede_editar_salidas: false,
+        puede_eliminar_salidas: false,
+        puede_crear_entradas: false,
+        puede_editar_entradas: false,
+        puede_eliminar_entradas: false,
+        puede_gestionar_usuarios: false,
+        puede_ver_inventario: true,
+        puede_ver_movimientos: true,
+        puede_ver_dashboard: true
+      })
+      .select('id, username, role, email, nombre_completo, estado_aprobacion, ' + PERMISSION_COLS)
       .single();
 
     if (error) throw error;
 
-    const token = generateToken(user);
-
     res.status(201).json({
       success: true,
-      data: { token, user: userResponse(user) }
+      data: {
+        pendiente: true,
+        message: 'Solicitud enviada. Un administrador debe aprobarla antes de que puedas iniciar sesion.',
+        username: user.username
+      }
     });
   } catch (err) {
     console.error('Register error:', err);
@@ -127,13 +140,20 @@ router.post('/login', async (req, res) => {
 
     const { data: user, error } = await supabase
       .from('perfiles')
-      .select('id, username, password_hash, role, email, nombre_completo, ' + PERMISSION_COLS)
+      .select('id, username, password_hash, role, email, nombre_completo, estado_aprobacion, ' + PERMISSION_COLS)
       .eq('username', username)
       .eq('activo', true)
       .single();
 
     if (error || !user) {
       return res.status(401).json({ success: false, message: 'Credenciales invalidas' });
+    }
+
+    if (user.estado_aprobacion === 'pendiente') {
+      return res.status(403).json({ success: false, message: 'Tu solicitud de registro esta pendiente de aprobacion por un administrador.' });
+    }
+    if (user.estado_aprobacion === 'rechazado') {
+      return res.status(403).json({ success: false, message: 'Tu solicitud de registro fue rechazada. Contacta al administrador.' });
     }
 
     const { match, upgradedHash } = await comparePassword(password, user.password_hash);
@@ -161,7 +181,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('perfiles')
-      .select('id, username, role, email, nombre_completo, ' + PERMISSION_COLS)
+      .select('id, username, role, email, nombre_completo, estado_aprobacion, ' + PERMISSION_COLS)
       .eq('id', req.user.id)
       .single();
     if (error || !user) {

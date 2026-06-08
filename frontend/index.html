@@ -876,7 +876,7 @@
 
       <div id="view-sales" class="view-section hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 p-4 mb-6">
-          <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+          <div class="hidden lg:flex lg:flex-row lg:items-end gap-4">
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div class="lg:col-span-2">
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
@@ -925,14 +925,14 @@
             </div>
           </div>
           <!-- Mobile: filtros + chips -->
-          <div class="lg:hidden flex items-center gap-2 mt-3">
-            <button data-open-filters="sales" class="mobile-filters-btn flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium text-slate-700 transition-colors touch-target">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+          <div class="lg:hidden flex items-center justify-center gap-2 mt-3">
+            <button data-open-filters="sales" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
               <span>Filtros</span>
-              <span class="mobile-filters-count hidden ml-1 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-xs font-semibold"></span>
+              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-blue-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
             </button>
-            <button id="clearFiltersBtnMobile" class="clear-filters-btn h-[42px] px-3 flex items-center gap-1.5 rounded-xl text-sm font-medium transition-all touch-target" title="Limpiar">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <button id="clearFiltersBtnMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="active-filter-chips lg:hidden mt-2 flex flex-wrap gap-1.5" data-chips="sales"></div>
@@ -983,7 +983,7 @@
       <!-- Entradas -->
       <div id="view-entradas" class="view-section hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 p-4 mb-6">
-          <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+          <div class="hidden lg:flex lg:flex-row lg:items-end gap-4">
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div class="lg:col-span-2">
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
@@ -1019,14 +1019,14 @@
               </button>
             </div>
           </div>
-          <div class="lg:hidden flex items-center gap-2 mt-3">
-            <button data-open-filters="entradas" class="mobile-filters-btn flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium text-slate-700 transition-colors touch-target">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+          <div class="lg:hidden flex items-center justify-center gap-2 mt-3">
+            <button data-open-filters="entradas" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
               <span>Filtros</span>
-              <span class="mobile-filters-count hidden ml-1 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-xs font-semibold"></span>
+              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-blue-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
             </button>
-            <button id="clearFiltersBtnEntradasMobile" class="clear-filters-btn h-[42px] px-3 flex items-center gap-1.5 rounded-xl text-sm font-medium transition-all touch-target" title="Limpiar">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <button id="clearFiltersBtnEntradasMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="active-filter-chips lg:hidden mt-2 flex flex-wrap gap-1.5" data-chips="entradas"></div>
@@ -1053,7 +1053,7 @@
       <!-- Movimientos -->
       <div id="view-movimientos" class="view-section hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 p-4 mb-6">
-          <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+          <div class="hidden lg:flex lg:flex-row lg:items-end gap-4">
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div class="lg:col-span-2">
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
@@ -1095,14 +1095,14 @@
               <button id="clearFiltersBtnMov" data-view="movimientos" class="hidden lg:inline-flex px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Limpiar</button>
             </div>
           </div>
-          <div class="lg:hidden flex items-center gap-2 mt-3">
-            <button data-open-filters="movimientos" class="mobile-filters-btn flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium text-slate-700 transition-colors touch-target">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+          <div class="lg:hidden flex items-center justify-center gap-2 mt-3">
+            <button data-open-filters="movimientos" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
               <span>Filtros</span>
-              <span class="mobile-filters-count hidden ml-1 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-xs font-semibold"></span>
+              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-blue-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
             </button>
-            <button id="clearFiltersBtnMovMobile" class="clear-filters-btn h-[42px] px-3 flex items-center gap-1.5 rounded-xl text-sm font-medium transition-all touch-target" title="Limpiar">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <button id="clearFiltersBtnMovMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="active-filter-chips lg:hidden mt-2 flex flex-wrap gap-1.5" data-chips="movimientos"></div>

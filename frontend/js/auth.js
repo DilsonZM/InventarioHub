@@ -17,6 +17,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tabRegister = document.getElementById('tabRegister');
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
+  const registerNotice = document.getElementById('registerNotice');
+
+  // Mostrar aviso de aprobacion al cambiar a tab "Solicitar acceso"
+  if (registerNotice && tabRegister) {
+    tabRegister.addEventListener('click', function () {
+      setTimeout(function () {
+        if (!registerForm.classList.contains('hidden')) {
+          registerNotice.classList.remove('hidden');
+        }
+      }, 50);
+    });
+  }
+  if (registerNotice && tabLogin) {
+    tabLogin.addEventListener('click', function () {
+      registerNotice.classList.add('hidden');
+    });
+  }
 
   function switchTab(tab) {
     const isLogin = tab === 'login';
@@ -97,7 +114,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     const username = document.getElementById('regUsername').value.trim();
     const password = document.getElementById('regPassword').value;
-    const role = document.getElementById('regRole').value;
+    const nombreCompleto = (document.getElementById('regNombreCompleto') || {}).value || '';
+    const email = (document.getElementById('regEmail') || {}).value || '';
     const btn = document.getElementById('registerBtn');
 
     if (!username || !password) {
@@ -107,10 +125,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setLoading(btn, true);
     try {
-      const res = await API.auth.register(username, password, role);
-      API.setToken(res.data.token);
-      API.setUser(res.data.user);
-      animateExit(() => { window.location.href = '/index.html'; });
+      const res = await API.auth.register(username, password, nombreCompleto, email);
+      // Mostrar mensaje de pendiente, NO iniciar sesion automaticamente
+      showError('registerError', '');
+      const ok = document.getElementById('registerError');
+      if (ok) {
+        ok.classList.remove('hidden');
+        ok.classList.remove('bg-red-500/10', 'border-red-500/20');
+        ok.classList.add('bg-emerald-500/10', 'border-emerald-500/20');
+        ok.querySelector('p').classList.remove('text-red-300');
+        ok.querySelector('p').classList.add('text-emerald-300');
+        ok.querySelector('p').textContent = (res.data && res.data.message) || 'Solicitud enviada. Un administrador la revisara.';
+      }
+      // Resetear form
+      registerForm.reset();
     } catch (err) {
       showError('registerError', err.message);
     } finally {

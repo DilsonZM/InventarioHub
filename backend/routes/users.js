@@ -21,6 +21,9 @@ function userPublic(u) {
     email: u.email,
     nombreCompleto: u.nombre_completo,
     activo: u.activo,
+    estadoAprobacion: u.estado_aprobacion || 'aprobado',
+    motivoRechazo: u.motivo_rechazo,
+    solicitadoEn: u.solicitado_en,
     ultimoAcceso: u.ultimo_acceso,
     creadoEn: u.creado_en,
     permisos: {
@@ -62,7 +65,7 @@ router.get('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), a
   try {
     const { data, error } = await supabase
       .from('perfiles')
-      .select('id, username, role, email, nombre_completo, activo, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+      .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
       .order('creado_en', { ascending: true });
     if (error) throw error;
     res.json({ success: true, data: (data || []).map(userPublic) });
@@ -171,6 +174,53 @@ router.delete('/:id', authMiddleware, requirePermission('puede_gestionar_usuario
     res.json({ success: true, message: 'Usuario desactivado' });
   } catch (err) {
     console.error('User delete error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
+// POST /api/users/:id/aprobar - aprobar usuario pendiente
+router.post('/:id/aprobar', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+  try {
+    const { role, permisos, nombreCompleto } = req.body || {};
+    const updateData = {
+      estado_aprobacion: 'aprobado',
+      motivo_rechazo: null
+    };
+    if (role) updateData.role = role;
+    if (nombreCompleto) updateData.nombre_completo = nombreCompleto;
+    if (permisos) updateData.permisos = permisos;
+
+    const { data, error } = await supabase
+      .from('perfiles')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+      .single();
+    if (error) throw error;
+    res.json({ success: true, data: userPublic(data) });
+  } catch (err) {
+    console.error('User approve error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
+// POST /api/users/:id/rechazar - rechazar usuario pendiente
+router.post('/:id/rechazar', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+  try {
+    const { motivo } = req.body || {};
+    const { data, error } = await supabase
+      .from('perfiles')
+      .update({
+        estado_aprobacion: 'rechazado',
+        motivo_rechazo: motivo || 'Sin motivo especificado'
+      })
+      .eq('id', req.params.id)
+      .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+      .single();
+    if (error) throw error;
+    res.json({ success: true, data: userPublic(data) });
+  } catch (err) {
+    console.error('User reject error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });
   }
 });

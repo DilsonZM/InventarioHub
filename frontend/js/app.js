@@ -382,7 +382,7 @@ async function populateProductFilter(selectId) {
 
 function hasActiveFilters(ids) {
   return !!($(ids.dateFrom).value || $(ids.dateTo).value || $(ids.period).value
-    || ($(ids.cocina) && $(ids.cocina).value) || ($(ids.product) && $(ids.product).value));
+    || ($(ids.cocina) && $(ids.cocina).value) || ($(ids.product) && $(ids.product).value) || ($(ids.extra) && $(ids.extra).value));
 }
 
 function updateClearBtn(ids) {
@@ -455,6 +455,8 @@ function updateFilterChips(ids) {
   chipsContainer.querySelectorAll('.filter-chip').forEach(function (btn, idx) {
     btn.addEventListener('click', function () {
       chips[idx].clear();
+      // Actualizar chips y boton limpiar inmediatamente
+      updateClearBtn(ids);
       // Disparar el loader segun la vista
       var loader = view === 'dashboard' ? loadDashboard :
                    view === 'sales' ? loadSales :
@@ -557,6 +559,20 @@ function applyMobileFilters(view) {
   if ($(productId) && $('#mfProduct')) $(productId).value = $('#mfProduct').value;
 
   closeModal('mobileFiltersModal');
+
+  // Actualizar chips y boton limpiar inmediatamente
+  var ids = {
+    view: view,
+    dateFrom: dateFromId,
+    dateTo: dateToId,
+    period: periodId,
+    product: productId,
+    clear: '#clearFiltersBtn' + prefix,
+    extra: tipoId,
+    cocina: cocinaId
+  };
+  updateClearBtn(ids);
+
   var loader = view === 'dashboard' ? loadDashboard :
                view === 'sales' ? loadSales :
                view === 'entradas' ? loadCompras :
@@ -1150,6 +1166,7 @@ function applyQuickPeriod(ids, loader) {
   }
   if (from) $(ids.dateFrom).value = from.toISOString().split('T')[0];
   if (to) $(ids.dateTo).value = to.toISOString().split('T')[0];
+  updateClearBtn(ids);
   loader();
 }
 
@@ -2134,6 +2151,18 @@ function initUsers() {
   if (saveConfigBtn) saveConfigBtn.addEventListener('click', saveConfig);
 }
 
+function estadoBadge(estado) {
+  if (estado === 'pendiente') return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">'
+    + '<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>'
+    + 'Pendiente</span>';
+  if (estado === 'rechazado') return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">'
+    + '<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/></svg>'
+    + 'Rechazado</span>';
+  return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">'
+    + '<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>'
+    + 'Aprobado</span>';
+}
+
 async function loadUsers() {
   if (!window.can('puedeGestionarUsuarios')) return;
   try {
@@ -2141,6 +2170,7 @@ async function loadUsers() {
     var users = res.data || [];
     var tbody = $('#usersTable');
     var cards = $('#usersCards');
+    var pendientes = users.filter(function (u) { return u.estadoAprobacion === 'pendiente'; }).length;
     if (users.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">No hay usuarios</td></tr>';
       cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">No hay usuarios</p>';
@@ -2148,14 +2178,20 @@ async function loadUsers() {
     }
     tbody.innerHTML = users.map(function (u) {
       var activeCount = Object.values(u.permisos).filter(Boolean).length;
-      return '<tr class="hover:bg-slate-50 transition-colors">'
+      var pendiente = u.estadoAprobacion === 'pendiente';
+      var rechazado = u.estadoAprobacion === 'rechazado';
+      return '<tr class="hover:bg-slate-50 transition-colors' + (pendiente ? ' bg-amber-50/30' : '') + '">'
         + '<td class="px-6 py-3"><div class="text-sm font-medium text-slate-800">' + escapeHtml(u.username) + '</div><div class="text-xs text-slate-400">' + escapeHtml(u.email || '') + '</div></td>'
         + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(u.nombreCompleto || '-') + '</td>'
         + '<td class="px-6 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700') + '">' + u.role + '</span></td>'
         + '<td class="px-6 py-3 text-center"><span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">' + activeCount + '/13</span></td>'
-        + '<td class="px-6 py-3">' + (u.activo === false ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Inactivo</span>' : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Activo</span>') + '</td>'
+        + '<td class="px-6 py-3">' + estadoBadge(u.estadoAprobacion) + '</td>'
         + '<td class="px-6 py-3 text-right">'
         + '<div class="flex items-center justify-end gap-1">'
+        + (pendiente ? '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors touch-target" title="Aprobar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>'
+          + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Rechazar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>' : '')
         + '<button onclick="window.editUser(\'' + u.id + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Editar">'
         + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>'
         + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors touch-target" title="Eliminar">'
@@ -2165,18 +2201,30 @@ async function loadUsers() {
     }).join('');
     cards.innerHTML = users.map(function (u) {
       var activeCount = Object.values(u.permisos).filter(Boolean).length;
-      return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
+      var pendiente = u.estadoAprobacion === 'pendiente';
+      var actionsHtml = '';
+      if (pendiente) {
+        actionsHtml = '<div class="flex gap-2 pt-2">'
+          + '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-sm font-medium touch-target flex items-center justify-center gap-1.5">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Aprobar</button>'
+          + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-red-700 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium touch-target flex items-center justify-center gap-1.5">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> Rechazar</button>'
+          + '</div>';
+      } else {
+        actionsHtml = '<div class="flex gap-1 pt-2 border-t border-slate-100">'
+          + '<button onclick="window.editUser(\'' + u.id + '\')" class="flex-1 p-2 text-amber-600 bg-amber-50 rounded-lg text-sm font-medium touch-target">Editar</button>'
+          + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-red-600 bg-red-50 rounded-lg text-sm font-medium touch-target">Eliminar</button>'
+          + '</div>';
+      }
+      return '<div class="bg-white border ' + (pendiente ? 'border-amber-300' : 'border-slate-200') + ' rounded-xl p-4 space-y-2">'
         + '<div class="flex items-start justify-between"><div><p class="text-sm font-semibold text-slate-800">' + escapeHtml(u.username) + '</p><p class="text-xs text-slate-500">' + escapeHtml(u.email || '') + '</p></div>'
         + '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700') + '">' + u.role + '</span></div>'
         + '<p class="text-xs text-slate-500">' + escapeHtml(u.nombreCompleto || '-') + '</p>'
         + '<div class="flex items-center justify-between text-xs">'
         + '<span class="text-slate-500">Permisos: ' + activeCount + '/13</span>'
-        + (u.activo === false ? '<span class="text-red-600 font-medium">Inactivo</span>' : '<span class="text-emerald-600 font-medium">Activo</span>')
+        + estadoBadge(u.estadoAprobacion)
         + '</div>'
-        + '<div class="flex gap-1 pt-2 border-t border-slate-100">'
-        + '<button onclick="window.editUser(\'' + u.id + '\')" class="flex-1 p-2 text-amber-600 bg-amber-50 rounded-lg text-sm font-medium touch-target">Editar</button>'
-        + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-red-600 bg-red-50 rounded-lg text-sm font-medium touch-target">Eliminar</button>'
-        + '</div>'
+        + actionsHtml
         + '</div>';
     }).join('');
   } catch (err) {
@@ -2231,6 +2279,30 @@ window.deleteUser = async function (id, username) {
   try {
     await API.users.delete(id);
     showToast('Usuario desactivado', 'success');
+    loadUsers();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+};
+
+window.approveUser = async function (id, username) {
+  // Si el admin quiere cambiar el rol antes de aprobar, abrir el modal de edicion
+  if (!confirm('¿Aprobar al usuario "' + username + '"? Luego podras editar sus permisos desde el boton lapiz.')) return;
+  try {
+    await API.users.approve(id, { role: 'vendedor' });
+    showToast('Usuario aprobado. Edita sus permisos si necesitas.', 'success');
+    loadUsers();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+};
+
+window.rejectUser = async function (id, username) {
+  var motivo = prompt('Motivo del rechazo (opcional):', '');
+  if (motivo === null) return;
+  try {
+    await API.users.reject(id, { motivo: motivo || 'Sin motivo especificado' });
+    showToast('Usuario rechazado', 'success');
     loadUsers();
   } catch (err) {
     showToast('Error: ' + err.message, 'error');

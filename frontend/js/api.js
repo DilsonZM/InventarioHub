@@ -107,6 +107,8 @@ const API = (() => {
       create: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
       update: (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
       delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+      approve: (id, data) => request(`/users/${id}/aprobar`, { method: 'POST', body: JSON.stringify(data || {}) }),
+      reject: (id, data) => request(`/users/${id}/rechazar`, { method: 'POST', body: JSON.stringify(data || {}) }),
     },
 
     products: {
