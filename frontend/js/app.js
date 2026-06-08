@@ -140,6 +140,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     $('#mobileFiltersContent').querySelectorAll('input, select').forEach(function (el) { el.value = ''; });
   });
 
+  // Click afuera del modal de filtros: aplica Y cierra
+  var filtersOverlay = document.querySelector('[data-apply-filters-overlay]');
+  if (filtersOverlay) {
+    filtersOverlay.addEventListener('click', function () {
+      var view = applyBtn ? (applyBtn.getAttribute('data-view') || 'sales') : 'sales';
+      applyMobileFilters(view);
+    });
+  }
+
   // Permitir que el boton Aplicar sepa en que vista esta
   var openMobileBtns = document.querySelectorAll('[data-open-filters]');
   openMobileBtns.forEach(function (btn) {
@@ -346,6 +355,7 @@ function navigate(view) {
 
 function initDashboard() {
   var ids = {
+    view: 'dashboard',
     dateFrom: '#filterDateFromDash',
     dateTo: '#filterDateToDash',
     period: '#filterQuickPeriodDash',
@@ -398,7 +408,8 @@ function updateClearBtn(ids) {
 
 // Chips: muestra cada filtro activo como pill removible
 function updateFilterChips(ids) {
-  var view = ids.view || 'sales';
+  var view = ids.view;
+  if (!view) return; // seguridad: sin view, no escribimos a ningun container
   var chipsContainer = document.querySelector('[data-chips="' + view + '"]');
   if (!chipsContainer) return;
   var chips = [];
@@ -1147,6 +1158,24 @@ function initFilters(view) {
   if (openBtn) openBtn.addEventListener('click', function () { openMobileFiltersModal(view); });
   var clearMobile = document.getElementById('clearFiltersBtn' + (view === 'sales' ? 'Mobile' : (view === 'entradas' ? 'EntradasMobile' : (view === 'movimientos' ? 'MovMobile' : 'DashMobile'))));
   if (clearMobile) clearMobile.addEventListener('click', function () { clearFilters(ids, loader); });
+
+  // Mobile: boton "Nueva ..." (espejo del desktop)
+  var newBtnMobileId = view === 'sales' ? 'newSaleBtnMobile' : (view === 'entradas' ? 'newCompraBtnMobile' : null);
+  if (newBtnMobileId) {
+    var newBtnMobile = document.getElementById(newBtnMobileId);
+    if (newBtnMobile) {
+      newBtnMobile.addEventListener('click', function () {
+        if (view === 'sales') openSaleModal();
+        else if (view === 'entradas') openCompraModal();
+      });
+    }
+  }
+
+  // Mobile: default periodo = Hoy (siempre visible el chip)
+  if (window.innerWidth < 1024 && $(ids.period) && !$(ids.period).value) {
+    $(ids.period).value = 'today';
+    applyQuickPeriod(ids, loader);
+  }
 
   updateClearBtn(ids);
 }
