@@ -75,15 +75,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function animateExit(callback) {
+    // Fade out rapido del form + mostrar loading overlay (hamburguesa girando)
     const container = document.querySelector('.min-h-\\[100dvh\\]');
     if (container) {
-      container.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+      container.style.transition = 'opacity 0.25s ease-out, transform 0.25s ease-out';
       container.style.opacity = '0';
-      container.style.transform = 'scale(0.98)';
-      setTimeout(callback, 280);
-    } else {
-      callback();
+      container.style.transform = 'scale(0.96)';
     }
+    setTimeout(function() {
+      if (typeof window.showLoadingTransition === 'function') {
+        window.showLoadingTransition(callback);
+      } else {
+        callback();
+      }
+    }, 250);
   }
 
   loginForm.addEventListener('submit', async (e) => {

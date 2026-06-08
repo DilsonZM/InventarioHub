@@ -62,6 +62,15 @@ function showError(id, msg) {
 document.addEventListener('DOMContentLoaded', async function () {
   console.log('[App] Inicializando InventarioApp...');
 
+  // Registrar Service Worker para PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(function (reg) {
+      console.log('[PWA] Service Worker registrado:', reg.scope);
+    }).catch(function (err) {
+      console.warn('[PWA] No se pudo registrar SW:', err);
+    });
+  }
+
   if (typeof API === 'undefined') {
     console.error('[App] API no esta definida. Verifica que api.js se cargo correctamente.');
     return;

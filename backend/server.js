@@ -30,7 +30,18 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
+
+app.use(express.static(path.join(__dirname, '../frontend'), {
+  setHeaders: function (res, filePath) {
+    if (filePath.endsWith('sw.js')) {
+      res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+    if (filePath.endsWith('manifest.json')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/config', configRoutes);

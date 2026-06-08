@@ -1,0 +1,47 @@
+{
+  "name": "InventarioHub",
+  "short_name": "InventarioHub",
+  "description": "Gestion de inventario para comida rapida",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#3b82f6",
+  "lang": "es",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva Salida",
+      "short_name": "Salida",
+      "url": "/index.html#sales",
+      "description": "Registrar una nueva salida de inventario"
+    },
+    {
+      "name": "Nueva Entrada",
+      "short_name": "Entrada",
+      "url": "/index.html#entradas",
+      "description": "Registrar una nueva entrada de inventario"
+    },
+    {
+      "name": "Inventario",
+      "short_name": "Inventario",
+      "url": "/index.html#inventory",
+      "description": "Ver productos en inventario"
+    }
+  ]
+}
