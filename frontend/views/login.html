@@ -35,7 +35,8 @@
       font-family: 'DM Sans', system-ui, sans-serif;
       font-size: var(--text-base);
       min-height: 100dvh;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: hidden;
     }
     .font-mono { font-family: 'Space Mono', monospace; }
 
@@ -182,12 +183,13 @@
     /* Loading overlay */
     .loading-overlay {
       position: fixed; inset: 0; z-index: 100;
-      min-height: 100dvh; height: 100dvh;
+      min-height: 100dvh; height: 100dvh; width: 100vw;
       display: flex; align-items: center; justify-content: center; flex-direction: column;
       gap: 0.5rem;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
       animation: overlay-in 0.3s ease-out;
+      overflow: hidden;
     }
     .loading-overlay.fade-out { animation: overlay-out 0.4s ease-in forwards; }
     .loading-overlay svg { transform-origin: center; animation: jelly-wobble 3.5s ease-in-out infinite; }
@@ -224,6 +226,21 @@
     }
 
     .touch-target { min-height: 44px; min-width: 44px; }
+
+    /* Solo en portrait/height restrictivo: scroll si el form es muy largo */
+    @media (max-height: 800px) {
+      .login-card { max-height: 92dvh; overflow-y: auto; }
+      .login-card::-webkit-scrollbar { width: 4px; }
+      .login-card::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    }
+
+    /* Layout 2 columnas solo en landscape */
+    @media (orientation: landscape) and (max-height: 500px) {
+      .login-layout { flex-direction: row !important; align-items: center !important; gap: 2.5rem !important; }
+      .login-aside { display: flex !important; }
+      .login-card { max-width: 24rem !important; max-height: 90dvh; overflow-y: auto; }
+      .login-card .login-header { display: none !important; }
+    }
   </style>
 </head>
 <body class="h-full bg-slate-950 text-white">
@@ -231,16 +248,33 @@
   <!-- Canvas de particulas (fondo) -->
   <canvas id="particleCanvas"></canvas>
 
-  <div class="min-h-[100dvh] flex items-center justify-center p-4 sm:p-6 lg:p-8 relative" style="z-index: 2;">
+  <div class="login-layout min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative gap-6 overflow-hidden" style="z-index: 2;">
     <div class="absolute inset-0 gradient-mesh bg-noise pointer-events-none"></div>
 
-    <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-0 left-1/4 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-    <div class="w-full max-w-md relative z-10">
+    <!-- Columna izquierda: branding (visible en landscape) -->
+    <div class="login-aside hidden flex-col items-center justify-center text-center shrink-0 max-w-xs">
+      <div id="burgerContainerL" class="burger-icon jelly inline-flex items-center justify-center w-32 h-32 rounded-3xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 backdrop-blur-xl border border-orange-400/20 mb-4" style="animation: pulse-glow 3s ease-in-out infinite;">
+        <svg viewBox="0 0 100 100" class="w-20 h-20" fill="none">
+          <g class="burger-bun-top close"><path d="M18 38 Q18 18, 50 18 Q82 18, 82 38 L82 42 L18 42 Z" fill="url(#bunGradL)" stroke="#d97706" stroke-width="1.2"/><circle cx="38" cy="28" r="1.4" fill="#fde68a"/><circle cx="55" cy="25" r="1.2" fill="#fde68a"/><circle cx="68" cy="30" r="1.4" fill="#fde68a"/><circle cx="46" cy="33" r="1" fill="#fde68a"/></g>
+          <g class="burger-lettuce"><path d="M14 48 Q20 44, 26 48 T38 48 T50 48 T62 48 T74 48 T86 48 L86 54 L14 54 Z" fill="#86efac" stroke="#16a34a" stroke-width="1"/></g>
+          <g class="burger-tomato"><rect x="16" y="55" width="68" height="6" rx="2" fill="#fb7185" stroke="#be123c" stroke-width="0.8"/><circle cx="28" cy="58" r="0.8" fill="#fecdd3"/><circle cx="50" cy="58" r="0.8" fill="#fecdd3"/><circle cx="72" cy="58" r="0.8" fill="#fecdd3"/></g>
+          <g class="burger-cheese"><path d="M14 62 L86 62 L82 70 L18 70 Z" fill="#fde047" stroke="#ca8a04" stroke-width="0.8"/><path d="M22 70 L20 74" stroke="#ca8a04" stroke-width="0.8"/><path d="M50 70 L48 74" stroke="#ca8a04" stroke-width="0.8"/><path d="M78 70 L76 74" stroke="#ca8a04" stroke-width="0.8"/></g>
+          <g class="burger-patty"><rect x="14" y="71" width="72" height="8" rx="3" fill="#78350f" stroke="#451a03" stroke-width="0.8"/><ellipse cx="30" cy="75" rx="1" ry="0.6" fill="#451a03" opacity="0.5"/><ellipse cx="55" cy="74" rx="1" ry="0.6" fill="#451a03" opacity="0.5"/><ellipse cx="72" cy="76" rx="1" ry="0.6" fill="#451a03" opacity="0.5"/></g>
+          <g class="burger-bun-bottom close"><path d="M18 80 L82 80 L82 84 Q82 88, 78 88 L22 88 Q18 88, 18 84 Z" fill="url(#bunGradL)" stroke="#d97706" stroke-width="1.2"/></g>
+          <defs><linearGradient id="bunGradL" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#fcd34d"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold title-shine">InventarioHub</h1>
+      <p class="text-slate-400 mt-1 text-sm">Gestion inteligente de inventario</p>
+    </div>
 
-      <!-- Header: hamburguesa animada + titulo -->
-      <div class="text-center mb-6 sm:mb-8 animate-fade-up">
+    <div class="login-card w-full max-w-md relative z-10">
+
+      <!-- Header: hamburguesa animada + titulo (oculto en landscape) -->
+      <div class="login-header text-center mb-6 sm:mb-8 animate-fade-up">
         <div id="burgerContainer" class="burger-icon jelly inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 backdrop-blur-xl border border-orange-400/20 mb-4" style="animation: pulse-glow 3s ease-in-out infinite;">
           <svg viewBox="0 0 100 100" class="w-12 h-12 sm:w-14 sm:h-14" fill="none">
             <!-- Pan superior -->

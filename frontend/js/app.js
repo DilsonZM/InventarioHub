@@ -203,7 +203,7 @@ function applyPermissionsToUI() {
 
 function setCurrentDate() {
   var el = $('#currentDate');
-  if (el) el.textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  if (el) el.textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: Utils.APP_TIMEZONE });
 }
 
 function initUser() {
@@ -387,8 +387,8 @@ function initDashboard() {
   var clearMobile = document.getElementById('clearFiltersBtnDashMobile');
   if (clearMobile) clearMobile.addEventListener('click', function () { clearFilters(ids, loader); });
 
-  // Mobile: default periodo = Hoy
-  if (window.innerWidth < 1024 && $(ids.period) && !$(ids.period).value) {
+  // Default periodo = Hoy
+  if ($(ids.period) && !$(ids.period).value) {
     $(ids.period).value = 'today';
     applyQuickPeriod(ids, loader);
   }
@@ -1201,8 +1201,8 @@ function initFilters(view) {
     }
   }
 
-  // Mobile: default periodo = Hoy (siempre visible el chip)
-  if (window.innerWidth < 1024 && $(ids.period) && !$(ids.period).value) {
+  // Default periodo = Hoy (siempre visible el chip al cargar)
+  if ($(ids.period) && !$(ids.period).value) {
     $(ids.period).value = 'today';
     applyQuickPeriod(ids, loader);
   }
@@ -1213,8 +1213,10 @@ function initFilters(view) {
 function applyQuickPeriod(ids, loader) {
   var period = $(ids.period).value;
   if (!period) return;
-  var now = new Date();
-  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Usar la fecha/hora actual en la timezone de la app (UTC-5)
+  var now = Utils.nowInAppTZ();
+  var todayStr = Utils.todayInAppTZ();
+  var today = new Date(todayStr + 'T00:00:00');
   var from, to;
   switch (period) {
     case 'today': from = today; to = now; break;
@@ -1873,7 +1875,7 @@ async function openCompraModal() {
     var titleEl = document.querySelector('#compraModal h3');
     if (titleEl) titleEl.textContent = 'Nueva Entrada';
   }
-  $('#compraFecha').value = new Date().toISOString().split('T')[0];
+  $('#compraFecha').value = Utils.todayInAppTZ();
   $('#compraCantidad').value = 1;
   if ($('#compraTotal')) $('#compraTotal').textContent = '$0.00';
   $('#compraFormError').classList.add('hidden');
