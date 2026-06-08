@@ -66,25 +66,35 @@
     @keyframes spinner-rotate {
       to { transform: rotate(360deg); }
     }
-    @keyframes burger-rise {
-      from { transform: translateY(-30px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+    @keyframes mouth-open-top {
+      from { transform: translateY(0); }
+      to { transform: translateY(-22px); }
     }
-    @keyframes burger-fall {
-      from { transform: translateY(30px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+    @keyframes mouth-open-bottom {
+      from { transform: translateY(0); }
+      to { transform: translateY(22px); }
     }
-    @keyframes burger-side-l {
-      from { transform: translateX(-30px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+    @keyframes mouth-close-top {
+      from { transform: translateY(-22px); }
+      to { transform: translateY(0); }
     }
-    @keyframes burger-side-r {
-      from { transform: translateX(30px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+    @keyframes mouth-close-bottom {
+      from { transform: translateY(22px); }
+      to { transform: translateY(0); }
     }
-    @keyframes burger-fade {
-      from { opacity: 0; transform: scale(0.7); }
-      to { opacity: 1; transform: scale(1); }
+    @keyframes ingredient-rise {
+      from { opacity: 0; transform: translateY(8px) scale(0.6); }
+      60%  { opacity: 1; transform: translateY(-2px) scale(1.08); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes jelly-wobble {
+      0%, 100% { transform: scale(1, 1) rotate(0); }
+      15% { transform: scale(1.08, 0.92) rotate(-2deg); }
+      30% { transform: scale(0.94, 1.06) rotate(2deg); }
+      45% { transform: scale(1.05, 0.95) rotate(-1.2deg); }
+      60% { transform: scale(0.97, 1.03) rotate(1.2deg); }
+      75% { transform: scale(1.02, 0.98) rotate(-0.6deg); }
+      90% { transform: scale(0.99, 1.01) rotate(0.4deg); }
     }
     @keyframes text-shine {
       0% { background-position: 200% center; }
@@ -111,20 +121,57 @@
     input:focus, select:focus { transform: translateY(-1px); }
     button:not(:disabled):active { transform: scale(0.98); }
 
-    /* Hamburger animation - el icono se ARMA por capas */
-    .burger-icon { display: block; }
-    .burger-bun-top { animation: burger-rise 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: 0.1s; transform-origin: center; }
-    .burger-lettuce { animation: burger-side-l 0.5s ease-out both; animation-delay: 0.3s; }
-    .burger-tomato { animation: burger-fade 0.4s ease-out both; animation-delay: 0.45s; transform-origin: center; }
-    .burger-cheese { animation: burger-side-r 0.5s ease-out both; animation-delay: 0.55s; }
-    .burger-patty { animation: burger-fade 0.4s ease-out both; animation-delay: 0.7s; }
-    .burger-bun-bottom { animation: burger-fall 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: 0.85s; }
+    /* === HAMBURGUESA: estilo cocodrilo mordida + gelatina === */
+    .burger-icon { display: block; transform-origin: center; }
+    .burger-icon > svg { transform-origin: center; }
 
-    /* Idle: breathing del hambuerguesa ya formado */
-    .burger-idle .burger-bun-top,
-    .burger-idle .burger-bun-bottom { animation: float 4s ease-in-out infinite; }
-    .burger-idle .burger-bun-top { animation-delay: 0s; }
-    .burger-idle .burger-bun-bottom { animation-delay: 0s; }
+    /* BOCA ABIERTA: panes se separan */
+    .burger-bun-top {
+      animation: mouth-open-top 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      animation-delay: 0.2s;
+    }
+    .burger-bun-bottom {
+      animation: mouth-open-bottom 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      animation-delay: 0.2s;
+    }
+
+    /* Ingredientes aparecen dentro (de abajo hacia arriba) */
+    .burger-patty {
+      animation: ingredient-rise 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      animation-delay: 0.7s;
+      transform-origin: center;
+    }
+    .burger-cheese {
+      animation: ingredient-rise 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      animation-delay: 0.85s;
+      transform-origin: center;
+    }
+    .burger-tomato {
+      animation: ingredient-rise 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      animation-delay: 1.0s;
+      transform-origin: center;
+    }
+    .burger-lettuce {
+      animation: ingredient-rise 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      animation-delay: 1.15s;
+      transform-origin: center;
+    }
+
+    /* BOCA SE CIERRA: cocodrilo muerde */
+    .burger-bun-top.close {
+      animation: mouth-close-top 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) both;
+      animation-delay: 1.55s;
+    }
+    .burger-bun-bottom.close {
+      animation: mouth-close-bottom 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) both;
+      animation-delay: 1.55s;
+    }
+
+    /* GELATINA: wobble continuo despues de formarse */
+    .burger-icon.jelly {
+      animation: jelly-wobble 3.5s ease-in-out infinite;
+      animation-delay: 2.3s;
+    }
 
     /* Particle canvas */
     #particleCanvas {
@@ -135,11 +182,15 @@
     /* Loading overlay */
     .loading-overlay {
       position: fixed; inset: 0; z-index: 100;
+      min-height: 100dvh; height: 100dvh;
       display: flex; align-items: center; justify-content: center; flex-direction: column;
+      gap: 0.5rem;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
       animation: overlay-in 0.3s ease-out;
     }
     .loading-overlay.fade-out { animation: overlay-out 0.4s ease-in forwards; }
+    .loading-overlay svg { transform-origin: center; animation: jelly-wobble 3.5s ease-in-out infinite; }
 
     .loading-bars { display: flex; gap: 6px; align-items: end; height: 30px; margin-top: 20px; }
     .loading-bar {
@@ -190,10 +241,10 @@
 
       <!-- Header: hamburguesa animada + titulo -->
       <div class="text-center mb-6 sm:mb-8 animate-fade-up">
-        <div id="burgerContainer" class="burger-icon burger-idle inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 backdrop-blur-xl border border-orange-400/20 mb-4" style="animation: pulse-glow 3s ease-in-out infinite;">
+        <div id="burgerContainer" class="burger-icon jelly inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 backdrop-blur-xl border border-orange-400/20 mb-4" style="animation: pulse-glow 3s ease-in-out infinite;">
           <svg viewBox="0 0 100 100" class="w-12 h-12 sm:w-14 sm:h-14" fill="none">
             <!-- Pan superior -->
-            <g class="burger-bun-top">
+            <g class="burger-bun-top close">
               <path d="M18 38 Q18 18, 50 18 Q82 18, 82 38 L82 42 L18 42 Z" fill="url(#bunGrad)" stroke="#d97706" stroke-width="1.2"/>
               <circle cx="38" cy="28" r="1.4" fill="#fde68a"/>
               <circle cx="55" cy="25" r="1.2" fill="#fde68a"/>
@@ -226,7 +277,7 @@
               <ellipse cx="72" cy="76" rx="1" ry="0.6" fill="#451a03" opacity="0.5"/>
             </g>
             <!-- Pan inferior -->
-            <g class="burger-bun-bottom">
+            <g class="burger-bun-bottom close">
               <path d="M18 80 L82 80 L82 84 Q82 88, 78 88 L22 88 Q18 88, 18 84 Z" fill="url(#bunGrad)" stroke="#d97706" stroke-width="1.2"/>
             </g>
             <defs>
@@ -329,7 +380,7 @@
 
   <!-- Loading overlay (mostrado al transicionar) -->
   <div id="loadingOverlay" class="loading-overlay hidden">
-    <svg viewBox="0 0 100 100" class="w-24 h-24" fill="none" style="animation: spinner-rotate 2s linear infinite;">
+    <svg viewBox="0 0 100 100" class="w-20 h-20 sm:w-24 sm:h-24" fill="none">
       <g>
         <path d="M18 38 Q18 18, 50 18 Q82 18, 82 38 L82 42 L18 42 Z" fill="url(#bunGrad2)" stroke="#d97706" stroke-width="1.2"/>
         <path d="M14 48 Q20 44, 26 48 T38 48 T50 48 T62 48 T74 48 T86 48 L86 54 L14 54 Z" fill="#86efac" stroke="#16a34a" stroke-width="1"/>
@@ -352,7 +403,7 @@
       <div class="loading-bar"></div>
       <div class="loading-bar"></div>
     </div>
-    <p class="text-slate-400 text-sm mt-4 font-medium">Cargando InventarioHub...</p>
+    <p class="text-slate-400 text-sm font-medium">Cargando InventarioHub...</p>
   </div>
 
   <script src="../js/api.js"></script>
