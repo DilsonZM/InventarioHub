@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Propuesta Comercial — Sistema de Control de Inventario</title>
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 1.8cm;
+    @bottom-center {
+      content: 'Página ' counter(page) ' de ' counter(pages) '  ·  Propuesta Comercial — InventarioHub  ·  Confidencial';
+      font-family: 'Helvetica', sans-serif;
+      font-size: 9pt;
+      color: #888;
+    }
+  }
+  @page :first {
+    margin: 0;
+    @bottom-center { content: ''; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+    margin: 0;
+  }
+  /* COVER */
+  .cover {
+    page-break-after: always;
+    height: 29.7cm;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+    padding: 4cm 3cm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.15) 0%, transparent 40%);
+    pointer-events: none;
+  }
+  .cover-content { position: relative; z-index: 1; }
+  .cover-brand {
+    font-size: 14pt;
+    color: #f59e0b;
+    letter-spacing: 4px;
+    font-weight: 700;
+    margin-bottom: 4cm;
+  }
+  .cover-title {
+    font-size: 38pt;
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 0 0 1.5cm 0;
+  }
+  .cover-subtitle {
+    font-size: 16pt;
+    color: #cbd5e1;
+    font-weight: 300;
+    margin-bottom: 4cm;
+  }
+  .cover-meta {
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 0.8cm;
+    font-size: 10pt;
+    color: #94a3b8;
+  }
+  .cover-meta strong { color: #f1f5f9; }
+  .cover-badge {
+    position: absolute;
+    bottom: 3cm;
+    right: 3cm;
+    background: #f59e0b;
+    color: #1a1a2e;
+    padding: 0.4cm 0.8cm;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 10pt;
+    letter-spacing: 1px;
+  }
+  /* TYPOGRAPHY */
+  h1 {
+    font-size: 22pt;
+    color: #1a1a2e;
+    border-bottom: 3px solid #f59e0b;
+    padding-bottom: 0.3cm;
+    margin: 1.5cm 0 0.6cm 0;
+    font-weight: 800;
+  }
+  h1:first-of-type { margin-top: 0; }
+  h2 {
+    font-size: 14pt;
+    color: #16213e;
+    margin: 0.8cm 0 0.3cm 0;
+    font-weight: 700;
+  }
+  h3 {
+    font-size: 11.5pt;
+    color: #0f3460;
+    margin: 0.5cm 0 0.2cm 0;
+    font-weight: 700;
+  }
+  p { margin: 0.3cm 0; text-align: justify; }
+  strong { color: #0f3460; }
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.4cm 0 0.6cm 0;
+    font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+  thead th {
+    background: #1a1a2e;
+    color: white;
+    padding: 0.35cm 0.4cm;
+    text-align: left;
+    font-weight: 700;
+    font-size: 9pt;
+    letter-spacing: 0.3px;
+  }
+  tbody td {
+    padding: 0.3cm 0.4cm;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:last-child td { border-bottom: none; }
+  /* CALLOUTS */
+  .callout {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 0.4cm 0.5cm;
+    margin: 0.5cm 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+  }
+  .callout-green {
+    background: #d1fae5;
+    border-left: 4px solid #10b981;
+    padding: 0.4cm 0.5cm;
+    margin: 0.5cm 0;
+    font-size: 10pt;
+  }
+  .callout-blue {
+    background: #dbeafe;
+    border-left: 4px solid #3b82f6;
+    padding: 0.4cm 0.5cm;
+    margin: 0.5cm 0;
+    font-size: 10pt;
+  }
+  /* PRICING CARDS */
+  .pricing {
+    display: flex;
+    gap: 0.4cm;
+    margin: 0.5cm 0;
+    page-break-inside: avoid;
+  }
+  .pricing-card {
+    flex: 1;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.5cm;
+    background: white;
+  }
+  .pricing-card.featured {
+    border-color: #f59e0b;
+    background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+    position: relative;
+  }
+  .pricing-card.featured::before {
+    content: 'RECOMENDADO';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #f59e0b;
+    color: #1a1a2e;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .pricing-tier {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 0.15cm;
+  }
+  .pricing-price {
+    font-size: 20pt;
+    font-weight: 800;
+    color: #0f3460;
+    margin: 0.1cm 0 0.3cm 0;
+    line-height: 1;
+  }
+  .pricing-price small {
+    font-size: 9pt;
+    font-weight: 400;
+    color: #6b7280;
+    display: block;
+  }
+  .pricing-features {
+    list-style: none;
+    padding: 0;
+    margin: 0.3cm 0 0 0;
+    font-size: 8.5pt;
+    line-height: 1.5;
+  }
+  .pricing-features li {
+    padding: 2px 0;
+    color: #374151;
+  }
+  .pricing-features li::before {
+    content: '✓';
+    color: #10b981;
+    font-weight: 700;
+    margin-right: 5px;
+  }
+  /* LISTS */
+  ul, ol { padding-left: 0.6cm; margin: 0.3cm 0; }
+  li { margin: 0.15cm 0; }
+  /* PAGE BREAKS */
+  .page-break { page-break-before: always; }
+  /* STEPS */
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+    margin: 0.5cm 0;
+  }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 0.3cm 0 0.3cm 1.2cm;
+    border-left: 2px solid #e5e7eb;
+    margin-left: 0.3cm;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: -0.4cm;
+    top: 0.25cm;
+    width: 0.7cm;
+    height: 0.7cm;
+    background: #f59e0b;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 10pt;
+  }
+  .steps li strong { display: block; margin-bottom: 0.1cm; }
+  .footer-note {
+    margin-top: 1.5cm;
+    padding-top: 0.5cm;
+    border-top: 1px solid #e5e7eb;
+    font-size: 8.5pt;
+    color: #6b7280;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+  <div class="cover-content">
+    <div class="cover-brand">INVENTARIOHUB</div>
+    <h1 class="cover-title">Sistema de<br>Control de<br>Inventario</h1>
+    <div class="cover-subtitle">Web app profesional para tiendas<br>de comida rápida</div>
+    <div class="cover-meta">
+      <div><strong>Propuesta Comercial</strong></div>
+      <div>Preparado para: [Nombre del Negocio]</div>
+      <div>Fecha: 07 de junio de 2026</div>
+      <div>Validez: 30 días</div>
+    </div>
+  </div>
+  <div class="cover-badge">CONFIDENCIAL</div>
+</div>
+
+<!-- PÁGINA 2: PROBLEMA -->
+<h1>El Problema</h1>
+<p>Si hoy usás Excel para llevar el inventario de tu tienda, seguro te pasa alguno de estos:</p>
+
+<table>
+  <thead>
+    <tr><th style="width:8%">#</th><th>Problema</th><th>Impacto real</th></tr>
+  </thead>
+  <tbody>
+    <tr><td style="text-align:center">1</td><td>No sabés el stock real en el momento</td><td>Te quedás sin producto a media jornada</td></tr>
+    <tr><td style="text-align:center">2</td><td>Varias personas editan el mismo archivo</td><td>Se pisan los datos, se pierde información</td></tr>
+    <tr><td style="text-align:center">3</td><td>No podés ver el inventario desde el celular</td><td>Tenés que volver a la tienda para consultar</td></tr>
+    <tr><td style="text-align:center">4</td><td>No hay control de quién modificó qué</td><td>Nadie se hace cargo de los errores</td></tr>
+    <tr><td style="text-align:center">5</td><td>Si se daña el computador o se borra el archivo</td><td>Perdés todo el histórico</td></tr>
+  </tbody>
+</table>
+
+<h1>La Solución</h1>
+<p>Una <strong>aplicación web moderna</strong> a la que acceden todos los usuarios desde cualquier dispositivo. El inventario se actualiza en tiempo real, queda respaldado en la nube, y cada acción queda registrada con fecha, hora y usuario.</p>
+
+<h2>¿Por qué web y no Excel?</h2>
+<table>
+  <thead>
+    <tr><th>Característica</th><th style="text-align:center;width:18%">Excel</th><th style="text-align:center;width:18%">Esta app</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Varios usuarios al tiempo</td><td style="text-align:center">❌</td><td style="text-align:center;color:#10b981;font-weight:700">✅</td></tr>
+    <tr><td>Acceso desde celular</td><td style="text-align:center">❌</td><td style="text-align:center;color:#10b981;font-weight:700">✅</td></tr>
+    <tr><td>Respaldo automático</td><td style="text-align:center">❌</td><td style="text-align:center;color:#10b981;font-weight:700">✅</td></tr>
+    <tr><td>Control de roles y permisos</td><td style="text-align:center">❌</td><td style="text-align:center;color:#10b981;font-weight:700">✅</td></tr>
+    <tr><td>Alertas automáticas de stock bajo</td><td style="text-align:center">❌</td><td style="text-align:center;color:#10b981;font-weight:700">✅</td></tr>
+    <tr><td>Auditoría (quién hizo qué)</td><td style="text-align:center">❌</td><td style="text-align:center;color:#10b981;font-weight:700">✅</td></tr>
+    <tr><td>Costo de mantenimiento</td><td style="text-align:center">Tu tiempo</td><td style="text-align:center">Incluido</td></tr>
+  </tbody>
+</table>
+
+<!-- PÁGINA 3: FEATURES -->
+<h1>Features Clave</h1>
+
+<h2>📦 Inventario</h2>
+<ul>
+  <li>Productos con nombre, categoría, proveedor y SKU</li>
+  <li>Stock actual y stock mínimo configurable</li>
+  <li>Unidad de medida (kg, litros, unidades)</li>
+  <li>Búsqueda y filtros por categoría</li>
+  <li>Alertas visuales de stock bajo</li>
+</ul>
+
+<h2>📥 Entradas</h2>
+<ul>
+  <li>Registro de compras y llegadas de proveedor</li>
+  <li>Cantidad, precio, proveedor, fecha</li>
+  <li>Actualización automática del stock</li>
+</ul>
+
+<h2>📤 Salidas</h2>
+<ul>
+  <li>Registro de consumos por cocina (Cocina 1, Cocina 2, Cocina 3…)</li>
+  <li>Productos con cantidad</li>
+  <li>Descuento automático de stock</li>
+</ul>
+
+<h2>📊 Dashboard y Alertas</h2>
+<ul>
+  <li>Estadísticas en tiempo real</li>
+  <li><strong>Alertas de stock bajo</strong>: te avisa antes de que te quedés sin producto</li>
+  <li>Top productos más usados</li>
+  <li>Movimientos del día</li>
+  <li>Gráficos de distribución</li>
+</ul>
+
+<h2>👥 Usuarios y Roles</h2>
+<ul>
+  <li>5 usuarios configurados (2 admin + 3 atendientes)</li>
+  <li>Cada rol con permisos diferenciados</li>
+  <li>Login seguro con contraseña encriptada (bcrypt + JWT)</li>
+</ul>
+
+<h2>📱 Acceso Multi-dispositivo</h2>
+<ul>
+  <li>Computador, tablet y celular</li>
+  <li>Tema claro/oscuro</li>
+  <li>Diseño responsive (se adapta a cualquier pantalla)</li>
+</ul>
+
+<!-- PÁGINA 4: SEGURIDAD -->
+<h1>Seguridad y Roles</h1>
+
+<table>
+  <thead>
+    <tr><th>Rol</th><th style="text-align:center;width:18%">Cantidad</th><th>Permisos</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Administrador</strong></td>
+      <td style="text-align:center">2</td>
+      <td>Crear/editar/eliminar productos, ver reportes, gestionar usuarios, ver auditoría completa</td>
+    </tr>
+    <tr>
+      <td><strong>Atendiente</strong></td>
+      <td style="text-align:center">3</td>
+      <td>Solo registrar entradas y salidas, consultar inventario (sin edición ni eliminación)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Seguridad técnica</h2>
+<div class="callout-blue">
+  <strong>🔐 Lo que hace que tu información esté protegida:</strong>
+  <ul style="margin:0.2cm 0 0 0">
+    <li>Contraseñas encriptadas con <strong>bcrypt</strong> (no se guardan en texto plano)</li>
+    <li>Autenticación con <strong>JWT</strong> (tokens firmados digitalmente)</li>
+    <li><strong>HTTPS</strong> (candadito verde) en todas las conexiones</li>
+    <li><strong>Auditoría completa</strong>: cada acción queda registrada con usuario, fecha y hora</li>
+    <li><strong>Backups automáticos</strong> diarios en la nube (Supabase)</li>
+  </ul>
+</div>
+
+<!-- PÁGINA 5: PRICING -->
+<h1>Paquetes y Precios</h1>
+
+<div class="pricing">
+  <div class="pricing-card">
+    <div class="pricing-tier">🥉 Inicial</div>
+    <div class="pricing-price">$500.000<small>pago único</small></div>
+    <ul class="pricing-features">
+      <li>Web app completa</li>
+      <li>5 usuarios (2 admin + 3 atend.)</li>
+      <li>Dominio .com, 1 año</li>
+      <li>SSL + despliegue</li>
+      <li>Branding personalizado</li>
+      <li>Capacitación 2h videollamada</li>
+      <li>Soporte bugs: <strong>3 meses</strong></li>
+      <li>Reportes básicos</li>
+      <li>Hosting gratuito (Vercel + Supabase)</li>
+    </ul>
+  </div>
+
+  <div class="pricing-card featured">
+    <div class="pricing-tier">🥈 Profesional</div>
+    <div class="pricing-price">$1.200.000<small>pago único</small></div>
+    <ul class="pricing-features">
+      <li>Todo lo del Inicial <strong>+</strong></li>
+      <li>Soporte bugs: <strong>12 meses</strong></li>
+      <li>3 reportes personalizados</li>
+      <li>Alertas email/WhatsApp</li>
+      <li>Auditoría avanzada</li>
+      <li>Capacitación presencial 3h</li>
+      <li>Backups diarios verificados</li>
+      <li>Prioridad en soporte (24h)</li>
+    </ul>
+  </div>
+
+  <div class="pricing-card">
+    <div class="pricing-tier">🥇 Premium</div>
+    <div class="pricing-price">$2.500.000<small>pago único</small></div>
+    <ul class="pricing-features">
+      <li>Todo lo del Profesional <strong>+</strong></li>
+      <li>Multi-sucursal</li>
+      <li>App móvil nativa (PWA)</li>
+      <li>Facturación electrónica DIAN</li>
+      <li>Soporte 24/7</li>
+      <li>Updates de seguridad de por vida</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Mantenimiento mensual (a partir del año 2)</h2>
+<table>
+  <thead>
+    <tr><th>Concepto</th><th>Valor</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Mensualidad (hosting + backups + soporte + updates)</td><td><strong>$150.000/mes</strong></td></tr>
+    <tr><td>Pack anual (20% descuento = 2 meses gratis)</td><td><strong>$1.440.000/año</strong></td></tr>
+    <tr><td><em>Equivale a</em></td><td><em>$120.000/mes con el descuento</em></td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>💡 El primer año de mantenimiento y soporte para bugs va incluido</strong> en el Paquete Inicial/Profesional. Desde el año 2 en adelante, se contrata aparte.
+</div>
+
+<h2>Módulos nuevos (a futuro, no incluidos)</h2>
+<table>
+  <thead>
+    <tr><th>Tipo</th><th>Ejemplo</th><th>Precio</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Pequeño</td><td>Campo extra, reporte nuevo, exportar PDF</td><td>$400.000 – $800.000</td></tr>
+    <tr><td>Mediano</td><td>Factura electrónica, lector código barras, WhatsApp</td><td>$1.500.000 – $3.000.000</td></tr>
+    <tr><td>Grande</td><td>Multi-sucursal, e-commerce, app nativa</td><td>$5.000.000+</td></tr>
+  </tbody>
+</table>
+
+<!-- PÁGINA 6: PROYECCIÓN 3 AÑOS + COMPARACIÓN -->
+<h1>Proyección de Inversión a 3 Años</h1>
+<p>Ejemplo conservador con el <strong>Paquete Inicial + módulos</strong> + mantenimiento:</p>
+
+<table>
+  <thead>
+    <tr><th>Año</th><th>Concepto</th><th style="text-align:right">Valor</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>Setup Paquete Inicial</td><td style="text-align:right">$500.000</td></tr>
+    <tr><td>1</td><td>1 módulo pequeño (ej. exportar reportes PDF)</td><td style="text-align:right">$500.000</td></tr>
+    <tr><td>2</td><td>Pack anual mantenimiento (20% off)</td><td style="text-align:right">$1.440.000</td></tr>
+    <tr><td>3</td><td>Pack anual mantenimiento</td><td style="text-align:right">$1.440.000</td></tr>
+    <tr><td>3</td><td>1 módulo mediano (ej. alertas WhatsApp)</td><td style="text-align:right">$1.500.000</td></tr>
+    <tr style="background:#fef3c7;font-weight:700"><td colspan="2">Total 3 años</td><td style="text-align:right">$5.380.000</td></tr>
+  </tbody>
+</table>
+
+<div class="callout-green">
+  <strong>✓ Equivale a $150.000/mes</strong> durante 3 años para tener un sistema de inventario profesional con todas las features que vas necesitando.
+</div>
+
+<h2>Comparación con alternativas</h2>
+<table>
+  <thead>
+    <tr><th>Solución</th><th>Costo</th><th>Tiempo</th><th>Limitaciones</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Excel personalizado</td><td>$300k – $800k</td><td>1-2 semanas</td><td>No escalable, no mobile, sin auditoría</td></tr>
+    <tr><td>App inventario SaaS</td><td>$1.5M – $3M/año</td><td>Inmediato</td><td>No personalizable, dependiente del proveedor</td></tr>
+    <tr style="background:#fef3c7"><td><strong>Esta propuesta (Inicial)</strong></td><td><strong>$500k + $1.4M/año</strong></td><td><strong>5-7 días</strong></td><td><strong>Tuyo, escalable, personalizable</strong></td></tr>
+    <tr><td>App a medida desde cero</td><td>$4M – $8M</td><td>2-3 meses</td><td>Caro, lento, mismo resultado</td></tr>
+  </tbody>
+</table>
+
+<!-- PÁGINA 7: SOPORTE -->
+<h1>Soporte y Alcance</h1>
+
+<h2>¿Qué es "soporte para bugs"?</h2>
+<p>Es la corrección de <strong>errores no previstos</strong> de la aplicación. Por ejemplo:</p>
+<ul>
+  <li>Un botón que no hace lo que debería</li>
+  <li>Un cálculo que da un valor incorrecto</li>
+  <li>Un error 500 inesperado</li>
+  <li>Problemas de despliegue o hosting</li>
+</ul>
+<p><strong>Tiempo de respuesta</strong>: 24-48h hábiles.</p>
+
+<h2>¿Qué NO incluye el soporte?</h2>
+<div class="callout">
+  <ul style="margin:0">
+    <li><strong>Mejoras o features nuevas</strong> (ej: "quiero un campo nuevo", "agregame un reporte")</li>
+    <li><strong>Capacitación adicional</strong> después de la inicial</li>
+    <li><strong>Cambios de configuración</strong> (ej: agregar productos, categorías)</li>
+    <li><strong>Migración de datos</strong> desde otro sistema</li>
+  </ul>
+  <p style="margin:0.3cm 0 0 0">Estos servicios se cotizan por separado.</p>
+</div>
+
+<h2>Canales de soporte</h2>
+<ul>
+  <li>📱 WhatsApp (respuesta en horario laboral)</li>
+  <li>📧 Email</li>
+  <li>🎥 Videollamada (solo Paquete Profesional/Premium)</li>
+</ul>
+
+<!-- PÁGINA 8: PRÓXIMOS PASOS + FORMA DE PAGO + GARANTÍAS -->
+<h1>Próximos Pasos</h1>
+<ol class="steps">
+  <li>
+    <strong>Aprobación de la cotización</strong>
+    50% anticipo · 50% contra entrega
+  </li>
+  <li>
+    <strong>Despliegue y configuración</strong>
+    5-7 días hábiles. Incluye registro del dominio, configuración de branding y alta de los 5 usuarios.
+  </li>
+  <li>
+    <strong>Capacitación</strong>
+    2h por videollamada (Inicial) o 3h presencial (Profesional/Premium).
+  </li>
+  <li>
+    <strong>Go-live</strong>
+    Acompañamiento durante la primera semana.
+  </li>
+  <li>
+    <strong>Cierre</strong>
+    Entrega de credenciales y documentación.
+  </li>
+</ol>
+
+<h1>Forma de Pago</h1>
+<table>
+  <thead><tr><th>Concepto</th><th>Detalle</th></tr></thead>
+  <tbody>
+    <tr><td>Setup</td><td>50% al firmar · 50% contra entrega</td></tr>
+    <tr><td>Mantenimiento mensual</td><td>Por transferencia o PSE, primeros 5 días del mes</td></tr>
+    <tr><td>Pack anual</td><td>Pago único al inicio del año</td></tr>
+    <tr><td>Módulos</td><td>50% al aprobar · 50% al entregar</td></tr>
+  </tbody>
+</table>
+
+<h1>Garantías</h1>
+<div class="callout-green">
+  <ul style="margin:0">
+    <li>✅ <strong>14 días de garantía</strong> después de la entrega: si no estás conforme con el setup inicial, se devuelve el 100% del anticipo</li>
+    <li>✅ <strong>Código fuente</strong> entregado al cliente al finalizar el contrato (es tuyo, no te quedás atado)</li>
+    <li>✅ <strong>Tus datos son tuyos</strong>: exportación completa disponible en cualquier momento (CSV, JSON)</li>
+    <li>✅ <strong>Cancelación sin penalidad</strong>: podés dar de baja el mantenimiento en cualquier momento, llevándote tus datos</li>
+  </ul>
+</div>
+
+<div class="footer-note">
+  Documento confidencial preparado exclusivamente para [Nombre del Negocio].<br>
+  Validez de la cotización: 30 días. © 2026 InventarioHub.
+</div>
+
+</body>
+</html>

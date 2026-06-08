@@ -135,7 +135,41 @@ InventarioHub/
 │   └── index.html        # SPA principal
 ├── supabase/migrations/  # Migraciones aplicadas
 ├── .agents/skills/       # Skills de agentes
-└── docs/                 # API contract, changelog, setup
+└── docs/
+    ├── API_CONTRACT.md
+    ├── CHANGELOG.md
+    ├── SUPABASE_SETUP.md
+    └── cotizacion/       # Propuesta comercial (MD, HTML, PDF)
+```
+
+## Propuesta Comercial
+
+Plantilla de cotización para presentar el sistema a clientes (tiendas de comida rápida).
+
+```
+docs/cotizacion/
+├── propuesta.md          # Fuente en Markdown
+├── propuesta.html        # Plantilla visual (con CSS para impresión)
+├── propuesta.pdf         # PDF generado listo para enviar
+└── generate_pdf.py       # Regenera el PDF desde el HTML
+```
+
+### Paquetes incluidos en la propuesta
+
+| Paquete | Precio | Soporte bugs | Highlights |
+|---|---|---|---|
+| 🥉 Inicial | $500.000 (único) | 3 meses | Web app, 5 usuarios, dominio .com, capacitación 2h |
+| 🥈 Profesional | $1.200.000 (único) | 12 meses | + 3 reportes personalizados, alertas, auditoría avanzada, capacitación presencial |
+| 🥇 Premium | $2.500.000 (único) | 24/7 | + multi-sucursal, app móvil, facturación DIAN |
+
+**Mantenimiento mensual** (a partir del año 2): $150.000/mes o $1.440.000/año (20% off).
+**Módulos nuevos** (futuro): desde $400.000.
+
+### Regenerar el PDF
+
+```bash
+pip install weasyprint --break-system-packages
+python3 docs/cotizacion/generate_pdf.py
 ```
 
 ## Links
