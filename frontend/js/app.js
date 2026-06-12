@@ -602,16 +602,16 @@ function openMobileFiltersModal(view) {
   var tipoId = view === 'movimientos' ? '#filterTipoMov' : null;
 
   var html = '<div>'
-    + '<label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Rango de fechas</label>'
-    + '<div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/50">'
-    + '<input type="date" id="mfDateFrom" data-view="' + view + '" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none focus:bg-white border-0" value="' + ($(dateFromId) ? $(dateFromId).value : '') + '">'
-    + '<div class="w-px bg-slate-200 self-stretch"></div>'
-    + '<input type="date" id="mfDateTo" data-view="' + view + '" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none focus:bg-white border-0" value="' + ($(dateToId) ? $(dateToId).value : '') + '">'
+    + '<label class=\"block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1\">Rango</label>'
+    + '<div class=\"flex items-stretch border border-slate-200 rounded-lg overflow-hidden\">'
+    + '<input type=\"date\" id=\"mfDateFrom\" data-view=\"' + view + '\" class=\"flex-1 min-w-0 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:bg-white border-0\">'
+    + '<div class=\"w-px bg-slate-200\"></div>'
+    + '<input type=\"date\" id=\"mfDateTo\" data-view=\"' + view + '\" class=\"flex-1 min-w-0 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:bg-white border-0\">'
     + '</div></div>';
 
   html += '<div>'
-    + '<label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5 mt-4">Periodo rapido</label>'
-    + '<select id="mfPeriod" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white">'
+    + '<label class=\"block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1 mt-3\">Periodo</label>'
+    + '<select id=\"mfPeriod\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white\">'
     + '<option value="">Sin periodo</option>'
     + '<option value="today">Hoy</option>'
     + '<option value="week">Esta semana</option>'
@@ -622,8 +622,8 @@ function openMobileFiltersModal(view) {
   setTimeout(function () { var el = $('#mfPeriod'); if (el && $(periodId)) el.value = $(periodId).value; }, 0);
 
   if (cocinaId && $(cocinaId)) {
-    html += '<div class="mt-4"><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Cocina</label>'
-      + '<select id="mfCocina" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white">'
+    html += '<div class=\"mt-3\"><label class=\"block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1\">Cocina</label>'
+      + '<select id=\"mfCocina\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white\">'
       + '<option value="">Todas</option>'
       + '<option value="Cocina 1">Cocina 1</option><option value="Cocina 2">Cocina 2</option><option value="Cocina 3">Cocina 3</option><option value="Cocina 4">Cocina 4</option>'
       + '</select></div>';
@@ -631,8 +631,8 @@ function openMobileFiltersModal(view) {
   }
 
   if (tipoId && $(tipoId)) {
-    html += '<div class="mt-4"><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Tipo</label>'
-      + '<select id="mfTipo" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white">'
+    html += '<div class=\"mt-3\"><label class=\"block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1\">Tipo</label>'
+      + '<select id=\"mfTipo\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white\">'
       + '<option value="">Todos</option><option value="entrada">Entradas</option><option value="salida">Salidas</option>'
       + '</select></div>';
     setTimeout(function () { var el = $('#mfTipo'); if (el && $(tipoId)) el.value = $(tipoId).value; }, 0);
