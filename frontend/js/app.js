@@ -429,7 +429,7 @@ function navigate(view) {
   });
 
   var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Pedidos', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos', dishes: 'Platos', users: 'Usuarios', config: 'Configuracion' };
-  $('#pageTitle').textContent = titles[view] || 'InventarioApp';
+  $('#pageTitle').textContent = titles[view] || 'Corner House';
 
   if (view === 'dashboard') loadDashboard();
   if (view === 'inventory') loadProducts();
@@ -2106,7 +2106,8 @@ $('#saleForm').addEventListener('submit', async function (e) {
   $('#previewCocina').textContent = paymentMethod;
 
   // Guardar payload para confirmar
-  state._pendingOrder = { isDishMode: isDishMode, paymentMethod: paymentMethod, total: total, submitBtn: submitBtn };
+  var includeTip = $('#previewIncludeTip') ? $('#previewIncludeTip').checked : true;
+  state._pendingOrder = { isDishMode: isDishMode, paymentMethod: paymentMethod, total: total, submitBtn: submitBtn, includeTip: includeTip };
 
   openModal('orderPreviewModal');
 });
@@ -2157,8 +2158,8 @@ document.getElementById('confirmOrderBtn').addEventListener('click', async funct
         $('#orderPreviewModal').classList.add('hidden');
         loadSales();
         if (isDishMode) loadDashboard();
-        // Render ticket directo de la respuesta (sin fetch extra)
-        renderTicketFromData(createRes.data);
+        // Pasar preferencia de propina al ticket
+        renderTicketFromData(createRes.data, pending.includeTip);
         return;
       } else {
         showToast(createRes.message || 'Error al registrar', 'error');
@@ -2186,16 +2187,27 @@ window.showTicket = async function (saleId) {
     $('#ticketNumber').textContent = s.numero_venta;
     $('#ticketCocina').textContent = s.paymentMethod;
     $('#ticketFecha').textContent = Utils.formatDate(s.createdAt);
+    $('#ticketBarcode').textContent = '*' + (s.numero_venta || '') + '*';
 
-    var itemsHtml = s.items.map(function (item) {
+    var items = s.items || [];
+    var subtotal = 0;
+    var itemsHtml = items.map(function (item) {
+      var sub = item.subtotal || ((item.unitPrice || 0) * (item.quantity || 0));
+      subtotal += sub;
       var badge = item.esPlato ? ' <span class=\"text-[9px] text-emerald-600\">🍽️</span>' : '';
-      return '<div class=\"flex items-center justify-between text-sm\">'
-        + '<span class=\"text-slate-700 font-mono\">' + escapeHtml(item.productName) + ' x' + item.quantity + badge + '</span>'
-        + '<span class=\"text-slate-600 font-mono\">' + Utils.formatCurrency(item.subtotal || (item.unitPrice * item.quantity)) + '</span>'
+      return '<div class=\"flex items-center justify-between text-[13px]\">'
+        + '<span class=\"text-slate-700\">' + escapeHtml(item.productName) + ' x' + item.quantity + badge + '</span>'
+        + '<span class=\"text-slate-700 font-mono\">' + Utils.formatCurrency(sub) + '</span>'
         + '</div>';
     }).join('');
     $('#ticketItems').innerHTML = itemsHtml;
-    $('#ticketTotal').textContent = Utils.formatCurrency(s.total);
+
+    var tip = Math.round(subtotal * 0.1 * 100) / 100;
+    $('#ticketSubtotal').textContent = Utils.formatCurrency(subtotal);
+    var tipRow = document.querySelector('#ticketTip').parentElement;
+    if (tipRow) tipRow.style.display = '';
+    $('#ticketTip').textContent = Utils.formatCurrency(tip);
+    $('#ticketTotal').textContent = Utils.formatCurrency(subtotal + tip);
 
     openModal('ticketModal');
   } catch (e) {
@@ -2212,22 +2224,33 @@ document.addEventListener('click', function (e) {
   }
 });
 
-function renderTicketFromData(sale) {
+function renderTicketFromData(sale, includeTip) {
   if (!sale) return;
   $('#ticketNumber').textContent = (sale.numero_venta || '');
   $('#ticketCocina').textContent = (sale.paymentMethod || '');
   $('#ticketFecha').textContent = Utils.formatDate(sale.createdAt);
-  $('#ticketTotal').textContent = Utils.formatCurrency(sale.total);
   $('#ticketBarcode').textContent = '*' + (sale.numero_venta || '') + '*';
 
   var items = sale.items || [];
+  var subtotal = 0;
   $('#ticketItems').innerHTML = items.map(function (item) {
     var sub = item.subtotal || ((item.unitPrice || 0) * (item.quantity || 0));
-    return '<div class=\"flex items-center justify-between text-sm\">'
+    subtotal += sub;
+    return '<div class=\"flex items-center justify-between text-[13px]\">'
       + '<span class=\"text-slate-700\">' + escapeHtml(item.productName) + ' x' + item.quantity + '</span>'
       + '<span class=\"text-slate-700 font-mono\">' + Utils.formatCurrency(sub) + '</span>'
       + '</div>';
   }).join('');
+
+  var tip = includeTip !== false ? Math.round(subtotal * 0.1 * 100) / 100 : 0;
+  var totalConPropina = subtotal + tip;
+
+  $('#ticketSubtotal').textContent = Utils.formatCurrency(subtotal);
+  // Ocultar linea de propina si no se incluye
+  var tipRow = document.querySelector('#ticketTip').parentElement;
+  if (tipRow) tipRow.style.display = tip > 0 ? '' : 'none';
+  $('#ticketTip').textContent = Utils.formatCurrency(tip);
+  $('#ticketTotal').textContent = Utils.formatCurrency(totalConPropina);
 
   openModal('ticketModal');
 }
@@ -2283,12 +2306,21 @@ window.openDateRange = function (view, fromId, toId, periodId, callback) {
   calendarState.toId = toId;
   calendarState.periodId = periodId;
   calendarState.callback = callback;
-  calendarState.start = null;
-  calendarState.end = null;
-  calendarState.picking = 'start';
+
+  // Leer valores actuales de los inputs para persistir el rango
+  var fromEl = $(fromId);
+  var toEl = $(toId);
+  calendarState.start = (fromEl && fromEl.value) || null;
+  calendarState.end = (toEl && toEl.value) || null;
+  calendarState.picking = (calendarState.start && calendarState.end) ? 'done' : 'start';
   calendarState.monthOffset = 0;
+
+  if (calendarState.start && calendarState.end) {
+    $('#calRangeText').textContent = calendarState.start + ' → ' + calendarState.end;
+  } else {
+    $('#calRangeText').textContent = 'Toca una fecha de inicio';
+  }
   renderCalendar();
-  $('#calRangeText').textContent = 'Toca una fecha de inicio';
   openModal('dateRangeModal');
 };
 
@@ -2412,6 +2444,9 @@ document.getElementById('applyDateRange').addEventListener('click', function () 
     var pEl = $(calendarState.periodId); if (pEl) pEl.value = '';
   }
   $('#dateRangeModal').classList.add('hidden');
+  // Guardar en state para persistencia
+  state.activeDateFrom = from;
+  state.activeDateTo = to;
   if (calendarState.callback) calendarState.callback();
 });
 
