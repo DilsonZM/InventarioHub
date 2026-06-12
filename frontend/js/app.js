@@ -1192,6 +1192,12 @@ async function initSales() {
   if (addSaleItemBtn) addSaleItemBtn.addEventListener('click', markSaleDirty);
   var addDishBtn = $('#addDishSaleItem');
   if (addDishBtn) addDishBtn.addEventListener('click', addDishSaleItem);
+
+  // Buscador unificado
+  var searchInput = $('#saleSearch');
+  if (searchInput) searchInput.addEventListener('input', Utils.debounce(function () {
+    filterSaleItems(searchInput.value.toLowerCase().trim());
+  }, 250));
 }
 
 window.openSaleModal = openSaleModal;
@@ -1609,18 +1615,36 @@ window.reactivateDish = async function (dishId, dishName) {
   } catch (err) { showToast('Error de conexion', 'error'); }
 };
 
+function filterSaleItems(query) {
+  // Filtrar opciones de platos
+  var dishSel = $('#saleDishSelect');
+  if (dishSel && window._dishOptions) {
+    dishSel.innerHTML = '<option value="">Seleccionar plato o bebida</option>'
+      + window._dishOptions.filter(function (d) { return !query || d.label.toLowerCase().includes(query); })
+        .map(function (d) { return '<option value="' + d.value + '" data-price="' + d.price + '">' + d.label + '</option>'; }).join('');
+  }
+  // Filtrar opciones de productos
+  var prodSel = $('#saleProductSelect');
+  if (prodSel && window._productOptions) {
+    prodSel.innerHTML = '<option value="">Seleccionar producto</option>'
+      + window._productOptions.filter(function (p) { return !query || p.label.toLowerCase().includes(query); })
+        .map(function (p) { return '<option value="' + p.value + '" data-stock="' + p.stock + '" data-unidad="' + p.unidad + '" data-stockReal="' + p.stockReal + '" data-stockReservado="' + p.stockReservado + '">' + p.label + '</option>'; }).join('');
+  }
+}
+
 async function loadDishOptions() {
   var sel = $('#saleDishSelect');
   if (!sel) return;
-  sel.innerHTML = '<option value="">Seleccionar plato o bebida</option>';
   try {
     var res = await API.dishes.list();
-    var dishes = (res.data || []).filter(function (d) {
-      return d.activo && d.disponible !== false;
+    var dishes = (res.data || []).filter(function (d) { return d.activo && d.disponible !== false; });
+    window._dishOptions = dishes.map(function (d) {
+      return { value: d.id, label: d.nombre + ' — ' + Utils.formatCurrency(d.precio_venta), price: d.precio_venta };
     });
-    sel.innerHTML += dishes.map(function (d) {
-      return '<option value="' + d.id + '" data-price="' + d.precio_venta + '">' + escapeHtml(d.nombre) + ' \u2014 ' + Utils.formatCurrency(d.precio_venta) + '</option>';
-    }).join('');
+    sel.innerHTML = '<option value="">Seleccionar plato o bebida</option>'
+      + window._dishOptions.map(function (d) {
+        return '<option value="' + d.value + '" data-price="' + d.price + '">' + d.label + '</option>';
+      }).join('');
     if (dishes.length === 0) {
       sel.innerHTML += '<option disabled>— Sin platos disponibles (stock insuficiente) —</option>';
     }
@@ -1918,6 +1942,12 @@ function refreshSaleProductOptions() {
           + (alreadyAdded && !isEditing ? ' disabled' : '')
           + '>' + label + '</option>';
       }).join('');
+
+  // Cachear para el buscador
+  window._productOptions = state.allAvailableProducts.map(function (p) {
+    var stockDisponible = (p.stock || 0) + (state.saleItems.find(function (i) { return i.productId === p.id; }) ? (state.saleItems.find(function (i) { return i.productId === p.id; }).cantidadBase || 0) : 0);
+    return { value: p.id, label: p.name + ' (Stock: ' + stockDisponible + ' ' + (p.unidad || 'unidad') + ')', stock: stockDisponible, unidad: p.unidad || 'unidad', stockReal: p.stock || 0, stockReservado: 0 };
+  });
 
   // Restaurar seleccion: solo si NO esta ya en state (en creacion) o siempre en edicion
   if (currentValue) {
@@ -3136,9 +3166,15 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
     if (noMsg) noMsg.remove();
     var temp = document.createElement('div');
     temp.innerHTML = html;
-    container.appendChild(temp.firstElementChild);
-    var idx = container.querySelectorAll('.dish-ingredient-row').length - 1;
-    container.lastElementChild.id = 'ingredientRow_' + idx;
+    // Insertar al inicio (arriba)
+    if (container.firstChild) {
+      container.insertBefore(temp.firstElementChild, container.firstChild);
+    } else {
+      container.appendChild(temp.firstElementChild);
+    }
+    // Re-indexar filas
+    var rows = container.querySelectorAll('.dish-ingredient-row');
+    rows.forEach(function (r, i) { r.id = 'ingredientRow_' + i; });
   }
 
   bindIngredientEvents();

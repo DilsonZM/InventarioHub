@@ -1386,6 +1386,11 @@
         </div>
         <form id="saleForm" class="p-6">
           <div class="space-y-4">
+            <!-- Buscador unificado -->
+            <div class="relative">
+              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input type="text" id="saleSearch" placeholder="Buscar plato, bebida o producto..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white">
+            </div>
             <!-- Seccion: Platos -->
             <div class="bg-white rounded-xl p-4 border border-slate-200">
               <h4 class="text-sm font-semibold text-slate-700 mb-3">Platos y Bebidas</h4>
@@ -1901,9 +1906,9 @@
   <div id="ticketModal" class="hidden fixed inset-0 z-[55] overflow-y-auto">
     <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
       <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-close-ticket></div>
-      <div class="relative z-10 animate-scale-in w-full max-w-sm mx-auto flex items-center justify-center">
+      <div class="relative z-10 animate-scale-in w-full max-w-sm mx-auto">
         <!-- Ticket paper -->
-        <div id="ticketPrint" class="bg-white rounded-2xl shadow-2xl overflow-hidden" style="max-width:340px;margin:0 auto">
+        <div id="ticketPrint" class="bg-white rounded-2xl shadow-2xl overflow-hidden" style="max-width:100%;margin:0 auto">
           <!-- Encabezado -->
           <div class="text-center py-5 px-5 border-b-2 border-dashed border-slate-200">
             <p class="text-lg font-bold text-slate-800 tracking-tight">Corner House</p>
