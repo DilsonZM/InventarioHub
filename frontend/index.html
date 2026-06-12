@@ -1386,10 +1386,11 @@
         </div>
         <form id="saleForm" class="p-6">
           <div class="space-y-4">
-            <!-- Buscador unificado -->
+            <!-- Buscador unificado con dropdown -->
             <div class="relative">
-              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              <input type="text" id="saleSearch" placeholder="Buscar plato, bebida o producto..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white">
+              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input type="text" id="saleSearch" autocomplete="off" placeholder="Buscar y agregar plato, bebida o producto..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white">
+              <div id="saleSearchDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-60 overflow-y-auto"></div>
             </div>
             <!-- Seccion: Platos -->
             <div class="bg-white rounded-xl p-4 border border-slate-200">
@@ -1483,7 +1484,7 @@
             </div>
 
             <div class="flex gap-3 pt-2">
-              <button type="button" data-close-modal class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors touch-target">Cancelar</button>
+              <button type="button" data-close-modal class="px-5 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors touch-target">Cancelar</button>
               <button type="submit" class="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Registrar Pedido</button>
             </div>
           </div>
@@ -1856,7 +1857,7 @@
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="button" data-close-modal class="flex-1 px-5 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
+            <button type="button" data-close-modal class="flex-1 px-5 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors touch-target">Cancelar</button>
             <button type="submit" class="flex-1 btn-primary px-5 py-3 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Guardar Plato</button>
           </div>
         </form>
