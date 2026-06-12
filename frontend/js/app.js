@@ -1714,6 +1714,9 @@ async function openSaleModal() {
     }
   }
 
+  // Cargar opciones de platos al abrir siempre
+  loadDishOptions();
+
   openModal('saleModal');
 }
 
