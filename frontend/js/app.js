@@ -326,12 +326,6 @@ function initSidebar() {
     }
   });
 
-  // Menu toggle (mobile)
-  $('#menuToggle').addEventListener('click', function () {
-    if (window.innerWidth >= 1024) return; // solo mobile
-    sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
-  });
 }
 
 function initSidebarGroups() {
