@@ -2177,16 +2177,6 @@ window.showTicket = async function (saleId) {
     $('#ticketItems').innerHTML = itemsHtml;
     $('#ticketTotal').textContent = Utils.formatCurrency(s.total);
 
-    var ings = s.ingredientesConsumidos || [];
-    if (ings.length > 0) {
-      $('#ticketIngredientes').classList.remove('hidden');
-      $('#ticketIngsList').innerHTML = ings.map(function (ing) {
-        return '<div class=\"flex items-center justify-between text-[11px]\"><span class=\"text-slate-500\">' + escapeHtml(ing.nombre) + '</span><span class=\"text-slate-400 font-mono\">' + ing.cantidad + ' ' + (ing.unidad || '') + '</span></div>';
-      }).join('');
-    } else {
-      $('#ticketIngredientes').classList.add('hidden');
-    }
-
     openModal('ticketModal');
   } catch (e) {
     console.error('showTicket error:', e);
