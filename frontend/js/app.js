@@ -2213,17 +2213,18 @@ document.addEventListener('click', function (e) {
 
 function renderTicketFromData(sale) {
   if (!sale) return;
-  $('#ticketNumber').textContent = sale.numero_venta || '';
-  $('#ticketCocina').textContent = sale.paymentMethod || '';
+  $('#ticketNumber').textContent = (sale.numero_venta || '');
+  $('#ticketCocina').textContent = (sale.paymentMethod || '');
   $('#ticketFecha').textContent = Utils.formatDate(sale.createdAt);
   $('#ticketTotal').textContent = Utils.formatCurrency(sale.total);
+  $('#ticketBarcode').textContent = '*' + (sale.numero_venta || '') + '*';
 
   var items = sale.items || [];
   $('#ticketItems').innerHTML = items.map(function (item) {
     var sub = item.subtotal || ((item.unitPrice || 0) * (item.quantity || 0));
     return '<div class=\"flex items-center justify-between text-sm\">'
       + '<span class=\"text-slate-700\">' + escapeHtml(item.productName) + ' x' + item.quantity + '</span>'
-      + '<span class=\"text-slate-600 font-mono\">' + Utils.formatCurrency(sub) + '</span>'
+      + '<span class=\"text-slate-700 font-mono\">' + Utils.formatCurrency(sub) + '</span>'
       + '</div>';
   }).join('');
 

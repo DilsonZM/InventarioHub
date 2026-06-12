@@ -1915,19 +1915,30 @@
       <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-close-ticket></div>
       <div class="relative z-10 animate-scale-in w-full max-w-sm">
         <!-- Ticket paper -->
-        <div id="ticketPrint" class="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-slate-200">
-          <div class="px-6 py-4 text-center border-b-2 border-dashed border-slate-200">
-            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-mono">InventarioHub</p>
-            <p class="text-lg font-bold text-slate-800 font-mono mt-0.5" id="ticketNumber">#------</p>
-            <div class="flex justify-center gap-4 mt-1">
-              <span class="text-[11px] text-slate-500 font-mono" id="ticketCocina">Cocina 1</span>
-              <span class="text-[11px] text-slate-500 font-mono" id="ticketFecha">--</span>
+        <div id="ticketPrint" class="bg-white rounded-2xl shadow-2xl overflow-hidden" style="max-width:320px;margin:0 auto">
+          <!-- Encabezado -->
+          <div class="text-center py-4 px-4 border-b-2 border-dashed border-slate-200">
+            <p class="text-base font-bold text-slate-800 tracking-tight" id="ticketStoreName">Corner House</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Sabores que unen</p>
+            <div class="mt-2 pt-2 border-t border-dotted border-slate-200">
+              <p class="text-[10px] text-slate-500 font-mono" id="ticketNumber">#P-001</p>
+              <p class="text-[10px] text-slate-400 font-mono" id="ticketFecha">12 jun 2026, 08:30</p>
+              <p class="text-[10px] text-slate-400 font-mono" id="ticketCocina">Cocina 1</p>
             </div>
           </div>
-          <div class="px-5 py-3 space-y-2" id="ticketItems"></div>
-          <div class="px-5 py-3 border-t-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-between">
-            <span class="text-sm font-bold text-slate-800 font-mono">TOTAL</span>
-            <span class="text-xl font-bold text-slate-800 font-mono" id="ticketTotal">$0</span>
+          <!-- Items -->
+          <div class="px-4 py-3 space-y-2" id="ticketItems"></div>
+          <!-- Total -->
+          <div class="px-4 py-3 border-t-2 border-dashed border-slate-200 bg-slate-50">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-slate-800">TOTAL</span>
+              <span class="text-lg font-bold text-slate-800 font-mono" id="ticketTotal">$0</span>
+            </div>
+          </div>
+          <!-- Footer -->
+          <div class="text-center py-3 px-4 border-t border-dashed border-slate-100">
+            <p class="text-[9px] text-slate-400 font-mono" id="ticketBarcode">*P-001*</p>
+            <p class="text-[9px] text-slate-300 mt-1">Gracias por tu compra</p>
           </div>
         </div>
         <!-- Actions -->
@@ -1950,8 +1961,17 @@
       #ticketModal > div { display: block !important; }
       #ticketModal .fixed { position: static !important; background: none !important; backdrop-filter: none !important; display: none !important; }
       #ticketModal .relative.z-10 { position: static !important; }
-      #ticketPrint { box-shadow: none !important; border-radius: 0 !important; width: 80mm !important; margin: 0 auto !important; border: 2px dashed #ccc !important; }
+      #ticketPrint { 
+        box-shadow: none !important; 
+        border-radius: 0 !important; 
+        width: 72mm !important; 
+        max-width: 72mm !important;
+        margin: 0 auto !important; 
+        border: none !important;
+        font-size: 10px !important;
+      }
       .ticket-actions { display: none !important; }
+      @page { size: 80mm auto; margin: 2mm; }
     }
   </style>
 
