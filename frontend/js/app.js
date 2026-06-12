@@ -1622,10 +1622,6 @@ async function loadDishOptions() {
     }
   } catch (e) {}
 }
-  } catch (e) {
-    // dishes might not be available yet
-  }
-}
 
 function addDishSaleItem() {
   var sel = $('#saleDishSelect');
