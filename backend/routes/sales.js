@@ -62,7 +62,9 @@ router.get('/', async (req, res) => {
         subtotal: item.subtotal,
         cantidadPresentacion: item.cantidad_presentacion,
         unidadPresentacion: item.unidad_presentacion,
-        factorConversion: item.factor_conversion
+        factorConversion: item.factor_conversion,
+        platoId: item.plato_id || null,
+        esPlato: item.es_plato || false
       }))
     }));
 
@@ -92,6 +94,29 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Venta no encontrada' });
     }
 
+    // Resolver ingredientes consumidos para ventas de platos
+    var ingredientesConsumidos = [];
+    for (var di = 0; di < (data.venta_detalles || []).length; di++) {
+      var det = data.venta_detalles[di];
+      if (det.es_plato && det.plato_id) {
+        var { data: receta } = await supabase
+          .from('plato_ingredientes')
+          .select('cantidad, unidad, productos!inner(nombre, unidad_medida)')
+          .eq('plato_id', det.plato_id);
+        if (receta) {
+          for (var ri = 0; ri < receta.length; ri++) {
+            var ing = receta[ri];
+            ingredientesConsumidos.push({
+              nombre: ing.productos.nombre,
+              cantidad: parseFloat(ing.cantidad) * det.cantidad,
+              unidad: ing.unidad,
+              por: det.producto_nombre + ' x' + det.cantidad
+            });
+          }
+        }
+      }
+    }
+
     const sale = {
       id: data.id,
       numero_venta: data.numero_venta,
@@ -112,8 +137,11 @@ router.get('/:id', async (req, res) => {
         subtotal: item.subtotal,
         cantidadPresentacion: item.cantidad_presentacion,
         unidadPresentacion: item.unidad_presentacion,
-        factorConversion: item.factor_conversion
-      }))
+        factorConversion: item.factor_conversion,
+        platoId: item.plato_id || null,
+        esPlato: item.es_plato || false
+      })),
+      ingredientesConsumidos: ingredientesConsumidos
     };
 
     res.json({ success: true, data: sale });
@@ -297,15 +325,33 @@ router.delete('/:id', requirePermission('puede_eliminar_salidas'), async (req, r
       return res.status(404).json({ success: false, message: 'Salida no encontrada' });
     }
 
-    // Devolver todo al stock
+    // Revertir stock segun tipo de venta
     for (const d of original.venta_detalles) {
-      await supabase.rpc('registrar_movimiento', {
-        p_producto_id: d.producto_id,
-        p_tipo: 'entrada',
-        p_cantidad: d.cantidad,
-        p_motivo: 'Eliminacion de venta ' + original.numero_venta,
-        p_usuario_id: req.user ? req.user.id : null
-      });
+      if (d.es_plato && d.plato_id) {
+        const { data: receta } = await supabase
+          .from('plato_ingredientes')
+          .select('producto_id, cantidad')
+          .eq('plato_id', d.plato_id);
+        if (receta) {
+          for (const ing of receta) {
+            await supabase.rpc('registrar_movimiento', {
+              p_producto_id: ing.producto_id,
+              p_tipo: 'entrada',
+              p_cantidad: ing.cantidad * d.cantidad,
+              p_motivo: 'Eliminacion de venta ' + original.numero_venta,
+              p_usuario_id: req.user ? req.user.id : null
+            });
+          }
+        }
+      } else if (d.producto_id) {
+        await supabase.rpc('registrar_movimiento', {
+          p_producto_id: d.producto_id,
+          p_tipo: 'entrada',
+          p_cantidad: d.cantidad,
+          p_motivo: 'Eliminacion de venta ' + original.numero_venta,
+          p_usuario_id: req.user ? req.user.id : null
+        });
+      }
     }
 
     await supabase.from('venta_detalles').delete().eq('venta_id', req.params.id);
@@ -321,19 +367,24 @@ router.delete('/:id', requirePermission('puede_eliminar_salidas'), async (req, r
 
 router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
   try {
-    const { items, paymentMethod, clienteNombre } = req.body;
+    const { items, platos, paymentMethod, clienteNombre } = req.body;
+
+    if (platos && Array.isArray(platos) && platos.length > 0) {
+      await handleDishSale(req, res);
+      return;
+    }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, message: 'La venta debe contener al menos un producto' });
+      return res.status(400).json({ success: false, message: 'La venta debe contener al menos un producto o plato' });
     }
 
     if (!paymentMethod) {
-      return res.status(400).json({ success: false, message: 'Método de pago requerido' });
+      return res.status(400).json({ success: false, message: 'Metodo de pago requerido' });
     }
 
     for (const item of items) {
       if (!item.productId || !item.quantity || item.quantity <= 0) {
-        return res.status(400).json({ success: false, message: 'Item inválido: productId y quantity son requeridos' });
+        return res.status(400).json({ success: false, message: 'Item invalido: productId y quantity son requeridos' });
       }
     }
 
@@ -350,15 +401,7 @@ router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
       p_cliente_nombre: clienteNombre || null
     });
 
-    if (error) {
-      if (error.message.includes('Stock insuficiente')) {
-        return res.status(400).json({ success: false, message: error.message });
-      }
-      if (error.message.includes('Producto no encontrado')) {
-        return res.status(400).json({ success: false, message: error.message });
-      }
-      throw error;
-    }
+    if (error) throw error;
 
     const { data: sale } = await supabase
       .from('ventas')
@@ -366,30 +409,150 @@ router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
       .eq('id', saleId)
       .single();
 
-    const response = {
-      id: sale.id,
-      numero_venta: sale.numero_venta,
-      total: sale.total,
-      paymentMethod: sale.metodo_pago,
-      userId: sale.usuario_id,
-      createdAt: sale.creado_en,
-      items: (sale.venta_detalles || []).map(item => ({
-        productId: item.producto_id,
-        productName: item.producto_nombre,
-        quantity: item.cantidad,
-        unitPrice: item.precio_unitario,
-        subtotal: item.subtotal,
-        cantidadPresentacion: item.cantidad_presentacion,
-        unidadPresentacion: item.unidad_presentacion,
-        factorConversion: item.factor_conversion
-      }))
-    };
-
-    res.status(201).json({ success: true, data: response });
+    const response = mapSaleResponse(sale);
+    res.status(201).json({ success: true, data: response, message: 'Venta registrada' });
   } catch (err) {
     console.error('Sale create error:', err);
     res.status(500).json({ success: false, message: err.message || 'Error del servidor' });
   }
 });
+
+// ============================================================================
+// Helpers: conversion de unidades, respuesta y venta de platos
+// ============================================================================
+
+function convertToBaseUnit(cantidad, fromUnit, toUnit) {
+  if (!fromUnit || !toUnit) return cantidad;
+  var from = fromUnit.toLowerCase().trim();
+  var to = toUnit.toLowerCase().trim();
+  if (from === to) return cantidad;
+  var toGrams = { g: 1, gr: 1, gramo: 1, gramos: 1, kg: 1000, kilo: 1000, kilos: 1000, lb: 453.592, lbs: 453.592, libra: 453.592, libras: 453.592, onza: 28.3495, oz: 28.3495 };
+  var toML = { ml: 1, mililitro: 1, mililitros: 1, l: 1000, litro: 1000, litros: 1000, lt: 1000 };
+  if (toGrams[from] && toGrams[to]) return (cantidad * toGrams[from]) / toGrams[to];
+  if (toML[from] && toML[to]) return (cantidad * toML[from]) / toML[to];
+  return cantidad;
+}
+
+function mapSaleResponse(sale) {
+  return {
+    id: sale.id, numero_venta: sale.numero_venta, total: sale.total,
+    subtotal: sale.subtotal, impuesto: sale.impuesto,
+    paymentMethod: sale.metodo_pago, estado: sale.estado,
+    userId: sale.usuario_id,
+    username: sale.perfiles ? sale.perfiles.username : 'Desconocido',
+    usuario_nombre: sale.perfiles ? (sale.perfiles.nombre_completo || sale.perfiles.username) : 'Desconocido',
+    clienteNombre: sale.cliente_nombre, createdAt: sale.creado_en,
+    items: (sale.venta_detalles || []).map(function (item) {
+      return {
+        productId: item.producto_id, productName: item.producto_nombre,
+        quantity: item.cantidad, unitPrice: item.precio_unitario,
+        subtotal: item.subtotal,
+        cantidadPresentacion: item.cantidad_presentacion,
+        unidadPresentacion: item.unidad_presentacion,
+        factorConversion: item.factor_conversion,
+        platoId: item.plato_id || null, esPlato: item.es_plato || false
+      };
+    })
+  };
+}
+
+async function handleDishSale(req, res) {
+  try {
+    var platos = req.body.platos;
+    var paymentMethod = req.body.paymentMethod;
+    var clienteNombre = req.body.clienteNombre;
+    if (!paymentMethod) return res.status(400).json({ success: false, message: 'Cocina requerida' });
+    var saleEstado = req.body.estado || 'completada';
+
+    var ingredientesTotales = {};
+    for (var i = 0; i < platos.length; i++) {
+      var d = platos[i];
+      var cantPlato = Math.max(1, parseInt(d.cantidad) || 1);
+      var { data: receta, error: recetaErr } = await supabase
+        .from('plato_ingredientes')
+        .select('producto_id, cantidad, unidad, productos!inner(nombre, unidad_medida)')
+        .eq('plato_id', d.plato_id);
+      if (recetaErr) throw recetaErr;
+      if (!receta || receta.length === 0) continue;
+      for (var j = 0; j < receta.length; j++) {
+        var ing = receta[j];
+        var pid = ing.producto_id;
+        var prodUnidad = ing.productos.unidad_medida || '';
+        var converted = convertToBaseUnit(ing.cantidad * cantPlato, ing.unidad, prodUnidad);
+        if (ingredientesTotales[pid]) {
+          ingredientesTotales[pid].cantidad_total += converted;
+        } else {
+          ingredientesTotales[pid] = { nombre: ing.productos.nombre, cantidad_total: converted, unidad: prodUnidad };
+        }
+      }
+    }
+
+    var prodIds = Object.keys(ingredientesTotales);
+    for (var k = 0; k < prodIds.length; k++) {
+      var pid = prodIds[k];
+      var needed = ingredientesTotales[pid].cantidad_total;
+      var { data: prod, error: prodErr } = await supabase.from('productos').select('stock_actual').eq('id', pid).single();
+      if (prodErr || !prod) return res.status(400).json({ success: false, message: 'Producto no encontrado' });
+      if (parseFloat(prod.stock_actual) < needed) {
+        return res.status(400).json({ success: false, message: 'Stock insuficiente de ' + ingredientesTotales[pid].nombre + '. Disponible: ' + parseFloat(prod.stock_actual) + ', Necesario: ' + Math.round(needed * 1000) / 1000 });
+      }
+    }
+
+    var totalVenta = 0;
+    for (var m = 0; m < platos.length; m++) {
+      var pd = platos[m];
+      var cant = Math.max(1, parseInt(pd.cantidad) || 1);
+      var precio = parseFloat(pd.precioUnitario) || 0;
+      if (!precio) { var { data: pi } = await supabase.from('platos').select('precio_venta').eq('id', pd.plato_id).single(); precio = pi ? parseFloat(pi.precio_venta) : 0; }
+      totalVenta += precio * cant;
+    }
+
+    var numVenta = 'P-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    var { data: venta, error: ventaErr } = await supabase.from('ventas').insert({
+      numero_venta: numVenta, metodo_pago: paymentMethod, usuario_id: req.user ? req.user.id : null,
+      cliente_nombre: clienteNombre || null, estado: saleEstado,
+      subtotal: totalVenta, impuesto: totalVenta * 0.19, total: totalVenta * 1.19
+    }).select().single();
+    if (ventaErr) throw ventaErr;
+
+    for (var n = 0; n < platos.length; n++) {
+      var pd2 = platos[n];
+      var cant2 = Math.max(1, parseInt(pd2.cantidad) || 1);
+      var precio2 = parseFloat(pd2.precioUnitario) || 0;
+      var { data: pi2 } = await supabase.from('platos').select('nombre, precio_venta').eq('id', pd2.plato_id).single();
+      if (!pi2) continue;
+      if (!precio2) precio2 = parseFloat(pi2.precio_venta);
+      await supabase.from('venta_detalles').insert({
+        venta_id: venta.id, producto_id: null, producto_nombre: pi2.nombre,
+        cantidad: cant2, precio_unitario: precio2, subtotal: precio2 * cant2,
+        plato_id: pd2.plato_id, es_plato: true
+      });
+    }
+
+    if (saleEstado !== 'pendiente') {
+      var idsDesc = Object.keys(ingredientesTotales);
+      for (var p = 0; p < idsDesc.length; p++) {
+        var pid2 = idsDesc[p];
+        var { error: moveErr } = await supabase.rpc('registrar_movimiento', {
+          p_producto_id: pid2, p_tipo: 'salida',
+          p_cantidad: ingredientesTotales[pid2].cantidad_total,
+          p_motivo: 'Venta de platos ' + numVenta,
+          p_usuario_id: req.user ? req.user.id : null
+        });
+        if (moveErr) throw moveErr;
+      }
+    }
+
+    var { data: saleFull } = await supabase.from('ventas')
+      .select('*, venta_detalles(*), perfiles(username, nombre_completo)')
+      .eq('id', venta.id).single();
+
+    res.status(201).json({ success: true, data: mapSaleResponse(saleFull),
+      message: saleEstado === 'pendiente' ? 'Pedido creado (pendiente)' : 'Pedido confirmado' });
+  } catch (err) {
+    console.error('handleDishSale error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Error al procesar pedido' });
+  }
+}
 
 module.exports = router;

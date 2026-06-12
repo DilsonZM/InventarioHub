@@ -167,6 +167,20 @@ const API = (() => {
       },
       indicadores: () => request('/reportes/indicadores'),
     },
+
+    dishes: {
+      list: (params = {}) => {
+        var qs = new URLSearchParams(params).toString();
+        return request('/dishes' + (qs ? '?' + qs : ''));
+      },
+      get: (id) => request('/dishes/' + id),
+      create: (dish) =>
+        request('/dishes', { method: 'POST', body: JSON.stringify(dish) }),
+      update: (id, dish) =>
+        request('/dishes/' + id, { method: 'PUT', body: JSON.stringify(dish) }),
+      delete: (id) =>
+        request('/dishes/' + id, { method: 'DELETE' }),
+    },
   };
 
   window.API = api;

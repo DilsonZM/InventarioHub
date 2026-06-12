@@ -1,0 +1,43 @@
+-- Agregar columna icono a productos
+ALTER TABLE productos ADD COLUMN IF NOT EXISTS icono TEXT NOT NULL DEFAULT '📦';
+
+-- Backfill con iconos segun categoria y nombre
+UPDATE productos SET icono = CASE
+  WHEN LOWER(categoria) LIKE '%carne%' OR LOWER(categoria) LIKE '%pollo%' OR LOWER(categoria) LIKE '%pescado%' THEN '🥩'
+  WHEN LOWER(categoria) LIKE '%lacteo%' OR LOWER(categoria) LIKE '%queso%' OR LOWER(categoria) LIKE '%leche%' THEN '🧀'
+  WHEN LOWER(categoria) LIKE '%verdura%' OR LOWER(categoria) LIKE '%vegetal%' OR LOWER(categoria) LIKE '%hortaliza%' THEN '🥬'
+  WHEN LOWER(categoria) LIKE '%fruta%' THEN '🍎'
+  WHEN LOWER(categoria) LIKE '%pan%' OR LOWER(categoria) LIKE '%panaderia%' OR LOWER(categoria) LIKE '%harina%' THEN '🍞'
+  WHEN LOWER(categoria) LIKE '%bebida%' OR LOWER(categoria) LIKE '%liquido%' THEN '🥤'
+  WHEN LOWER(categoria) LIKE '%condimento%' OR LOWER(categoria) LIKE '%especia%' OR LOWER(categoria) LIKE '%salsa%' THEN '🧂'
+  WHEN LOWER(categoria) LIKE '%aceite%' OR LOWER(categoria) LIKE '%grasa%' THEN '🫒'
+  WHEN LOWER(categoria) LIKE '%arroz%' OR LOWER(categoria) LIKE '%grano%' OR LOWER(categoria) LIKE '%cereal%' OR LOWER(categoria) LIKE '%pasta%' THEN '🌾'
+  WHEN LOWER(nombre) LIKE '%huevo%' THEN '🥚'
+  WHEN LOWER(nombre) LIKE '%tomate%' THEN '🍅'
+  WHEN LOWER(nombre) LIKE '%cebolla%' THEN '🧅'
+  WHEN LOWER(nombre) LIKE '%ajo%' THEN '🧄'
+  WHEN LOWER(nombre) LIKE '%papa%' OR LOWER(nombre) LIKE '%patata%' THEN '🥔'
+  WHEN LOWER(nombre) LIKE '%lechuga%' THEN '🥬'
+  WHEN LOWER(nombre) LIKE '%queso%' THEN '🧀'
+  WHEN LOWER(nombre) LIKE '%leche%' OR LOWER(nombre) LIKE '%crema%' THEN '🥛'
+  WHEN LOWER(nombre) LIKE '%mayonesa%' OR LOWER(nombre) LIKE '%salsa%' THEN '🥫'
+  WHEN LOWER(nombre) LIKE '%aceite%' THEN '🫒'
+  WHEN LOWER(nombre) LIKE '%sal%' THEN '🧂'
+  WHEN LOWER(nombre) LIKE '%azucar%' THEN '🍬'
+  WHEN LOWER(nombre) LIKE '%cafe%' THEN '☕'
+  WHEN LOWER(nombre) LIKE '%pan%' OR LOWER(nombre) LIKE '%bollo%' OR LOWER(nombre) LIKE '%tortilla%' THEN '🫓'
+  WHEN LOWER(nombre) LIKE '%carne%' OR LOWER(nombre) LIKE '%res%' THEN '🥩'
+  WHEN LOWER(nombre) LIKE '%pollo%' THEN '🍗'
+  WHEN LOWER(nombre) LIKE '%pescado%' OR LOWER(nombre) LIKE '%atun%' THEN '🐟'
+  WHEN LOWER(nombre) LIKE '%manzana%' OR LOWER(nombre) LIKE '%fruta%' THEN '🍎'
+  WHEN LOWER(nombre) LIKE '%limon%' THEN '🍋'
+  WHEN LOWER(nombre) LIKE '%naranja%' THEN '🍊'
+  WHEN LOWER(nombre) LIKE '%pimiento%' OR LOWER(nombre) LIKE '%chile%' OR LOWER(nombre) LIKE '%aji%' THEN '🌶️'
+  WHEN LOWER(nombre) LIKE '%pepino%' THEN '🥒'
+  WHEN LOWER(nombre) LIKE '%brocoli%' OR LOWER(nombre) LIKE '%coliflor%' THEN '🥦'
+  WHEN LOWER(nombre) LIKE '%zanahoria%' THEN '🥕'
+  WHEN LOWER(nombre) LIKE '%fresa%' THEN '🍓'
+  WHEN LOWER(nombre) LIKE '%agua%' THEN '💧'
+  ELSE '📦'
+END
+WHERE icono = '📦' OR icono IS NULL;

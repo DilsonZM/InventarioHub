@@ -9,7 +9,10 @@ const state = {
   editingSaleId: null,
   editingCompraId: null,
   modoPublico: false,
-  activeFilters: []
+  activeFilters: [],
+  dishes: [],
+  saleType: 'productos',
+  saleDishItems: []
 };
 
 let categoryChart = null;
@@ -130,12 +133,14 @@ document.addEventListener('DOMContentLoaded', async function () {
   initUser();
   initNavigation();
   initSidebar();
+  initSidebarGroups();
   initModals();
   initDashboard();
   initInventory();
   initSales();
   initCompras();
   initMovimientos();
+  initDishes();
   initUsers();
 
   // Modal de filtros mobile
@@ -184,6 +189,7 @@ function applyPermissionsToUI() {
     'sales': 'puedeVerMovimientos',
     'entradas': 'puedeVerMovimientos',
     'movimientos': 'puedeVerMovimientos',
+    'dishes': 'puedeVerInventario',
     'users': 'puedeGestionarUsuarios'
   };
   Object.keys(navItems).forEach(function (view) {
@@ -243,27 +249,23 @@ function initSidebar() {
   var body = document.body;
   var STORAGE_KEY = 'sidebar:collapsed';
 
-  // Restaurar estado colapsado en desktop
+  // Restaurar estado en desktop
   try {
-    if (window.innerWidth >= 1024 && localStorage.getItem(STORAGE_KEY) === '1') {
-      sidebar.classList.add('collapsed');
-      body.classList.add('sidebar-collapsed');
+    if (window.innerWidth >= 1024) {
+      if (localStorage.getItem(STORAGE_KEY) === '1') {
+        sidebar.classList.add('collapsed');
+        body.classList.add('sidebar-collapsed');
+        sidebar.style.setProperty('width', '5rem', 'important');
+      } else {
+        sidebar.classList.add('pinned');
+      }
     }
   } catch (e) {}
 
   $('#menuToggle').addEventListener('click', function () {
     if (window.innerWidth < 1024) {
-      // Mobile: drawer behaviour
       sidebar.classList.toggle('-translate-x-full');
       overlay.classList.toggle('hidden');
-    } else {
-      // Desktop: colapsar/expandir
-      var willCollapse = !sidebar.classList.contains('collapsed');
-      sidebar.classList.toggle('collapsed', willCollapse);
-      body.classList.toggle('sidebar-collapsed', willCollapse);
-      try {
-        localStorage.setItem(STORAGE_KEY, willCollapse ? '1' : '0');
-      } catch (e) {}
     }
   });
 
@@ -280,11 +282,101 @@ function initSidebar() {
     } else {
       sidebar.classList.remove('collapsed');
       body.classList.remove('sidebar-collapsed');
-      // En móvil, si el sidebar no tiene la clase translate-x-full, mostrarlo
       if (!sidebar.classList.contains('-translate-x-full')) {
         overlay.classList.remove('hidden');
       }
     }
+  });
+
+  // Configurar pin button
+  var pinBtn = document.getElementById('sidebarPinBtn');
+  if (pinBtn) {
+    pinBtn.addEventListener('click', function () {
+      var isPinned = sidebar.classList.contains('pinned');
+      if (isPinned) {
+        // Unpin: colapsar
+        sidebar.classList.remove('pinned');
+        sidebar.classList.add('collapsed');
+        body.classList.add('sidebar-collapsed');
+        sidebar.style.setProperty('width', '5rem', 'important');
+        sidebar.style.removeProperty('width');
+        sidebar.style.setProperty('width', '5rem', 'important');
+        setTimeout(function () { sidebar.style.setProperty('width', '5rem', 'important'); }, 50);
+        try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) {}
+      } else {
+        // Pin: fijar expandido
+        sidebar.classList.add('pinned');
+        sidebar.classList.remove('collapsed');
+        body.classList.remove('sidebar-collapsed');
+        sidebar.style.removeProperty('width');
+        try { localStorage.setItem(STORAGE_KEY, '0'); } catch (e) {}
+      }
+    });
+  }
+
+  // Hover expand (solo si no esta pinned)
+  sidebar.addEventListener('mouseenter', function () {
+    if (!sidebar.classList.contains('pinned') && sidebar.classList.contains('collapsed') && window.innerWidth >= 1024) {
+      sidebar.style.setProperty('width', '18rem', 'important');
+    }
+  });
+  sidebar.addEventListener('mouseleave', function () {
+    if (!sidebar.classList.contains('pinned') && sidebar.classList.contains('collapsed') && window.innerWidth >= 1024) {
+      sidebar.style.setProperty('width', '5rem', 'important');
+    }
+  });
+
+  // Menu toggle (mobile)
+  $('#menuToggle').addEventListener('click', function () {
+    if (window.innerWidth >= 1024) return; // solo mobile
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+  });
+}
+
+function initSidebarGroups() {
+  var groups = document.querySelectorAll('.sidebar-group');
+  var STORAGE_KEY = 'sidebar:groups';
+
+  // Restaurar estado
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) {}
+
+  groups.forEach(function (group) {
+    var groupName = group.dataset.group;
+    var header = group.querySelector('.sidebar-group-header');
+    var items = group.querySelector('.sidebar-group-items');
+    if (!header || !items) return;
+
+    // Restaurar expandido
+    if (saved[groupName] !== false) {
+      group.classList.add('expanded');
+    }
+
+    header.addEventListener('click', function () {
+      var isExpanded = group.classList.toggle('expanded');
+      saved[groupName] = isExpanded;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (e) {}
+    });
+  });
+
+  // Auto-expandir grupo del link activo
+  function expandActiveGroup() {
+    var activeLink = document.querySelector('.nav-link.active');
+    if (activeLink) {
+      var group = activeLink.closest('.sidebar-group');
+      if (group) {
+        group.classList.add('expanded');
+        var groupName = group.dataset.group;
+        saved[groupName] = true;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (e) {}
+      }
+    }
+  }
+
+  expandActiveGroup();
+  window.addEventListener('hashchange', function () {
+    setTimeout(expandActiveGroup, 100);
   });
 }
 
@@ -341,7 +433,7 @@ function navigate(view) {
     link.classList.toggle('active', isActive);
   });
 
-  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Salidas', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos', users: 'Usuarios', config: 'Configuracion' };
+  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Pedidos', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos', dishes: 'Platos', users: 'Usuarios', config: 'Configuracion' };
   $('#pageTitle').textContent = titles[view] || 'InventarioApp';
 
   if (view === 'dashboard') loadDashboard();
@@ -349,6 +441,7 @@ function navigate(view) {
   if (view === 'sales') loadSales();
   if (view === 'compras' || view === 'entradas') loadCompras();
   if (view === 'movimientos') loadMovimientos();
+  if (view === 'dishes') loadDishes();
   if (view === 'users') loadUsers();
   if (view === 'config') loadConfig();
 
@@ -1050,6 +1143,11 @@ $('#productForm').addEventListener('submit', async function (e) {
 
 async function initSales() {
   $('#newSaleBtn').addEventListener('click', function () { openSaleModal(); });
+  // Botón Nuevo Pedido en header
+  var newOrderBtn = $('#newOrderBtn');
+  if (newOrderBtn) newOrderBtn.addEventListener('click', function () { location.hash = '#sales'; setTimeout(openSaleModal, 200); });
+  var newOrderBtnMobile = $('#newOrderBtnMobile');
+  if (newOrderBtnMobile) newOrderBtnMobile.addEventListener('click', function () { location.hash = '#sales'; setTimeout(openSaleModal, 200); });
   initFilters('sales');
   // Dirty tracking: cualquier cambio en el form marca el modal como sucio
   var saleForm = $('#saleForm');
@@ -1059,6 +1157,16 @@ async function initSales() {
   }
   var addSaleItemBtn = $('#addSaleItem');
   if (addSaleItemBtn) addSaleItemBtn.addEventListener('click', markSaleDirty);
+
+  // Toggle tipo de venta
+  var tipoProdBtn = $('#saleTypeProductos');
+  var tipoPlatoBtn = $('#saleTypePlatos');
+  if (tipoProdBtn) tipoProdBtn.addEventListener('click', function () { setSaleType('productos'); });
+  if (tipoPlatoBtn) tipoPlatoBtn.addEventListener('click', function () { setSaleType('platos'); });
+
+  // Add dish item button
+  var addDishBtn = $('#addDishSaleItem');
+  if (addDishBtn) addDishBtn.addEventListener('click', addDishSaleItem);
 }
 
 window.openSaleModal = openSaleModal;
@@ -1088,7 +1196,7 @@ window.editSale = async function (id) {
     var pmEl = $('#salePaymentMethod');
     if (pmEl) pmEl.value = sale.paymentMethod || '';
     var titleEl = document.querySelector('#saleModal h3');
-    if (titleEl) titleEl.textContent = 'Editar Salida #' + sale.id.slice(-6);
+    if (titleEl) titleEl.textContent = 'Editar Pedido #' + sale.id.slice(-6);
     openSaleModal();
   } catch (err) {
     showToast('Error al cargar salida: ' + err.message, 'error');
@@ -1325,6 +1433,9 @@ function renderSalesTable() {
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Ver detalle">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
+      + '<button onclick="window.showTicket(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors touch-target" title="Imprimir ticket">'
+      + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>'
+      + '</button>'
       + (window.can && window.can('puedeEditarSalidas') ?
         '<button onclick="window.editSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Editar">'
         + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
@@ -1367,6 +1478,9 @@ function renderSalesTable() {
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Ver">'
       + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
+      + '<button onclick="window.showTicket(\'' + s.id + '\')" class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors touch-target" title="Imprimir">'
+      + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>'
+      + '</button>'
       + (window.can && window.can('puedeEditarSalidas') ?
         '<button onclick="window.editSale(\'' + s.id + '\')" class="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Editar">'
         + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
@@ -1389,36 +1503,171 @@ window.viewSale = async function (id) {
     $('#detailSaleId').textContent = '#' + sale.id.slice(-6);
     $('#detailSaleDate').textContent = formatDate(sale.createdAt);
     $('#detailSalePayment').textContent = sale.paymentMethod;
-    $('#detailSaleTotal').textContent = sale.items.reduce(function (s, i) { return s + i.quantity; }, 0) + ' unid.';
+    $('#detailSaleTotal').textContent = Utils.formatCurrency(sale.total);
 
     var itemsHtml = sale.items.map(function (item) {
-      var qty = item.unidadPresentacion && item.factorConversion !== 1 ? item.cantidadPresentacion : item.quantity;
-      var presLabel = item.unidadPresentacion || '';
-      var equiv = '';
-      if (item.unidadPresentacion && item.factorConversion !== 1) {
-        equiv = '<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium ml-1">' + escapeHtml(presLabel) + '</span>';
-      }
+      var badge = item.esPlato
+        ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-medium ml-1">Plato</span>'
+        : '';
       return '<div class="flex items-center justify-between px-4 py-3">'
         + '<div class="flex-1 min-w-0">'
-        + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.productName) + ' x' + qty + equiv + '</p>'
-        + '<p class="text-xs text-slate-500">Cantidad base: ' + item.quantity + ' unid.</p>'
+        + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.productName) + ' x' + item.quantity + badge + '</p>'
+        + '<p class="text-xs text-slate-500">' + Utils.formatCurrency(item.unitPrice || 0) + ' c/u · ' + Utils.formatCurrency(item.subtotal || 0) + '</p>'
         + '</div>'
-        + '<p class="text-sm font-semibold text-slate-800 ml-4">' + item.quantity + '</p>'
+        + '<p class="text-sm font-semibold text-slate-800 ml-4">' + Utils.formatCurrency(item.subtotal || 0) + '</p>'
         + '</div>';
     }).join('');
 
-    $('#detailSaleItems').innerHTML = itemsHtml;
+    // Ingredientes consumidos
+    var ingsHtml = '';
+    if (sale.ingredientesConsumidos && sale.ingredientesConsumidos.length > 0) {
+      ingsHtml = '<div class="border-t border-slate-100 px-4 py-3 bg-slate-50/50">'
+        + '<p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Ingredientes consumidos</p>'
+        + sale.ingredientesConsumidos.map(function (ing) {
+          return '<div class="flex items-center justify-between text-xs py-1">'
+            + '<span class="text-slate-600">' + escapeHtml(ing.nombre) + ' <span class="text-slate-400">' + ing.cantidad + ' ' + (ing.unidad || '') + '</span></span>'
+            + '<span class="text-slate-400 text-[10px]">' + escapeHtml(ing.por) + '</span>'
+            + '</div>';
+        }).join('')
+        + '</div>';
+    }
+
+    $('#detailSaleItems').innerHTML = itemsHtml + ingsHtml;
     openModal('saleDetailModal');
   } catch (err) {
     showToast('Error al cargar salida', 'error');
   }
 };
 
+function setSaleType(type) {
+  state.saleType = type;
+  var prodSection = $('#saleProductSection');
+  var dishSection = $('#saleDishSection');
+  var prodBtn = $('#saleTypeProductos');
+  var platoBtn = $('#saleTypePlatos');
+  var titleEl = document.querySelector('#saleModal h3');
+
+  if (type === 'platos') {
+    if (prodSection) prodSection.classList.add('hidden');
+    if (dishSection) dishSection.classList.remove('hidden');
+    if (prodBtn) { prodBtn.classList.remove('active-tab', 'bg-white', 'shadow-sm'); prodBtn.classList.add('text-slate-600'); }
+    if (platoBtn) { platoBtn.classList.add('active-tab', 'bg-white', 'shadow-sm', 'text-slate-800'); platoBtn.classList.remove('text-slate-600'); }
+    if (titleEl) titleEl.textContent = 'Nuevo Pedido';
+    loadDishOptions();
+  } else {
+    if (prodSection) prodSection.classList.remove('hidden');
+    if (dishSection) dishSection.classList.add('hidden');
+    if (prodBtn) { prodBtn.classList.add('active-tab', 'bg-white', 'shadow-sm', 'text-slate-800'); prodBtn.classList.remove('text-slate-600'); }
+    if (platoBtn) { platoBtn.classList.remove('active-tab', 'bg-white', 'shadow-sm'); platoBtn.classList.add('text-slate-600'); }
+    if (titleEl) {
+      if (state.editingSaleId) titleEl.textContent = 'Editar Pedido #' + state.editingSaleId.slice(-6);
+      else titleEl.textContent = 'Nuevo Pedido';
+    }
+  }
+}
+
+window.confirmAction = function (title, message, iconSvg, btnText, callback) {
+  $('#confirmActionTitle').textContent = title;
+  $('#confirmActionMessage').textContent = message;
+  if (iconSvg) {
+    var iconContainer = $('#confirmActionIcon');
+    iconContainer.innerHTML = iconSvg;
+    iconContainer.className = iconContainer.className.replace(/bg-\w+-\d+/g, 'bg-rose-100');
+  }
+  $('#confirmActionOk').textContent = btnText || 'Confirmar';
+  state._confirmCallback = callback;
+  $('#confirmActionModal').classList.remove('hidden');
+};
+
+window.archiveDish = function (dishId, dishName) {
+  if (!window.can('puedeEditarProductos')) { showToast('Sin permiso', 'error'); return; }
+  window.confirmAction(
+    '¿Archivar plato?',
+    '"' + dishName + '" dejará de estar disponible para ventas. Podés reactivarlo cuando quieras.',
+    '<svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>',
+    'Archivar',
+    async function () {
+      try {
+        var res = await API.dishes.update(dishId, { activo: false });
+        if (res.success) { showToast('Plato archivado', 'success'); loadDishes(); }
+        else showToast(res.message || 'Error al archivar', 'error');
+      } catch (err) { showToast('Error de conexion', 'error'); }
+    }
+  );
+};
+
+window.reactivateDish = async function (dishId, dishName) {
+  if (!window.can('puedeEditarProductos')) { showToast('Sin permiso', 'error'); return; }
+  try {
+    var res = await API.dishes.update(dishId, { activo: true });
+    if (res.success) { showToast('Plato reactivado', 'success'); loadDishes(); }
+    else showToast(res.message || 'Error al reactivar', 'error');
+  } catch (err) { showToast('Error de conexion', 'error'); }
+};
+
+async function loadDishOptions() {
+  var sel = $('#saleDishSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Seleccionar plato o bebida</option>';
+  try {
+    var res = await API.dishes.list();
+    var dishes = (res.data || []).filter(function (d) {
+      return d.activo && d.disponible !== false;
+    });
+    sel.innerHTML += dishes.map(function (d) {
+      return '<option value="' + d.id + '" data-price="' + d.precio_venta + '">' + escapeHtml(d.nombre) + ' \u2014 ' + Utils.formatCurrency(d.precio_venta) + '</option>';
+    }).join('');
+    if (dishes.length === 0) {
+      sel.innerHTML += '<option disabled>— Sin platos disponibles (stock insuficiente) —</option>';
+    }
+  } catch (e) {}
+}
+  } catch (e) {
+    // dishes might not be available yet
+  }
+}
+
+function addDishSaleItem() {
+  var sel = $('#saleDishSelect');
+  var qty = parseInt($('#saleDishQuantity').value) || 1;
+
+  if (!sel.value) { showToast('Selecciona un plato o bebida', 'error'); return; }
+  if (qty <= 0) { showToast('Cantidad invalida', 'error'); return; }
+
+  var opt = sel.options[sel.selectedIndex];
+  var price = parseFloat(opt.dataset.price) || 0;
+
+  var existing = state.saleDishItems.find(function (i) { return i.plato_id === sel.value; });
+  if (existing) {
+    existing.cantidad = qty;
+    existing.precioUnitario = price;
+    showToast('Cantidad actualizada', 'success');
+  } else {
+    state.saleDishItems.push({
+      plato_id: sel.value,
+      nombre: opt.textContent.split(' \u2014 ')[0],
+      cantidad: qty,
+      precioUnitario: price
+    });
+    showToast('Plato agregado', 'success');
+  }
+
+  renderSaleItems();
+  sel.value = '';
+  $('#saleDishQuantity').value = 1;
+}
+
 async function openSaleModal() {
   var isEditing = !!state.editingSaleId;
-  state.saleDirty = false; // reset al abrir
-  if (!isEditing) state.saleItems = [];
-  // En edicion no reseteamos el form (mantenemos la cocina pre-poblada)
+  state.saleDirty = false;
+  state._pendingOrder = null;
+  var submitBtn = document.querySelector('#saleForm button[type=\"submit\"]');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Registrar Pedido'; }
+  if (!isEditing) {
+    state.saleItems = [];
+    state.saleDishItems = [];
+    setSaleType('platos');
+  }
   if (!isEditing) {
     $('#saleForm').reset();
   }
@@ -1429,7 +1678,7 @@ async function openSaleModal() {
 
   if (!isEditing) {
     var titleEl = document.querySelector('#saleModal h3');
-    if (titleEl) titleEl.textContent = 'Nueva Salida';
+    if (titleEl) titleEl.textContent = 'Nuevo Pedido';
   }
   renderSaleItems();
 
@@ -1684,16 +1933,54 @@ function refreshSaleProductOptions() {
 function renderSaleItems() {
   var tbody = $('#saleItemsTable');
   var cards = $('#saleItemsCards');
+  var isDishMode = state.saleType === 'platos';
+  var items = isDishMode ? state.saleDishItems : state.saleItems;
 
-  refreshSaleProductOptions();
+  if (!isDishMode) refreshSaleProductOptions();
 
-  if (state.saleItems.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">Sin productos agregados</td></tr>';
-    cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Sin productos agregados</p>';
+  if (items.length === 0) {
+    var emptyMsg = isDishMode ? 'Sin platos agregados' : 'Sin productos agregados';
+    tbody.innerHTML = '<tr><td colspan="' + (isDishMode ? 3 : 4) + '" class="px-4 py-6 text-center text-slate-400">' + emptyMsg + '</td></tr>';
+    if (cards) cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">' + emptyMsg + '</p>';
     $('#saleTotal').textContent = '0';
     return;
   }
 
+  if (isDishMode) {
+    var total = 0;
+    tbody.innerHTML = items.map(function (item, idx) {
+      var sub = item.precioUnitario * item.cantidad;
+      total += sub;
+      return '<tr>'
+        + '<td class="px-4 py-2"><span class="text-sm text-slate-700 font-medium">' + escapeHtml(item.nombre) + '</span></td>'
+        + '<td class="px-4 py-2 text-center"><span class="text-sm text-slate-600">' + item.cantidad + '</span></td>'
+        + '<td class="px-4 py-2 text-right">'
+        + '<button onclick="window.removeDishSaleItem(' + idx + ')" class="p-1 text-red-400 hover:text-red-600 transition-colors touch-target">'
+        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+        + '</button>'
+        + '</td>'
+        + '</tr>';
+    }).join('');
+    $('#saleTotal').textContent = Utils.formatCurrency(total);
+
+    if (cards) {
+      cards.innerHTML = items.map(function (item, idx) {
+        var sub = item.precioUnitario * item.cantidad;
+        return '<div class="flex items-center justify-between bg-slate-50 rounded-xl p-3">'
+          + '<div class="flex-1 min-w-0">'
+          + '<p class="text-sm font-medium text-slate-700 truncate">' + escapeHtml(item.nombre) + '</p>'
+          + '<p class="text-xs text-slate-500">' + item.cantidad + ' x ' + Utils.formatCurrency(item.precioUnitario) + ' = ' + Utils.formatCurrency(sub) + '</p>'
+          + '</div>'
+          + '<button onclick="window.removeDishSaleItem(' + idx + ')" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors touch-target">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+          + '</button>'
+          + '</div>';
+      }).join('');
+    }
+    return;
+  }
+
+  // Product mode (existing)
   tbody.innerHTML = state.saleItems.map(function (item, idx) {
     var presHtml = '';
     if (item.unidadPresentacion && item.factorConversion !== 1) {
@@ -1755,12 +2042,23 @@ window.removeSaleItem = function (idx) {
   renderSaleItems();
 };
 
+window.removeDishSaleItem = function (idx) {
+  state.saleDishItems.splice(idx, 1);
+  renderSaleItems();
+};
+
 $('#saleForm').addEventListener('submit', async function (e) {
   e.preventDefault();
+  var submitBtn = this.querySelector('button[type="submit"]');
   var paymentMethod = $('#salePaymentMethod').value;
+  var isDishMode = state.saleType === 'platos';
 
-  if (state.saleItems.length === 0) {
+  if (!isDishMode && state.saleItems.length === 0) {
     showError('saleFormError', 'Agrega al menos un producto');
+    return;
+  }
+  if (isDishMode && state.saleDishItems.length === 0) {
+    showError('saleFormError', 'Agrega al menos un plato o bebida');
     return;
   }
   if (!paymentMethod) {
@@ -1768,36 +2066,164 @@ $('#saleForm').addEventListener('submit', async function (e) {
     return;
   }
 
-  var payload = {
-    items: state.saleItems.map(function (i) {
-      return {
-        productId: i.productId,
-        quantity: i.cantidadBase,
-        cantidadPresentacion: i.unidadPresentacion ? i.cantidadPresentacion : null,
-        unidadPresentacion: i.unidadPresentacion || null,
-        factorConversion: i.factorConversion || 1
-      };
-    }),
-    paymentMethod: paymentMethod,
-  };
+  // Prevenir doble clic
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Preparando...'; }
+
+  // Mostrar preview
+  var items = isDishMode ? state.saleDishItems : state.saleItems;
+  var total = 0;
+
+  var previewHtml = items.map(function (item) {
+    var sub = isDishMode ? (item.precioUnitario * item.cantidad) : item.cantidadBase;
+    total += sub;
+    var label = isDishMode
+      ? '<span class="text-[11px] text-slate-500">' + Utils.formatCurrency(item.precioUnitario) + ' c/u</span>'
+      : '<span class="text-[11px] text-slate-500">' + (item.unidadPresentacion ? item.cantidadPresentacion + ' ' + item.unidadPresentacionLabel : item.cantidadBase + ' ' + item.unidadBase) + '</span>';
+    return '<div class="flex items-center justify-between py-2 border-b border-slate-50 text-sm">'
+      + '<div><span class="text-slate-700 font-medium">' + escapeHtml(item.productName || item.nombre) + ' x' + (isDishMode ? item.cantidad : item.cantidadBase) + '</span><br>' + label + '</div>'
+      + '<span class="text-slate-800 font-semibold">' + Utils.formatCurrency(sub) + '</span>'
+      + '</div>';
+  }).join('');
+
+  $('#previewItems').innerHTML = previewHtml;
+  $('#previewTotal').textContent = Utils.formatCurrency(total);
+  $('#previewCocina').textContent = paymentMethod;
+
+  // Guardar payload para confirmar
+  state._pendingOrder = { isDishMode: isDishMode, paymentMethod: paymentMethod, total: total, submitBtn: submitBtn };
+
+  openModal('orderPreviewModal');
+});
+
+// Confirmar pedido desde preview
+document.addEventListener('click', function (e) {
+  if (e.target.closest('[data-close-preview]')) {
+    $('#orderPreviewModal').classList.add('hidden');
+    var btn = (state._pendingOrder || {}).submitBtn;
+    if (btn) { btn.disabled = false; btn.textContent = 'Registrar Pedido'; }
+    state._pendingOrder = null;
+  }
+});
+document.getElementById('confirmOrderBtn').addEventListener('click', async function () {
+  var pending = state._pendingOrder;
+  if (!pending) return;
+  $('#orderPreviewModal').classList.add('hidden');
+  var btn = pending.submitBtn;
+  if (btn) { btn.textContent = 'Confirmando...'; }
+
+  var isDishMode = pending.isDishMode;
+  var paymentMethod = pending.paymentMethod;
+
+  var payload;
+  if (isDishMode) {
+    payload = { platos: state.saleDishItems, paymentMethod: paymentMethod, estado: 'completada' };
+  } else {
+    payload = {
+      items: state.saleItems.map(function (i) {
+        return { productId: i.productId, quantity: i.cantidadBase, cantidadPresentacion: i.unidadPresentacion ? i.cantidadPresentacion : null, unidadPresentacion: i.unidadPresentacion || null, factorConversion: i.factorConversion || 1 };
+      }),
+      paymentMethod: paymentMethod,
+    };
+  }
 
   try {
     if (state.editingSaleId) {
       await API.sales.update(state.editingSaleId, payload);
-      showToast('Salida actualizada correctamente');
+      showToast('Pedido actualizado correctamente');
       state.editingSaleId = null;
     } else {
-      await API.sales.create(payload);
-      showToast('Salida registrada correctamente');
+      var createRes = await API.sales.create(payload);
+      if (createRes.success) {
+        showToast('Pedido registrado correctamente');
+        closeModal('saleModal');
+        state.saleDirty = false;
+        state._pendingOrder = null;
+        $('#orderPreviewModal').classList.add('hidden');
+        loadSales();
+        if (isDishMode) loadDashboard();
+        // Render ticket directo de la respuesta (sin fetch extra)
+        renderTicketFromData(createRes.data);
+        return;
+      } else {
+        showToast(createRes.message || 'Error al registrar', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = 'Registrar Pedido'; }
+        return;
+      }
     }
     closeModal('saleModal');
     state.saleDirty = false;
+    state._pendingOrder = null;
+    $('#orderPreviewModal').classList.add('hidden');
     loadSales();
-    loadDashboard();
+    if (isDishMode) loadDashboard();
   } catch (err) {
-    showError('saleFormError', err.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Registrar Pedido'; }
+    showToast(err.message || 'Error al registrar', 'error');
   }
 });
+
+window.showTicket = async function (saleId) {
+  try {
+    var res = await API.sales.get(saleId);
+    var s = res.data;
+
+    $('#ticketNumber').textContent = s.numero_venta;
+    $('#ticketCocina').textContent = s.paymentMethod;
+    $('#ticketFecha').textContent = Utils.formatDate(s.createdAt);
+
+    var itemsHtml = s.items.map(function (item) {
+      var badge = item.esPlato ? ' <span class=\"text-[9px] text-emerald-600\">🍽️</span>' : '';
+      return '<div class=\"flex items-center justify-between text-sm\">'
+        + '<span class=\"text-slate-700 font-mono\">' + escapeHtml(item.productName) + ' x' + item.quantity + badge + '</span>'
+        + '<span class=\"text-slate-600 font-mono\">' + Utils.formatCurrency(item.subtotal || (item.unitPrice * item.quantity)) + '</span>'
+        + '</div>';
+    }).join('');
+    $('#ticketItems').innerHTML = itemsHtml;
+    $('#ticketTotal').textContent = Utils.formatCurrency(s.total);
+
+    var ings = s.ingredientesConsumidos || [];
+    if (ings.length > 0) {
+      $('#ticketIngredientes').classList.remove('hidden');
+      $('#ticketIngsList').innerHTML = ings.map(function (ing) {
+        return '<div class=\"flex items-center justify-between text-[11px]\"><span class=\"text-slate-500\">' + escapeHtml(ing.nombre) + '</span><span class=\"text-slate-400 font-mono\">' + ing.cantidad + ' ' + (ing.unidad || '') + '</span></div>';
+      }).join('');
+    } else {
+      $('#ticketIngredientes').classList.add('hidden');
+    }
+
+    openModal('ticketModal');
+  } catch (e) {
+    console.error('showTicket error:', e);
+  }
+};
+
+document.addEventListener('click', function (e) {
+  if (e.target.closest('[data-close-ticket]')) {
+    $('#ticketModal').classList.add('hidden');
+  }
+  if (e.target.closest('#printTicketBtn')) {
+    window.print();
+  }
+});
+
+function renderTicketFromData(sale) {
+  if (!sale) return;
+  $('#ticketNumber').textContent = sale.numero_venta || '';
+  $('#ticketCocina').textContent = sale.paymentMethod || '';
+  $('#ticketFecha').textContent = Utils.formatDate(sale.createdAt);
+  $('#ticketTotal').textContent = Utils.formatCurrency(sale.total);
+
+  var items = sale.items || [];
+  $('#ticketItems').innerHTML = items.map(function (item) {
+    var sub = item.subtotal || ((item.unitPrice || 0) * (item.quantity || 0));
+    return '<div class=\"flex items-center justify-between text-sm\">'
+      + '<span class=\"text-slate-700\">' + escapeHtml(item.productName) + ' x' + item.quantity + '</span>'
+      + '<span class=\"text-slate-600 font-mono\">' + Utils.formatCurrency(sub) + '</span>'
+      + '</div>';
+  }).join('');
+
+  openModal('ticketModal');
+}
 
 function closeModalWithGuard(modalId) {
   var isDirty = false;
@@ -1848,6 +2274,21 @@ function initModals() {
         if (m.id === 'sidebar' || m.id === 'sidebarOverlay') return;
         m.classList.add('hidden');
       });
+    }
+  });
+
+  // Confirm action modal
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-confirm-action-cancel]')) {
+      $('#confirmActionModal').classList.add('hidden');
+    }
+  });
+  document.getElementById('confirmActionOk').addEventListener('click', function () {
+    $('#confirmActionModal').classList.add('hidden');
+    if (state._confirmCallback) {
+      var cb = state._confirmCallback;
+      state._confirmCallback = null;
+      cb();
     }
   });
 }
@@ -2258,6 +2699,429 @@ function initUsers() {
   var saveConfigBtn = $('#saveConfigBtn');
   if (saveConfigBtn) saveConfigBtn.addEventListener('click', saveConfig);
 }
+
+// ============================================================================
+// PLATOS (DISHES) — CRUD, receta con ingredientes del inventario
+// ============================================================================
+
+function initDishes() {
+  var addBtn = $('#addDishBtn');
+  if (addBtn) addBtn.addEventListener('click', function () { openDishModal(); });
+
+  var form = $('#dishForm');
+  if (form) form.addEventListener('submit', saveDish);
+
+  var search = $('#searchDishes');
+  if (search) search.addEventListener('input', Utils.debounce(loadDishes, 300));
+
+  var typeFilter = $('#filterDishType');
+  if (typeFilter) typeFilter.addEventListener('change', loadDishes);
+}
+
+async function loadDishes() {
+  try {
+    var search = ($('#searchDishes') ? $('#searchDishes').value : '').trim();
+    var tipo = $('#filterDishType') ? $('#filterDishType').value : '';
+    var params = {};
+    if (tipo) params.tipo = tipo;
+
+    var res = await API.dishes.list(params);
+    var dishes = res.data || [];
+
+    if (search) {
+      var s = search.toLowerCase();
+      dishes = dishes.filter(function (d) { return d.nombre.toLowerCase().includes(s); });
+    }
+
+    state.dishes = dishes;
+    renderDishesTable();
+  } catch (err) {
+    console.error('loadDishes error:', err);
+  }
+}
+
+function renderDishesTable() {
+  var tbody = $('#dishesTable');
+  var cards = $('#dishesCards');
+  var all = state.dishes;
+  var activos = all.filter(function (d) { return d.activo; });
+  var archivados = all.filter(function (d) { return !d.activo; });
+
+  // === ACTIVOS ===
+  if (!activos.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-16 text-center"><div class="flex flex-col items-center gap-3"><div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center"><svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div><p class="text-sm font-medium text-slate-600">No se encontraron platos</p><p class="text-xs text-slate-400">Ajustá los filtros o creá un nuevo plato</p></div></td></tr>';
+    if (cards) cards.innerHTML = '<div class="text-center py-12"><div class="w-14 h-14 mx-auto rounded-2xl bg-slate-50 flex items-center justify-center mb-3"><svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div><p class="text-sm font-medium text-slate-600">No se encontraron platos</p><p class="text-xs text-slate-400">Ajustá los filtros o creá un nuevo plato</p></div>';
+  } else {
+    tbody.innerHTML = activos.map(function (d) { return renderDishRow(d, true); }).join('');
+    if (cards) cards.innerHTML = activos.map(function (d) { return renderDishCard(d, true); }).join('');
+  }
+
+  // === ARCHIVADOS ===
+  var archSection = $('#dishesArchivedSection');
+  var archTable = $('#dishesArchivedTable');
+  var archCards = $('#dishesArchivedCards');
+  var archCount = $('#dishesArchivedCount');
+  var archLabel = $('#dishesArchivedLabel');
+  var archContent = $('#dishesArchivedContent');
+  var archChevron = $('#archivedChevron');
+
+  if (archivados.length > 0) {
+    if (archSection) archSection.classList.remove('hidden');
+    if (archCount) archCount.textContent = ' (' + archivados.length + ')';
+    if (archLabel) archLabel.textContent = 'Platos archivados (' + archivados.length + ')';
+    if (archTable) archTable.innerHTML = archivados.map(function (d) { return renderDishRow(d, false); }).join('');
+    if (archCards) archCards.innerHTML = archivados.map(function (d) { return renderDishCard(d, false); }).join('');
+    // Siempre colapsados por defecto
+    if (archContent) { archContent.style.maxHeight = '0'; }
+    if (archChevron) { archChevron.style.transform = ''; }
+  } else {
+    if (archSection) archSection.classList.add('hidden');
+  }
+}
+
+// Toggle seccion archivados
+var toggleArchivedBtn = document.getElementById('toggleArchivedBtn');
+if (toggleArchivedBtn) {
+  toggleArchivedBtn.addEventListener('click', function () {
+    var content = $('#dishesArchivedContent');
+    var chevron = $('#archivedChevron');
+    if (!content || !chevron) return;
+    var isOpen = content.style.maxHeight !== '0px' && content.style.maxHeight !== '0';
+    if (isOpen) {
+      content.style.maxHeight = '0';
+      chevron.style.transform = '';
+    } else {
+      content.style.maxHeight = content.scrollHeight + 'px';
+      chevron.style.transform = 'rotate(180deg)';
+    }
+  });
+}
+
+function renderDishRow(d, isActive) {
+  var badge = d.tipo === 'bebida'
+    ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700">Bebida</span>'
+    : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Plato</span>';
+
+  var ingsHtml = '';
+  if (d.ingredientes && d.ingredientes.length > 0) {
+    ingsHtml = '<div class="text-[11px] text-slate-400 mt-0.5 space-y-0.5">'
+      + d.ingredientes.map(function (ing) {
+        return '<div>· ' + escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad + (ing.costo > 0 ? ' <span class="text-slate-500">' + Utils.formatCurrency(ing.costo) + '</span>' : '') + '</div>';
+      }).join('')
+      + '</div>';
+  }
+
+  var actions;
+  if (isActive) {
+    actions = '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>'
+      + '<button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Archivar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>';
+  } else {
+    actions = '<button onclick="window.reactivateDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="px-2.5 py-1 text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors touch-target" title="Reactivar">Reactivar</button>';
+  }
+
+  return '<tr class="hover:bg-slate-50 transition-colors">'
+    + '<td class="px-6 py-3"><span class="text-sm font-semibold text-slate-800">' + escapeHtml(d.nombre) + '</span>' + ingsHtml + '</td>'
+    + '<td class="px-6 py-3">' + badge + '</td>'
+    + '<td class="px-6 py-3 text-center"><span class="text-sm text-slate-600">' + (d.num_ingredientes || 0) + '</span></td>'
+    + '<td class="px-6 py-3 text-right"><span class="text-sm font-semibold text-slate-800">' + Utils.formatCurrency(d.precio_venta) + '</span></td>'
+    + '<td class="px-6 py-3 text-right"><span class="text-sm ' + ((d.costo || 0) > 0 ? 'text-slate-600' : 'text-slate-400') + '">' + ((d.costo || 0) > 0 ? Utils.formatCurrency(d.costo) : '—') + '</span></td>'
+    + '<td class="px-6 py-3 text-center">' + (isActive ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Activo</span>' : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Archivado</span>') + '</td>'
+    + '<td class="px-6 py-3 text-right"><div class="flex items-center justify-end gap-1">' + actions + '</div></td>'
+    + '</tr>';
+}
+
+function renderDishCard(d, isActive) {
+  return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3' + (isActive ? '' : ' opacity-75') + '">'
+    + '<div class="flex items-start justify-between gap-2">'
+    + '<div class="min-w-0 flex-1">'
+    + '<p class="font-semibold text-slate-800 truncate">' + escapeHtml(d.nombre) + '</p>'
+    + (d.ingredientes && d.ingredientes.length > 0 ? '<div class="text-[11px] text-slate-400 mt-0.5 space-y-0.5">' + d.ingredientes.map(function(ing) { return '<div>· ' + escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad + (ing.costo > 0 ? ' — ' + Utils.formatCurrency(ing.costo) : '') + '</div>'; }).join('') + '</div>' : '')
+    + '<p class="text-xs text-slate-500 mt-0.5">' + (d.tipo === 'bebida' ? 'Bebida' : 'Plato') + ' · Venta: ' + Utils.formatCurrency(d.precio_venta) + ((d.costo || 0) > 0 ? ' · Costo: ' + Utils.formatCurrency(d.costo) : '') + '</p>'
+    + '</div>'
+    + '<span class="shrink-0 text-xs px-2 py-0.5 rounded-full ' + (isActive ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50') + '">' + (isActive ? 'Activo' : 'Archivado') + '</span>'
+    + '</div>'
+    + '<div class="flex items-center justify-end gap-1">'
+    + (isActive
+      ? '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>'
+      : '<button onclick="window.reactivateDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors touch-target">Reactivar</button>')
+    + '</div>'
+    + '</div>';
+}
+
+async function openDishModal(dishId) {
+  var isEdit = !!dishId;
+  var title = $('#dishModalTitle');
+  title.textContent = isEdit ? 'Editar Plato' : 'Nuevo Plato';
+  $('#dishId').value = isEdit ? dishId : '';
+  $('#dishName').value = '';
+  $('#dishDescription').value = '';
+  $('#dishType').value = '';
+  $('#dishPrice').value = '0';
+  $('#dishIngredients').innerHTML = '<p id="noIngredientsMsg" class="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl">Sin ingredientes. Agregá productos del inventario para armar la receta.</p>';
+  $('#dishFormError').classList.add('hidden');
+
+  // Cargar productos para los selectores de ingredientes
+  window._dishProducts = [];
+  try {
+    var res = await API.products.list();
+    window._dishProducts = res.data || [];
+  } catch (e) {
+    window._dishProducts = [];
+  }
+
+  if (isEdit) {
+    try {
+      var res = await API.dishes.get(dishId);
+      var d = res.data;
+      $('#dishName').value = d.nombre || '';
+      $('#dishDescription').value = d.descripcion || '';
+      $('#dishType').value = d.tipo || '';
+      $('#dishPrice').value = d.precio_venta || 0;
+      if (d.ingredientes && d.ingredientes.length > 0) {
+        renderIngredientList(d.ingredientes);
+      }
+    } catch (e) {
+      showToast('Error al cargar plato', 'error');
+      return;
+    }
+  }
+
+  // Bindear el boton de agregar ingrediente
+  var addIngBtn = $('#addIngredientBtn');
+  if (addIngBtn) {
+    addIngBtn.onclick = function () { openIngredientSelector(); };
+  }
+
+  openModal('dishModal');
+}
+
+function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, editIndex) {
+  var html = '<div class="dish-ingredient-row bg-slate-50 border border-slate-100 rounded-xl">'
+    + '<div class="flex items-end gap-3 p-3">'
+    + '<div class="flex-1 min-w-0">'
+    + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Producto</label>'
+    + '<select class="ing-product w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">'
+    + '<option value="">Seleccionar producto</option>'
+    + (window._dishProducts || []).map(function (p) {
+      var stockInfo = ' (' + (p.stock || 0) + ' ' + (p.unidad || 'unid') + ')';
+      return '<option value="' + p.id + '" data-unidad="' + (p.unidad || '') + '"' + (productoIdPreset === p.id ? ' selected' : '') + '>' + escapeHtml(p.name) + stockInfo + '</option>';
+    }).join('')
+    + '</select>'
+    + '</div>'
+    + '<div class="w-24 shrink-0">'
+    + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
+    + '<input type="number" class="ing-qty w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + (cantidadPreset || '') + '">'
+    + '</div>'
+    + '<div class="w-28 shrink-0">'
+    + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Unidad</label>'
+    + '<select class="ing-unit w-full px-2 py-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">'
+    + '<option value="">--</option>'
+    + '</select>'
+    + '</div>'
+    + '<div class="shrink-0 pb-0.5">'
+    + '<button type="button" class="ing-remove p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors touch-target" title="Quitar ingrediente">'
+    + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+    + '</button>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+
+  if (editIndex !== undefined) {
+    var existingRow = document.querySelector('#ingredientRow_' + editIndex);
+    if (existingRow) existingRow.outerHTML = html.replace('ingredientRowNew', 'ingredientRow_' + editIndex);
+  } else {
+    var container = $('#dishIngredients');
+    var noMsg = $('#noIngredientsMsg');
+    if (noMsg) noMsg.remove();
+    var temp = document.createElement('div');
+    temp.innerHTML = html;
+    container.appendChild(temp.firstElementChild);
+    var idx = container.querySelectorAll('.dish-ingredient-row').length - 1;
+    container.lastElementChild.id = 'ingredientRow_' + idx;
+  }
+
+  bindIngredientEvents();
+}
+
+function bindIngredientEvents() {
+  var rows = document.querySelectorAll('#dishIngredients .dish-ingredient-row');
+  rows.forEach(function (row) {
+    var removeBtn = row.querySelector('.ing-remove');
+    if (removeBtn && !removeBtn._bound) {
+      removeBtn._bound = true;
+      removeBtn.addEventListener('click', function () {
+        row.remove();
+        var remaining = document.querySelectorAll('#dishIngredients .dish-ingredient-row');
+        if (remaining.length === 0) {
+          $('#dishIngredients').innerHTML = '<p id="noIngredientsMsg" class="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl">Sin ingredientes. Agregá productos del inventario para armar la receta.</p>';
+        }
+      });
+    }
+
+    // Producto → llenar unidades
+    var prodSelect = row.querySelector('.ing-product');
+    var unitSelect = row.querySelector('.ing-unit');
+    if (prodSelect && unitSelect && !prodSelect._unitBound) {
+      prodSelect._unitBound = true;
+      prodSelect.addEventListener('change', function () {
+        var opt = this.options[this.selectedIndex];
+        var unidad = opt ? opt.getAttribute('data-unidad') || '' : '';
+        var pres = window.getPresentaciones(unidad);
+        unitSelect.innerHTML = pres.map(function (p) {
+          return '<option value="' + p.value + '"' + (p.factor === 1 ? ' selected' : '') + '>' + escapeHtml(p.label) + '</option>';
+        }).join('');
+      });
+      // Disparar cambio inicial si ya hay producto seleccionado
+      if (prodSelect.value) {
+        prodSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+  });
+}
+
+function renderIngredientList(ingredientes) {
+  var container = $('#dishIngredients');
+  container.innerHTML = '';
+  ingredientes.forEach(function (ing, i) {
+    var row = document.createElement('div');
+    row.innerHTML = '<div class="dish-ingredient-row bg-slate-50 border border-slate-100 rounded-xl" id="ingredientRow_' + i + '">'
+      + '<div class="flex items-end gap-3 p-3">'
+      + '<div class="flex-1 min-w-0">'
+      + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Producto</label>'
+      + '<select class="ing-product w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">'
+      + '<option value="">Seleccionar producto</option>'
+      + (window._dishProducts || []).map(function (pr) {
+        var info = ' (' + (pr.stock || 0) + ' ' + (pr.unidad || 'unid') + ')';
+        return '<option value="' + pr.id + '" data-unidad="' + (pr.unidad || '') + '"' + (ing.producto_id === pr.id ? ' selected' : '') + '>' + escapeHtml(pr.name) + info + '</option>';
+      }).join('')
+      + '</select>'
+      + '</div>'
+      + '<div class="w-24 shrink-0">'
+      + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
+      + '<input type="number" class="ing-qty w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + ing.cantidad + '">'
+      + '</div>'
+      + '<div class="w-28 shrink-0">'
+      + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Unidad</label>'
+      + '<select class="ing-unit w-full px-2 py-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">'
+      + '<option value="">--</option>'
+      + '</select>'
+      + '</div>'
+      + '<div class="shrink-0 pb-0.5">'
+      + '<button type="button" class="ing-remove p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors touch-target" title="Quitar ingrediente">'
+      + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+      + '</button>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
+    container.appendChild(row.firstElementChild);
+  });
+  bindIngredientEvents();
+  // Pre-seleccionar unidad guardada
+  ingredientes.forEach(function (ing, idx) {
+    var row = document.getElementById('ingredientRow_' + idx);
+    if (row && ing.unidad) {
+      var unitSel = row.querySelector('.ing-unit');
+      if (unitSel) {
+        setTimeout(function () {
+          for (var o = 0; o < unitSel.options.length; o++) {
+            if (unitSel.options[o].value === ing.unidad) {
+              unitSel.value = ing.unidad;
+              break;
+            }
+          }
+        }, 50);
+      }
+    }
+  });
+}
+
+async function saveDish(e) {
+  e.preventDefault();
+  var id = $('#dishId').value;
+  var isEdit = !!id;
+  var errorEl = $('#dishFormError');
+
+  var nombre = ($('#dishName').value || '').trim();
+  var tipo = $('#dishType').value;
+  var precio = parseFloat($('#dishPrice').value) || 0;
+
+  if (!nombre) {
+    errorEl.querySelector('p').textContent = 'El nombre es obligatorio';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+  if (!tipo) {
+    errorEl.querySelector('p').textContent = 'Seleccioná el tipo (plato o bebida)';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  errorEl.classList.add('hidden');
+
+  // Recolectar ingredientes
+  var ingredients = [];
+  var rows = document.querySelectorAll('#dishIngredients .dish-ingredient-row');
+  rows.forEach(function (row) {
+    var prodSelect = row.querySelector('.ing-product');
+    var qtyInput = row.querySelector('.ing-qty');
+    var unitInput = row.querySelector('.ing-unit');
+    if (prodSelect && prodSelect.value && qtyInput && parseFloat(qtyInput.value) > 0) {
+      ingredients.push({
+        producto_id: prodSelect.value,
+        cantidad: parseFloat(qtyInput.value),
+        unidad: (unitInput ? unitInput.value : '').trim() || 'g'
+      });
+    }
+  });
+
+  var payload = {
+    nombre: nombre,
+    descripcion: ($('#dishDescription').value || '').trim(),
+    tipo: tipo,
+    precio_venta: precio,
+    ingredientes: ingredients
+  };
+
+  try {
+    var res;
+    if (isEdit) {
+      res = await API.dishes.update(id, payload);
+    } else {
+      res = await API.dishes.create(payload);
+    }
+    if (res.success) {
+      showToast(isEdit ? 'Plato actualizado' : 'Plato creado', 'success');
+      closeModal('dishModal');
+      loadDishes();
+    } else {
+      errorEl.querySelector('p').textContent = res.message || 'Error al guardar';
+      errorEl.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.error('saveDish error:', err);
+    errorEl.querySelector('p').textContent = 'Error de conexion';
+    errorEl.classList.remove('hidden');
+  }
+}
+
+window.editDish = async function (dishId) {
+  await openDishModal(dishId);
+};
+
+window.deleteDish = async function (dishId, dishName) {
+  if (!confirm('¿Desactivar "' + dishName + '"? Dejará de estar disponible.')) return;
+  try {
+    var res = await API.dishes.delete(dishId);
+    if (res.success) {
+      showToast('Plato desactivado', 'success');
+      loadDishes();
+    } else {
+      showToast(res.message || 'Error al desactivar', 'error');
+    }
+  } catch (err) {
+    showToast('Error de conexion', 'error');
+  }
+};
 
 function estadoBadge(estado) {
   if (estado === 'pendiente') return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">'

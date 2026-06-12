@@ -16,17 +16,37 @@ window.PRESENTACIONES_POR_UNIDAD = {
     { value: 'kg', label: 'Kilogramo (kg)', factor: 1, icon: 'kg' },
     { value: 'g', label: 'Gramo (g)', factor: 0.001, icon: 'g' },
     { value: 'lb', label: 'Libra (0.454 kg)', factor: 0.454, icon: 'lb' },
+    { value: 'onza', label: 'Onza (28.35 g)', factor: 0.02835, icon: 'oz' },
     { value: 'bulto_25', label: 'Bulto x 25 kg', factor: 25, icon: 'b25' },
     { value: 'bulto_50', label: 'Bulto x 50 kg', factor: 50, icon: 'b50' }
   ],
   'kilogramo': [
     { value: 'kilogramo', label: 'Kilogramo (kg)', factor: 1, icon: 'kg' },
     { value: 'gramo', label: 'Gramo (g)', factor: 0.001, icon: 'g' },
-    { value: 'libra', label: 'Libra (0.454 kg)', factor: 0.454, icon: 'lb' }
+    { value: 'libra', label: 'Libra (0.454 kg)', factor: 0.454, icon: 'lb' },
+    { value: 'onza', label: 'Onza (28.35 g)', factor: 0.02835, icon: 'oz' }
+  ],
+  'g': [
+    { value: 'g', label: 'Gramo (g)', factor: 1, icon: 'g' },
+    { value: 'kg', label: 'Kilogramo (1000 g)', factor: 1000, icon: 'kg' },
+    { value: 'lb', label: 'Libra (453.6 g)', factor: 453.6, icon: 'lb' },
+    { value: 'onza', label: 'Onza (28.35 g)', factor: 28.35, icon: 'oz' }
+  ],
+  'gramo': [
+    { value: 'gramo', label: 'Gramo (g)', factor: 1, icon: 'g' },
+    { value: 'kilogramo', label: 'Kilogramo (1000 g)', factor: 1000, icon: 'kg' },
+    { value: 'libra', label: 'Libra (453.6 g)', factor: 453.6, icon: 'lb' }
   ],
   'lb': [
     { value: 'lb', label: 'Libra', factor: 1, icon: 'lb' },
-    { value: 'kg', label: 'Kilogramo (2.205 lb)', factor: 2.205, icon: 'kg' }
+    { value: 'kg', label: 'Kilogramo (2.205 lb)', factor: 2.205, icon: 'kg' },
+    { value: 'g', label: 'Gramo (0.0022 lb)', factor: 0.002205, icon: 'g' },
+    { value: 'onza', label: 'Onza (0.0625 lb)', factor: 0.0625, icon: 'oz' }
+  ],
+  'libra': [
+    { value: 'libra', label: 'Libra', factor: 1, icon: 'lb' },
+    { value: 'kilogramo', label: 'Kilogramo (2.205 lb)', factor: 2.205, icon: 'kg' },
+    { value: 'gramo', label: 'Gramo (0.0022 lb)', factor: 0.002205, icon: 'g' }
   ],
   'unidad': [
     { value: 'unidad', label: 'Unidad', factor: 1, icon: 'u' },

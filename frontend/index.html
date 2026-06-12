@@ -418,15 +418,12 @@
     /* Sidebar collapse (desktop) */
     @media (min-width: 1024px) {
       #sidebar.collapsed {
-        width: 5rem; /* w-20 */
+        width: 5rem !important;
       }
       #sidebar.collapsed .sidebar-label,
       #sidebar.collapsed .sidebar-user-info,
       #sidebar.collapsed .sidebar-header-text {
         display: none;
-      }
-      #sidebar.collapsed .sidebar-icon-bg {
-        margin: 0 auto;
       }
       #sidebar.collapsed .nav-link {
         justify-content: center;
@@ -439,16 +436,12 @@
       #sidebar.collapsed #logoutBtn {
         display: none;
       }
-      #sidebar.collapsed .sidebar-collapsed-logout {
+      #sidebar.collapsed .sidebar-collapsed-logout.show {
         display: flex;
       }
     }
-    .sidebar-collapsed-logout {
-      display: none;
-    }
-    .sidebar-collapsed-logout.show {
-      display: flex;
-    }
+    .sidebar-collapsed-logout { display: none; }
+    #sidebar.collapsed .sidebar-collapsed-logout { display: flex; }
 
     /* Cuando el sidebar está colapsado, ajustar padding del main */
     @media (min-width: 1024px) {
@@ -557,6 +550,61 @@
       white-space: nowrap;
       max-width: 200px;
     }
+
+    /* Sidebar accordion groups */
+    .sidebar-group-header { cursor: pointer; user-select: none; }
+    .sidebar-group-header:hover { background: var(--color-bg-sidebar-hover); }
+    .sidebar-group-items { max-height: 0; }
+    .sidebar-group.expanded .sidebar-chevron { transform: rotate(180deg); }
+    .sidebar-group.expanded .sidebar-group-items { max-height: 500px; }
+    #sidebar.collapsed .sidebar-group-header { justify-content: center; padding-left: 0.25rem; padding-right: 0.25rem; }
+    #sidebar.collapsed .sidebar-group-header .sidebar-group-label,
+    #sidebar.collapsed .sidebar-chevron { display: none; }
+    #sidebar.collapsed .sidebar-group-icon { width: 1.25rem; height: 1.25rem; }
+    #sidebar.collapsed .sidebar-group-items { max-height: 0 !important; }
+    #sidebar.collapsed .sidebar-group.expanded .sidebar-group-items { max-height: 0 !important; }
+    /* Pin: icono de fijar */
+    .pin-icon-outline { display: block; }
+    .pin-icon-filled { display: none; }
+    #sidebar.pinned .pin-icon-outline { display: none; }
+    #sidebar.pinned .pin-icon-filled { display: block; }
+    /* Oculto cuando colapsado, visible al hover */
+    #sidebar.collapsed:not(:hover) #sidebarPinBtn { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    #sidebar.collapsed:hover #sidebarPinBtn { opacity: 1; pointer-events: auto; transition: opacity 0.3s; }
+
+    /* Hover expand: collapsed sidebar se expande al pasar el mouse */
+    @media (min-width: 1024px) {
+      #sidebar.collapsed:hover {
+        width: 18rem !important;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.08);
+      }
+      #sidebar.collapsed:hover .sidebar-label { display: inline !important; }
+      #sidebar.collapsed:hover .sidebar-header-text { display: block !important; }
+      #sidebar.collapsed:hover .sidebar-user-info { display: block !important; }
+      #sidebar.collapsed:hover .sidebar-icon-bg { margin: 0 !important; }
+      #sidebar.collapsed:hover .pin-icon-outline { display: none !important; }
+      #sidebar.collapsed:hover .pin-icon-filled { display: block !important; }
+      #sidebar.collapsed:hover #logoutBtn { display: flex !important; }
+      #sidebar.collapsed:hover #logoutBtnCollapsed { display: none !important; }
+      #sidebar.collapsed:hover .sidebar-group-header { justify-content: flex-start; padding-left: 0.75rem; padding-right: 0.75rem; }
+      #sidebar.collapsed:hover .sidebar-group-header .sidebar-group-label { display: block !important; }
+      #sidebar.collapsed:hover .sidebar-chevron { display: block !important; }
+      #sidebar.collapsed:hover .sidebar-group-icon { width: 0.875rem; height: 0.875rem; }
+      #sidebar.collapsed:hover .sidebar-group-items { max-height: none !important; }
+      #sidebar.collapsed:hover .sidebar-group.expanded .sidebar-group-items { max-height: 500px !important; }
+      #sidebar.collapsed:hover .sidebar-group:not(.expanded) .sidebar-group-items { max-height: 0 !important; }
+      #sidebar.collapsed:hover .nav-link { justify-content: flex-start; padding-left: 0.75rem; padding-right: 0.75rem; }
+      #sidebar.collapsed:hover .sidebar-user-row { justify-content: flex-start; }
+    }
+
+    #sidebar.collapsed .sidebar-group-header span,
+    #sidebar.collapsed .sidebar-chevron { display: none; }
+    #sidebar.collapsed .sidebar-group-header { justify-content: center; padding: 0.5rem; }
+    #sidebar.collapsed .sidebar-group-items { max-height: 0 !important; }
+
+    /* Toggle de tipo de venta */
+    [data-theme="dark"] .sale-type-btn.text-slate-600 { color: #94a3b8 !important; }
+    [data-theme="dark"] .sale-type-btn.active-tab { color: var(--color-text-primary) !important; }
   </style>
 </head>
 <body class="h-full bg-slate-50 animate-fade-in">
@@ -570,105 +618,153 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
         </svg>
       </div>
-      <div class="sidebar-header-text min-w-0">
+      <div class="sidebar-header-text min-w-0 flex-1">
         <h1 class="text-base font-bold sidebar-text-primary tracking-tight">InventarioApp</h1>
         <p class="text-xs sidebar-text-muted">Panel de control</p>
       </div>
+      <button id="sidebarPinBtn" class="pin-btn shrink-0 p-1 rounded-lg sidebar-text-muted hover:sidebar-text-primary hover:bg-slate-100/50 transition-all touch-target hidden lg:flex items-center justify-center" title="Fijar menú">
+        <svg class="w-4 h-4 pin-icon-outline" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 4.5l-4 4L7 7l-1.5 1.5 6 6L13 16l-1.5-4 4-4-1.5-1.5M9 15l-3 6M15 4.5L19.5 9"/></svg>
+        <svg class="w-4 h-4 pin-icon-filled hidden" fill="currentColor" stroke="none" viewBox="0 0 24 24"><path d="M14.5 4.5l-3.5 3.5-4-1.5L5.5 8l6 6L13 15.5l-1.5-4 4-4L14.5 4.5zM9 15l-3 6 6-3-3-3z"/></svg>
+      </button>
     </div>
 
-    <nav class="px-3 py-6 space-y-1">
-      <a href="#dashboard" data-nav="dashboard" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
-        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
-          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-          </svg>
+    <nav class="px-3 py-4 space-y-1 overflow-y-auto" style="max-height:calc(100dvh - 160px)">
+      <!-- Grupo: Panel -->
+      <div class="sidebar-group expanded" data-group="panel">
+        <button type="button" class="sidebar-group-header w-full flex items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider sidebar-text-muted hover:sidebar-text-secondary transition-colors rounded-lg" data-group-toggle="panel">
+          <svg class="w-3.5 h-3.5 shrink-0 sidebar-group-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span class="flex-1 text-left sidebar-group-label">Panel</span>
+          <svg class="sidebar-chevron w-3 h-3 shrink-0 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="sidebar-group-items overflow-hidden transition-all duration-300 ease-out">
+          <a href="#dashboard" data-nav="dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Dashboard</span>
+          </a>
         </div>
-        <span class="sidebar-label">Dashboard</span>
-      </a>
-      <a href="#inventory" data-nav="inventory" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
-        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
-          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
+      </div>
+
+      <!-- Grupo: Inventario -->
+      <div class="sidebar-group" data-group="inventory">
+        <button type="button" class="sidebar-group-header w-full flex items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider sidebar-text-muted hover:sidebar-text-secondary transition-colors rounded-lg" data-group-toggle="inventory">
+          <svg class="w-3.5 h-3.5 shrink-0 sidebar-group-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          <span class="flex-1 text-left sidebar-group-label">Inventario</span>
+          <svg class="sidebar-chevron w-3 h-3 shrink-0 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="sidebar-group-items overflow-hidden transition-all duration-300 ease-out">
+          <a href="#inventory" data-nav="inventory" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Productos</span>
+          </a>
+          <a href="#dishes" data-nav="dishes" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Platos</span>
+          </a>
         </div>
-        <span class="sidebar-label">Inventario</span>
-      </a>
-      <a href="#sales" data-nav="sales" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
-        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
-          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3-3m0 0l3 3m-3-3v12"/>
-          </svg>
+      </div>
+
+      <!-- Grupo: Operaciones -->
+      <div class="sidebar-group" data-group="operations">
+        <button type="button" class="sidebar-group-header w-full flex items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider sidebar-text-muted hover:sidebar-text-secondary transition-colors rounded-lg" data-group-toggle="operations">
+          <svg class="w-3.5 h-3.5 shrink-0 sidebar-group-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+          <span class="flex-1 text-left sidebar-group-label">Operaciones</span>
+          <svg class="sidebar-chevron w-3 h-3 shrink-0 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="sidebar-group-items overflow-hidden transition-all duration-300 ease-out">
+          <a href="#sales" data-nav="sales" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3-3m0 0l3 3m-3-3v12"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Pedidos</span>
+          </a>
+          <a href="#entradas" data-nav="entradas" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12.75l3 3 3-3M12 15.75V9"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Entradas</span>
+          </a>
+          <a href="#movimientos" data-nav="movimientos" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Movimientos</span>
+          </a>
         </div>
-        <span class="sidebar-label">Salidas</span>
-      </a>
-      <a href="#entradas" data-nav="entradas" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
-        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
-          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12.75l3 3 3-3M12 15.75V9"/>
-          </svg>
+      </div>
+
+      <!-- Grupo: Administracion -->
+      <div class="sidebar-group" data-group="admin">
+        <button type="button" class="sidebar-group-header w-full flex items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider sidebar-text-muted hover:sidebar-text-secondary transition-colors rounded-lg" data-group-toggle="admin" data-requires-permission="puedeGestionarUsuarios">
+          <svg class="w-3.5 h-3.5 shrink-0 sidebar-group-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span class="flex-1 text-left sidebar-group-label">Admin</span>
+          <svg class="sidebar-chevron w-3 h-3 shrink-0 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="sidebar-group-items overflow-hidden transition-all duration-300 ease-out">
+          <a href="#users" data-nav="users" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target" data-requires-permission="puedeGestionarUsuarios">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Usuarios</span>
+          </a>
+          <a href="#config" data-nav="config" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target" data-requires-permission="puedeGestionarUsuarios">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Config</span>
+          </a>
         </div>
-        <span class="sidebar-label">Entradas</span>
-      </a>
-      <a href="#movimientos" data-nav="movimientos" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target">
-        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
-          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-        </div>
-        <span class="sidebar-label">Movimientos</span>
-      </a>
-      <a href="#users" data-nav="users" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target" data-requires-permission="puedeGestionarUsuarios">
-        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
-          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-          </svg>
-        </div>
-        <span class="sidebar-label">Usuarios</span>
-      </a>
-      <a href="#config" data-nav="config" class="nav-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium group touch-target" data-requires-permission="puedeGestionarUsuarios">
-        <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
-          <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          </svg>
-        </div>
-        <span class="sidebar-label">Configuracion</span>
-      </a>
-      </a>
+      </div>
     </nav>
 
-    <div class="absolute bottom-0 left-0 right-0 p-3 border-t sidebar-user-bg backdrop-blur-sm">
-      <div id="userInfoRow" class="sidebar-user-row flex items-center gap-3 px-2 py-1">
-        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-md shrink-0">
-          <span class="text-xs font-bold text-white" id="userInitial">A</span>
+    <div class="absolute bottom-0 left-0 right-0 border-t sidebar-user-bg backdrop-blur-sm p-3">
+        <div id="userInfoRow" class="sidebar-user-row flex items-center gap-3 px-2 py-1">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-md shrink-0">
+            <span class="text-xs font-bold text-white" id="userInitial">A</span>
+          </div>
+          <div class="sidebar-user-info flex-1 min-w-0">
+            <p class="text-sm font-semibold sidebar-text-primary truncate" id="userName">Admin</p>
+            <p class="text-xs sidebar-text-muted" id="userRole">Administrador</p>
+          </div>
+          <button id="logoutBtn" class="p-2 sidebar-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all touch-target" title="Cerrar sesion">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          </button>
+          <a id="loginLink" href="/views/login.html" class="hidden p-2 sidebar-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all touch-target" title="Iniciar sesion">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+          </a>
         </div>
-        <div class="sidebar-user-info flex-1 min-w-0">
-          <p class="text-sm font-semibold sidebar-text-primary truncate" id="userName">Admin</p>
-          <p class="text-xs sidebar-text-muted" id="userRole">Administrador</p>
-        </div>
-        <button id="logoutBtn" class="p-2 sidebar-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all touch-target" title="Cerrar sesion">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-          </svg>
+        <button id="logoutBtnCollapsed" class="sidebar-collapsed-logout w-full p-2 sidebar-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all touch-target items-center justify-center" title="Cerrar sesión">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
         </button>
-        <a id="loginLink" href="/views/login.html" class="hidden p-2 sidebar-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all touch-target" title="Iniciar sesion">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-          </svg>
-        </a>
-      </div>
-      <button id="logoutBtnCollapsed" class="sidebar-collapsed-logout w-full p-2 sidebar-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all touch-target items-center justify-center" title="Cerrar sesión">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-        </svg>
-      </button>
     </div>
   </aside>
 
   <div class="lg:pl-72 lg-sidebar-pad min-h-[100dvh] transition-all duration-300">
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
       <div class="flex items-center justify-between px-4 py-3 sm:px-6 gap-3">
-        <button id="menuToggle" class="p-2.5 -ml-2 sidebar-text-secondary hover:bg-slate-100 rounded-xl transition-colors touch-target" title="Mostrar/ocultar menú" aria-label="Alternar menú">
+        <button id="menuToggle" class="lg:hidden p-2.5 -ml-2 sidebar-text-secondary hover:bg-slate-100 rounded-xl transition-colors touch-target" title="Mostrar/ocultar menú" aria-label="Alternar menú">
           <svg id="menuIconOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
@@ -677,6 +773,13 @@
           <h2 class="text-lg sm:text-xl font-bold sidebar-text-primary truncate" id="pageTitle">Dashboard</h2>
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
+          <button id="newOrderBtn" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md shadow-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/30 hover:from-emerald-600 hover:to-teal-700 transition-all touch-target" title="Nuevo Pedido">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>Nuevo Pedido</span>
+          </button>
+          <button id="newOrderBtnMobile" class="sm:hidden inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl shadow-md shadow-emerald-500/25 touch-target" title="Nuevo Pedido">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          </button>
           <button id="themeToggle" class="theme-toggle" aria-label="Cambiar modo" title="Modo oscuro">
             <svg class="w-5 h-5 theme-icon-sun hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -932,7 +1035,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span>Nueva Salida</span>
+                <span>Nuevo Pedido</span>
               </button>
             </div>
           </div>
@@ -940,7 +1043,7 @@
           <div class="lg:hidden flex items-center justify-between gap-2 mt-3">
             <button id="newSaleBtnMobile" data-requires-permission="puedeCrearSalidas" class="btn-success inline-flex items-center justify-center gap-1.5 px-4 py-2 text-white text-xs font-semibold rounded-lg shadow-sm touch-target">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-              <span>Nueva Salida</span>
+              <span>Nuevo Pedido</span>
             </button>
             <div class="flex items-center gap-2">
               <button data-open-filters="sales" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
@@ -1256,7 +1359,7 @@
       <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-close-modal></div>
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto z-10 animate-scale-in">
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h3 class="text-lg font-semibold text-slate-800">Nueva Salida</h3>
+          <h3 class="text-lg font-semibold text-slate-800">Nuevo Pedido</h3>
           <button data-close-modal class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors touch-target">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -1265,6 +1368,14 @@
         </div>
         <form id="saleForm" class="p-6">
           <div class="space-y-4">
+            <!-- Toggle: Tipo de venta -->
+            <div class="flex rounded-xl bg-slate-100 p-1 gap-1 border border-slate-200">
+              <button type="button" id="saleTypePlatos" class="sale-type-btn flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors active-tab bg-white shadow-sm text-slate-800">Platos y Bebidas</button>
+              <button type="button" id="saleTypeProductos" class="sale-type-btn flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors text-slate-600 hover:text-slate-800">Productos</button>
+            </div>
+
+            <!-- Seccion: Productos (existente) -->
+            <div id="saleProductSection" class="hidden">
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">Agregar Productos</label>
               <div class="space-y-2">
@@ -1298,6 +1409,33 @@
                   Agregar a la salida
                 </button>
               </div>
+            </div>
+            </div>
+
+            <!-- Seccion: Platos y Bebidas -->
+            <div id="saleDishSection">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Agregar Platos y Bebidas</label>
+              <div class="space-y-2">
+                <div class="flex gap-2 items-end">
+                  <div class="flex-1">
+                    <select id="saleDishSelect" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+                      <option value="">Seleccionar plato o bebida</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cant.</label>
+                    <input type="number" id="saleDishQuantity" min="1" step="1" value="1" class="w-20 px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+                  </div>
+                </div>
+                <button type="button" id="addDishSaleItem" class="w-full btn-success px-4 py-2.5 text-white rounded-xl text-sm font-medium touch-target flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  Agregar al pedido
+                </button>
+              </div>
+            </div>
             </div>
 
             <div class="border border-slate-200 rounded-xl overflow-hidden">
@@ -1339,7 +1477,7 @@
 
             <div class="flex gap-3 pt-2">
               <button type="button" data-close-modal class="flex-1 px-4 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
-              <button type="submit" class="btn-success flex-1 px-4 py-3 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Registrar Salida</button>
+              <button type="submit" class="btn-success flex-1 px-4 py-3 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Registrar Pedido</button>
             </div>
           </div>
         </form>
@@ -1466,6 +1604,78 @@
     </div>
   </div>
 
+  <!-- Vista: Platos -->
+  <div id="view-dishes" class="view-section hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">Platos y Bebidas</h1>
+      <button id="addDishBtn" data-requires-permission="puedeCrearProductos" class="btn-primary px-4 py-2.5 text-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-md touch-target">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Plato
+      </button>
+    </div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+      <div class="relative flex-1 max-w-md">
+        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" id="searchDishes" placeholder="Buscar plato o bebida..." class="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+      </div>
+      <select id="filterDishType" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+        <option value="">Todos los tipos</option>
+        <option value="plato">Platos</option>
+        <option value="bebida">Bebidas</option>
+      </select>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
+      <table class="w-full text-sm table-desktop">
+        <thead class="bg-slate-50">
+          <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            <th class="px-6 py-3">Nombre</th>
+            <th class="px-6 py-3">Tipo</th>
+            <th class="px-6 py-3 text-center">Ingredientes</th>
+            <th class="px-6 py-3 text-right">Precio Venta</th>
+            <th class="px-6 py-3 text-right">Costo</th>
+            <th class="px-6 py-3 text-center">Estado</th>
+            <th class="px-6 py-3"></th>
+          </tr>
+        </thead>
+        <tbody id="dishesTable" class="divide-y divide-slate-100">
+          <tr><td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Cargando...</td></tr>
+        </tbody>
+      </table>
+      <div id="dishesCards" class="table-card-mobile p-4 space-y-3"></div>
+    </div>
+
+    <!-- Archivados -->
+    <div id="dishesArchivedSection" class="mt-8 hidden">
+      <button type="button" id="toggleArchivedBtn" class="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-colors">
+        <svg class="w-4 h-4 shrink-0 transition-transform duration-200" id="archivedChevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        <span id="dishesArchivedLabel">Platos archivados</span>
+        <span id="dishesArchivedCount" class="font-normal text-slate-400"></span>
+      </button>
+      <div id="dishesArchivedContent" class="mt-3" style="max-height:0;overflow:hidden;transition:max-height 0.3s ease-out">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
+        <table class="w-full text-sm table-desktop">
+          <thead class="bg-slate-50">
+            <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <th class="px-6 py-3">Nombre</th>
+              <th class="px-6 py-3">Tipo</th>
+              <th class="px-6 py-3 text-center">Ingredientes</th>
+              <th class="px-6 py-3 text-right">Precio Venta</th>
+              <th class="px-6 py-3 text-right">Costo</th>
+              <th class="px-6 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="dishesArchivedTable" class="divide-y divide-slate-100">
+            <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Sin platos archivados</td></tr>
+          </tbody>
+        </table>
+        <div id="dishesArchivedCards" class="table-card-mobile p-4 space-y-3"></div>
+      </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Vista: Usuarios -->
   <div id="view-users" class="view-section hidden">
     <div class="flex items-center justify-between mb-6">
@@ -1578,6 +1788,152 @@
     </div>
   </div>
 
+  <!-- Modal: Plato crear/editar -->
+  <div id="dishModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
+      <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-close-modal></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto z-10 animate-scale-in">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h3 class="text-lg font-semibold text-slate-800" id="dishModalTitle">Nuevo Plato</h3>
+          <button data-close-modal class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors touch-target">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <form id="dishForm" class="p-6 space-y-5">
+          <input type="hidden" id="dishId">
+
+          <!-- Fila 1: Nombre + Tipo -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Nombre *</label>
+              <input type="text" id="dishName" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target" placeholder="Ej: Bandeja Paisa">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Tipo *</label>
+              <select id="dishType" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+                <option value="">Seleccionar</option>
+                <option value="plato">Plato</option>
+                <option value="bebida">Bebida</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Fila 2: Descripción + Precio -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
+              <textarea id="dishDescription" rows="2" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all resize-none touch-target" placeholder="Descripción breve del plato o bebida"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Precio venta *</label>
+              <input type="number" id="dishPrice" required min="0" step="0.01" value="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all touch-target">
+            </div>
+          </div>
+
+          <!-- Receta: ingredientes -->
+          <div class="border-t border-slate-100 pt-5">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-sm font-semibold text-slate-800">Receta — Ingredientes</h4>
+              <button type="button" id="addIngredientBtn" class="px-3.5 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors touch-target inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Agregar ingrediente
+              </button>
+            </div>
+            <div id="dishIngredients" class="space-y-3 max-h-72 overflow-y-auto">
+              <p id="noIngredientsMsg" class="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl">Sin ingredientes. Agregá productos del inventario para armar la receta.</p>
+            </div>
+          </div>
+
+          <div id="dishFormError" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p class="text-sm text-red-600"></p>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="button" data-close-modal class="flex-1 px-5 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
+            <button type="submit" class="flex-1 btn-primary px-5 py-3 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Guardar Plato</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: preview del pedido antes de confirmar -->
+  <div id="orderPreviewModal" class="hidden fixed inset-0 z-[55] overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
+      <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-close-preview></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto z-10 animate-scale-in overflow-hidden">
+        <div class="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-medium text-emerald-200 uppercase tracking-wider">Resumen del Pedido</p>
+              <p class="text-lg font-bold text-white mt-0.5" id="previewCocina">Cocina 1</p>
+            </div>
+            <button data-close-preview class="p-2 text-emerald-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors touch-target">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="p-5 space-y-3">
+          <div id="previewItems"></div>
+          <div class="border-t border-slate-100 pt-3 flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-700">Total</span>
+            <span class="text-xl font-bold text-slate-800" id="previewTotal">$0</span>
+          </div>
+        </div>
+        <div class="px-5 pb-5 flex gap-3">
+          <button data-close-preview class="flex-1 px-4 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
+          <button id="confirmOrderBtn" class="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Confirmar Pedido
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ticket del pedido -->
+  <div id="ticketModal" class="hidden fixed inset-0 z-[55] overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
+      <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-close-ticket></div>
+      <div class="relative z-10 animate-scale-in w-full max-w-sm">
+        <!-- Ticket paper -->
+        <div id="ticketPrint" class="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-slate-200">
+          <div class="px-6 py-4 text-center border-b-2 border-dashed border-slate-200">
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-mono">InventarioHub</p>
+            <p class="text-lg font-bold text-slate-800 font-mono mt-0.5" id="ticketNumber">#------</p>
+            <div class="flex justify-center gap-4 mt-1">
+              <span class="text-[11px] text-slate-500 font-mono" id="ticketCocina">Cocina 1</span>
+              <span class="text-[11px] text-slate-500 font-mono" id="ticketFecha">--</span>
+            </div>
+          </div>
+          <div class="px-5 py-3 space-y-2" id="ticketItems"></div>
+          <div class="px-5 py-3 border-t-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-between">
+            <span class="text-sm font-bold text-slate-800 font-mono">TOTAL</span>
+            <span class="text-xl font-bold text-slate-800 font-mono" id="ticketTotal">$0</span>
+          </div>
+        </div>
+        <!-- Actions -->
+        <div class="flex gap-3 mt-4 ticket-actions">
+          <button data-close-ticket class="flex-1 px-4 py-3 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cerrar</button>
+          <button id="printTicketBtn" class="flex-1 px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl shadow-sm text-sm touch-target flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Imprimir
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print-only styles -->
+  <style>
+    @media print {
+      body * { visibility: hidden !important; }
+      #ticketPrint, #ticketPrint * { visibility: visible !important; }
+      #ticketPrint { position: absolute; left: 0; top: 0; width: 80mm; box-shadow: none !important; border-radius: 0 !important; border: none !important; }
+      .ticket-actions { display: none !important; }
+    }
+  </style>
+
   <div id="toast" class="hidden fixed bottom-6 right-6 z-[60] max-w-sm animate-slide-up">
     <div class="flex items-center gap-3 px-5 py-4 rounded-xl shadow-lg border">
       <span id="toastIcon"></span>
@@ -1598,6 +1954,24 @@
         <div class="flex gap-3">
           <button id="confirmDiscardCancel" data-confirm-cancel class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Seguir editando</button>
           <button id="confirmDiscardOk" class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Si, descartar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: confirmacion generica -->
+  <div id="confirmActionModal" class="hidden fixed inset-0 z-[60] overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4">
+      <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-confirm-action-cancel></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-auto z-10 animate-scale-in p-6 text-center">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-rose-100 flex items-center justify-center" id="confirmActionIcon">
+          <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-800 mb-2" id="confirmActionTitle">¿Confirmar?</h3>
+        <p class="text-sm text-slate-600 mb-6" id="confirmActionMessage">¿Estás seguro?</p>
+        <div class="flex gap-3">
+          <button data-confirm-action-cancel class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
+          <button id="confirmActionOk" class="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Confirmar</button>
         </div>
       </div>
     </div>

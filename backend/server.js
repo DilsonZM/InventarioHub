@@ -10,6 +10,7 @@ const comprasRoutes = require('./routes/compras');
 const reportesRoutes = require('./routes/reportes');
 const usersRoutes = require('./routes/users');
 const configRoutes = require('./routes/config');
+const dishesRoutes = require('./routes/dishes');
 const { authMiddleware, requirePermission } = require('./middleware/auth');
 const supabase = require('./lib/supabase');
 
@@ -50,6 +51,7 @@ app.use('/api/products', authMiddleware, productRoutes);
 app.use('/api/sales', authMiddleware, salesRoutes);
 app.use('/api/compras', authMiddleware, comprasRoutes);
 app.use('/api/reportes', authMiddleware, reportesRoutes);
+app.use('/api/dishes', authMiddleware, dishesRoutes);
 
 app.get('/api/stats', authMiddleware, async (req, res) => {
   try {
