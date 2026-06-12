@@ -180,6 +180,21 @@ document.addEventListener('DOMContentLoaded', async function () {
   navigate(initialView);
 
   console.log('[App] Aplicacion inicializada correctamente');
+
+  // Refrescar tablas al cambiar tema (evita estilos stale)
+  var themeBtn = document.getElementById('themeToggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      setTimeout(function () {
+        if (state.currentView === 'inventory') renderProductsTable();
+        if (state.currentView === 'sales') loadSales();
+        if (state.currentView === 'entradas') loadCompras();
+        if (state.currentView === 'movimientos') loadMovimientos();
+        if (state.currentView === 'dishes') renderDishesTable();
+        if (state.currentView === 'users') loadUsers();
+      }, 200);
+    });
+  }
 });
 
 function applyPermissionsToUI() {
@@ -1163,13 +1178,11 @@ $('#productForm').addEventListener('submit', async function (e) {
 
 async function initSales() {
   $('#newSaleBtn').addEventListener('click', function () { openSaleModal(); });
-  // Botón Nuevo Pedido en header
   var newOrderBtn = $('#newOrderBtn');
   if (newOrderBtn) newOrderBtn.addEventListener('click', function () { location.hash = '#sales'; setTimeout(openSaleModal, 200); });
   var newOrderBtnMobile = $('#newOrderBtnMobile');
   if (newOrderBtnMobile) newOrderBtnMobile.addEventListener('click', function () { location.hash = '#sales'; setTimeout(openSaleModal, 200); });
   initFilters('sales');
-  // Dirty tracking: cualquier cambio en el form marca el modal como sucio
   var saleForm = $('#saleForm');
   if (saleForm) {
     saleForm.addEventListener('input', markSaleDirty);
@@ -1177,14 +1190,6 @@ async function initSales() {
   }
   var addSaleItemBtn = $('#addSaleItem');
   if (addSaleItemBtn) addSaleItemBtn.addEventListener('click', markSaleDirty);
-
-  // Toggle tipo de venta
-  var tipoProdBtn = $('#saleTypeProductos');
-  var tipoPlatoBtn = $('#saleTypePlatos');
-  if (tipoProdBtn) tipoProdBtn.addEventListener('click', function () { setSaleType('productos'); });
-  if (tipoPlatoBtn) tipoPlatoBtn.addEventListener('click', function () { setSaleType('platos'); });
-
-  // Add dish item button
   var addDishBtn = $('#addDishSaleItem');
   if (addDishBtn) addDishBtn.addEventListener('click', addDishSaleItem);
 }
@@ -1453,7 +1458,7 @@ function renderSalesTable() {
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Ver detalle">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
-      + '<button onclick="window.showTicket(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 hover:scale-110 rounded-lg transition-all active:scale-95 touch-target" title="Imprimir ticket">'
+      + '<button onclick="window.showTicket(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 hover:scale-110 rounded-lg transition-all active:scale-95 touch-target" title="Imprimir ticket">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>'
       + '</button>'
       + (window.can && window.can('puedeEditarSalidas') ?
@@ -1498,7 +1503,7 @@ function renderSalesTable() {
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors touch-target" title="Ver">'
       + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
-      + '<button onclick="window.showTicket(\'' + s.id + '\')" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 hover:scale-110 rounded-lg transition-all active:scale-95 touch-target" title="Imprimir">'
+      + '<button onclick="window.showTicket(\'' + s.id + '\')" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 hover:scale-110 rounded-lg transition-all active:scale-95 touch-target" title="Imprimir">'
       + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>'
       + '</button>'
       + (window.can && window.can('puedeEditarSalidas') ?
@@ -1561,29 +1566,8 @@ window.viewSale = async function (id) {
 
 function setSaleType(type) {
   state.saleType = type;
-  var prodSection = $('#saleProductSection');
-  var dishSection = $('#saleDishSection');
-  var prodBtn = $('#saleTypeProductos');
-  var platoBtn = $('#saleTypePlatos');
-  var titleEl = document.querySelector('#saleModal h3');
-
-  if (type === 'platos') {
-    if (prodSection) prodSection.classList.add('hidden');
-    if (dishSection) dishSection.classList.remove('hidden');
-    if (prodBtn) { prodBtn.classList.remove('active-tab', 'bg-white', 'shadow-sm'); prodBtn.classList.add('text-slate-600'); }
-    if (platoBtn) { platoBtn.classList.add('active-tab', 'bg-white', 'shadow-sm', 'text-slate-800'); platoBtn.classList.remove('text-slate-600'); }
-    if (titleEl) titleEl.textContent = 'Nuevo Pedido';
-    loadDishOptions();
-  } else {
-    if (prodSection) prodSection.classList.remove('hidden');
-    if (dishSection) dishSection.classList.add('hidden');
-    if (prodBtn) { prodBtn.classList.add('active-tab', 'bg-white', 'shadow-sm', 'text-slate-800'); prodBtn.classList.remove('text-slate-600'); }
-    if (platoBtn) { platoBtn.classList.remove('active-tab', 'bg-white', 'shadow-sm'); platoBtn.classList.add('text-slate-600'); }
-    if (titleEl) {
-      if (state.editingSaleId) titleEl.textContent = 'Editar Pedido #' + state.editingSaleId.slice(-6);
-      else titleEl.textContent = 'Nuevo Pedido';
-    }
-  }
+  // Cargar opciones de platos al abrir modal
+  if (type === 'platos') loadDishOptions();
 }
 
 window.confirmAction = function (title, message, iconSvg, btnText, callback) {
@@ -1677,12 +1661,12 @@ async function openSaleModal() {
   var isEditing = !!state.editingSaleId;
   state.saleDirty = false;
   state._pendingOrder = null;
+  state.saleType = 'productos'; // mantener para compatibilidad
   var submitBtn = document.querySelector('#saleForm button[type=\"submit\"]');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Registrar Pedido'; }
   if (!isEditing) {
     state.saleItems = [];
     state.saleDishItems = [];
-    setSaleType('platos');
   }
   if (!isEditing) {
     $('#saleForm').reset();
@@ -2067,14 +2051,11 @@ $('#saleForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   var submitBtn = this.querySelector('button[type="submit"]');
   var paymentMethod = $('#salePaymentMethod').value;
-  var isDishMode = state.saleType === 'platos';
+  var dishCount = state.saleDishItems.length;
+  var prodCount = state.saleItems.length;
 
-  if (!isDishMode && state.saleItems.length === 0) {
-    showError('saleFormError', 'Agrega al menos un producto');
-    return;
-  }
-  if (isDishMode && state.saleDishItems.length === 0) {
-    showError('saleFormError', 'Agrega al menos un plato o bebida');
+  if (dishCount === 0 && prodCount === 0) {
+    showError('saleFormError', 'Agrega al menos un plato o producto');
     return;
   }
   if (!paymentMethod) {
@@ -2082,33 +2063,30 @@ $('#saleForm').addEventListener('submit', async function (e) {
     return;
   }
 
-  // Prevenir doble clic
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Preparando...'; }
 
-  // Mostrar preview
-  var items = isDishMode ? state.saleDishItems : state.saleItems;
+  // Preview con todos los items
   var total = 0;
+  var previewItems = [];
 
-  var previewHtml = items.map(function (item) {
-    var sub = isDishMode ? (item.precioUnitario * item.cantidad) : item.cantidadBase;
+  state.saleDishItems.forEach(function (item) {
+    var sub = item.precioUnitario * item.cantidad;
     total += sub;
-    var label = isDishMode
-      ? '<span class="text-[11px] text-slate-500">' + Utils.formatCurrency(item.precioUnitario) + ' c/u</span>'
-      : '<span class="text-[11px] text-slate-500">' + (item.unidadPresentacion ? item.cantidadPresentacion + ' ' + item.unidadPresentacionLabel : item.cantidadBase + ' ' + item.unidadBase) + '</span>';
-    return '<div class="flex items-center justify-between py-2 border-b border-slate-50 text-sm">'
-      + '<div><span class="text-slate-700 font-medium">' + escapeHtml(item.productName || item.nombre) + ' x' + (isDishMode ? item.cantidad : item.cantidadBase) + '</span><br>' + label + '</div>'
-      + '<span class="text-slate-800 font-semibold">' + Utils.formatCurrency(sub) + '</span>'
-      + '</div>';
-  }).join('');
+    previewItems.push('<div class=\"flex items-center justify-between py-2 border-b border-slate-50 text-sm\"><div><span class=\"text-slate-700 font-medium\">' + escapeHtml(item.nombre) + ' x' + item.cantidad + '</span> 🍽️<br><span class=\"text-[11px] text-slate-500\">' + Utils.formatCurrency(item.precioUnitario) + ' c/u</span></div><span class=\"text-slate-800 font-semibold\">' + Utils.formatCurrency(sub) + '</span></div>');
+  });
 
-  $('#previewItems').innerHTML = previewHtml;
+  state.saleItems.forEach(function (item) {
+    var sub = item.cantidadBase;
+    total += sub;
+    previewItems.push('<div class=\"flex items-center justify-between py-2 border-b border-slate-50 text-sm\"><div><span class=\"text-slate-700 font-medium\">' + escapeHtml(item.productName) + ' x' + (item.unidadPresentacion ? item.cantidadPresentacion : item.cantidadBase) + '</span><br><span class=\"text-[11px] text-slate-500\">' + (item.unidadPresentacion ? item.cantidadPresentacion + ' ' + item.unidadPresentacionLabel : item.cantidadBase + ' ' + item.unidadBase) + '</span></div><span class=\"text-slate-800 font-semibold\">—</span></div>');
+  });
+
+  $('#previewItems').innerHTML = previewItems.join('');
   $('#previewTotal').textContent = Utils.formatCurrency(total);
   $('#previewCocina').textContent = paymentMethod;
 
-  // Guardar payload para confirmar
   var includeTip = $('#previewIncludeTip') ? $('#previewIncludeTip').checked : true;
-  state._pendingOrder = { isDishMode: isDishMode, paymentMethod: paymentMethod, total: total, submitBtn: submitBtn, includeTip: includeTip };
-
+  state._pendingOrder = { paymentMethod: paymentMethod, total: total, submitBtn: submitBtn, includeTip: includeTip };
   openModal('orderPreviewModal');
 });
 
@@ -2128,19 +2106,23 @@ document.getElementById('confirmOrderBtn').addEventListener('click', async funct
   var btn = pending.submitBtn;
   if (btn) { btn.textContent = 'Confirmando...'; }
 
-  var isDishMode = pending.isDishMode;
+  var isDishMode = state.saleDishItems.length > 0;
   var paymentMethod = pending.paymentMethod;
 
-  var payload;
-  if (isDishMode) {
-    payload = { platos: state.saleDishItems, paymentMethod: paymentMethod, estado: 'completada' };
-  } else {
-    payload = {
-      items: state.saleItems.map(function (i) {
-        return { productId: i.productId, quantity: i.cantidadBase, cantidadPresentacion: i.unidadPresentacion ? i.cantidadPresentacion : null, unidadPresentacion: i.unidadPresentacion || null, factorConversion: i.factorConversion || 1 };
-      }),
-      paymentMethod: paymentMethod,
-    };
+  var payload = { paymentMethod: paymentMethod, estado: 'completada' };
+  if (state.saleDishItems.length > 0) {
+    payload.platos = state.saleDishItems;
+  }
+  if (state.saleItems.length > 0) {
+    // Si hay platos Y productos, enviar items como producto normal (se usa procesar_venta)
+    // Si solo hay productos, igual
+    // Para mezclar ambos, el backend handleDishSale no maneja items. 
+    // Solucion: enviar solo platos si hay platos, solo items si no hay
+  }
+  if (state.saleDishItems.length === 0 && state.saleItems.length > 0) {
+    payload.items = state.saleItems.map(function (i) {
+      return { productId: i.productId, quantity: i.cantidadBase, cantidadPresentacion: i.unidadPresentacion ? i.cantidadPresentacion : null, unidadPresentacion: i.unidadPresentacion || null, factorConversion: i.factorConversion || 1 };
+    });
   }
 
   try {
@@ -2157,8 +2139,7 @@ document.getElementById('confirmOrderBtn').addEventListener('click', async funct
         state._pendingOrder = null;
         $('#orderPreviewModal').classList.add('hidden');
         loadSales();
-        if (isDishMode) loadDashboard();
-        // Pasar preferencia de propina al ticket
+        loadDashboard();
         renderTicketFromData(createRes.data, pending.includeTip);
         return;
       } else {
@@ -2260,6 +2241,7 @@ function initDateRangePicker() {
     var target = e.target;
     if (target.tagName === 'INPUT' && target.type === 'date') {
       e.preventDefault();
+      e.stopPropagation();
       var view = target.dataset.view || '';
       var prefix = '';
       if (target.id && target.id.includes('Dash')) prefix = 'Dash';

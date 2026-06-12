@@ -13,6 +13,7 @@ const configRoutes = require('./routes/config');
 const dishesRoutes = require('./routes/dishes');
 const { authMiddleware, requirePermission } = require('./middleware/auth');
 const supabase = require('./lib/supabase');
+const { applyBogotaDateFilter } = require('./lib/timezone');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -79,16 +80,7 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
       .from('ventas')
       .select('total')
       .eq('estado', 'completada');
-    if (from) {
-      ventasQuery = ventasQuery.gte('creado_en', from);
-    } else {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      ventasQuery = ventasQuery.gte('creado_en', today.toISOString());
-    }
-    if (to) {
-      ventasQuery = ventasQuery.lte('creado_en', to + 'T23:59:59');
-    }
+    ventasQuery = applyBogotaDateFilter(ventasQuery, 'creado_en', from, to);
     if (cocina) {
       ventasQuery = ventasQuery.eq('metodo_pago', cocina);
     }
