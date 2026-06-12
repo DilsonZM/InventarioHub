@@ -1942,12 +1942,15 @@
     </div>
   </div>
 
-  <!-- Print-only styles -->
   <style>
     @media print {
-      body * { visibility: hidden !important; }
-      #ticketPrint, #ticketPrint * { visibility: visible !important; }
-      #ticketPrint { position: absolute; left: 0; top: 0; width: 80mm; box-shadow: none !important; border-radius: 0 !important; border: none !important; }
+      html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
+      body > *:not(#ticketModal) { display: none !important; }
+      #ticketModal { position: static !important; display: block !important; background: white !important; margin: 0 !important; padding: 0 !important; }
+      #ticketModal > div { display: block !important; }
+      #ticketModal .fixed { position: static !important; background: none !important; backdrop-filter: none !important; display: none !important; }
+      #ticketModal .relative.z-10 { position: static !important; }
+      #ticketPrint { box-shadow: none !important; border-radius: 0 !important; width: 80mm !important; margin: 0 auto !important; border: 2px dashed #ccc !important; }
       .ticket-actions { display: none !important; }
     }
   </style>
