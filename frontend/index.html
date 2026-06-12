@@ -1973,7 +1973,82 @@
       .ticket-actions { display: none !important; }
       @page { size: 80mm auto; margin: 2mm; }
     }
+
+    /* Calendar date picker */
+    .cal-day { 
+      width: 28px; height: 28px; border-radius: 6px; font-size: 11px; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: all 0.15s; color: #374151; user-select: none;
+    }
+    .cal-day:hover { background: #e2e8f0; }
+    .cal-day.other-month { color: #cbd5e1; }
+    .cal-day.today { font-weight: 700; border: 2px solid #3b82f6; }
+    .cal-day.range-start, .cal-day.range-end { background: #3b82f6; color: white; font-weight: 700; border-radius: 6px; }
+    .cal-day.in-range { background: #dbeafe; color: #1e40af; border-radius: 0; }
+    .cal-day.range-start { border-radius: 6px 0 0 6px; }
+    .cal-day.range-end { border-radius: 0 6px 6px 0; }
+    .cal-day.range-start.range-end { border-radius: 6px; }
+    [data-theme="dark"] .cal-day { color: #e2e8f0; }
+    [data-theme="dark"] .cal-day:hover { background: #334155; }
+    [data-theme="dark"] .cal-day.other-month { color: #475569; }
+    [data-theme="dark"] .cal-day.in-range { background: #1e3a5f; color: #93c5fd; }
+    [data-theme="dark"] .calendar-preset { background: #334155; color: #cbd5e1; }
+    [data-theme="dark"] .calendar-preset:hover { background: #475569; }
   </style>
+
+  <!-- Modal: Calendario rango de fechas -->
+  <div id="dateRangeModal" class="hidden fixed inset-0 z-[55] overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" data-close-calendar></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto z-10 animate-scale-in overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h3 class="text-base font-semibold text-slate-800">Seleccionar rango</h3>
+          <button data-close-calendar class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors touch-target">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <!-- Presets -->
+        <div class="flex gap-2 px-5 pt-4 pb-2 flex-wrap">
+          <button class="calendar-preset px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" data-preset="today">Hoy</button>
+          <button class="calendar-preset px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" data-preset="week">Esta semana</button>
+          <button class="calendar-preset px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" data-preset="month">Este mes</button>
+          <button class="calendar-preset px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" data-preset="clear">Limpiar</button>
+        </div>
+        <!-- Dual calendar -->
+        <div class="grid grid-cols-2 gap-4 p-5">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <button class="cal-nav p-1 text-slate-400 hover:text-slate-600 transition-colors" data-cal-nav="prev">&lt;</button>
+              <span class="text-xs font-semibold text-slate-700" id="calMonth1">Junio</span>
+              <span class="w-5"></span>
+            </div>
+            <div class="grid grid-cols-7 gap-0.5 text-center">
+              <span class="text-[9px] text-slate-400 py-1">D</span><span class="text-[9px] text-slate-400 py-1">L</span><span class="text-[9px] text-slate-400 py-1">M</span><span class="text-[9px] text-slate-400 py-1">M</span><span class="text-[9px] text-slate-400 py-1">J</span><span class="text-[9px] text-slate-400 py-1">V</span><span class="text-[9px] text-slate-400 py-1">S</span>
+              <div id="calGrid1" class="grid grid-cols-7 gap-0.5 col-span-7"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="w-5"></span>
+              <span class="text-xs font-semibold text-slate-700" id="calMonth2">Julio</span>
+              <button class="cal-nav p-1 text-slate-400 hover:text-slate-600 transition-colors" data-cal-nav="next">&gt;</button>
+            </div>
+            <div class="grid grid-cols-7 gap-0.5 text-center">
+              <span class="text-[9px] text-slate-400 py-1">D</span><span class="text-[9px] text-slate-400 py-1">L</span><span class="text-[9px] text-slate-400 py-1">M</span><span class="text-[9px] text-slate-400 py-1">M</span><span class="text-[9px] text-slate-400 py-1">J</span><span class="text-[9px] text-slate-400 py-1">V</span><span class="text-[9px] text-slate-400 py-1">S</span>
+              <div id="calGrid2" class="grid grid-cols-7 gap-0.5 col-span-7"></div>
+            </div>
+          </div>
+        </div>
+        <div class="px-5 pb-4 text-center">
+          <span class="text-xs text-slate-500" id="calRangeText">Toca una fecha de inicio</span>
+        </div>
+        <div class="flex gap-3 px-5 pb-5">
+          <button data-close-calendar class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-xl text-sm touch-target">Cancelar</button>
+          <button id="applyDateRange" class="flex-1 btn-primary px-4 py-2.5 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="toast" class="hidden fixed bottom-6 right-6 z-[60] max-w-sm animate-slide-up">
     <div class="flex items-center gap-3 px-5 py-4 rounded-xl shadow-lg border">

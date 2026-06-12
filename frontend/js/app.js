@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   initSidebar();
   initSidebarGroups();
   initModals();
+  initDateRangePicker();
   initDashboard();
   initInventory();
   initSales();
@@ -2231,6 +2232,30 @@ function renderTicketFromData(sale) {
   openModal('ticketModal');
 }
 
+function initDateRangePicker() {
+  document.addEventListener('click', function (e) {
+    var target = e.target;
+    if (target.tagName === 'INPUT' && target.type === 'date') {
+      e.preventDefault();
+      var view = target.dataset.view || '';
+      var prefix = '';
+      if (target.id && target.id.includes('Dash')) prefix = 'Dash';
+      else if (target.id && target.id.includes('Entradas')) prefix = 'Entradas';
+      else if (target.id && target.id.includes('Mov')) prefix = 'Mov';
+      var fromId = '#filterDateFrom' + prefix;
+      var toId = '#filterDateTo' + prefix;
+      var periodId = '#filterQuickPeriod' + prefix;
+      var loader = function () {
+        if (view === 'dashboard') loadDashboard();
+        else if (view === 'sales') loadSales();
+        else if (view === 'entradas') loadCompras();
+        else if (view === 'movimientos') loadMovimientos();
+      };
+      window.openDateRange(view, fromId, toId, periodId, loader);
+    }
+  });
+}
+
 function closeModalWithGuard(modalId) {
   var isDirty = false;
   if (modalId === 'saleModal' && state.saleDirty) isDirty = true;
@@ -2246,6 +2271,156 @@ function closeModalWithGuard(modalId) {
 
 function markSaleDirty() { state.saleDirty = true; }
 function markCompraDirty() { state.compraDirty = true; }
+
+// ============================================================================
+// Calendario unificado de rango de fechas
+// ============================================================================
+var calendarState = { monthOffset: 0, start: null, end: null, picking: 'start', view: '', fromId: '', toId: '', periodId: '', callback: null };
+
+window.openDateRange = function (view, fromId, toId, periodId, callback) {
+  calendarState.view = view;
+  calendarState.fromId = fromId;
+  calendarState.toId = toId;
+  calendarState.periodId = periodId;
+  calendarState.callback = callback;
+  calendarState.start = null;
+  calendarState.end = null;
+  calendarState.picking = 'start';
+  calendarState.monthOffset = 0;
+  renderCalendar();
+  $('#calRangeText').textContent = 'Toca una fecha de inicio';
+  openModal('dateRangeModal');
+};
+
+function renderCalendar() {
+  var today = new Date();
+  var base = new Date(today.getFullYear(), today.getMonth() + calendarState.monthOffset, 1);
+  var m1 = base.getMonth();
+  var y1 = base.getFullYear();
+  var m2 = m1 + 1;
+  var y2 = y1;
+  if (m2 > 11) { m2 = 0; y2++; }
+  var months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  $('#calMonth1').textContent = months[m1] + ' ' + y1;
+  $('#calMonth2').textContent = months[m2] + ' ' + y2;
+  renderCalGrid('calGrid1', y1, m1, today);
+  renderCalGrid('calGrid2', y2, m2, today);
+}
+
+function renderCalGrid(gridId, year, month, today) {
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var firstDow = new Date(year, month, 0).getDate(); // days in prev month
+  var startDow = new Date(year, month, 1).getDay();
+  var html = '';
+  // Empty cells for previous month
+  for (var d = startDow - 1; d >= 0; d--) {
+    var dayNum = firstDow - d;
+    html += '<div class=\"cal-day other-month\">' + dayNum + '</div>';
+  }
+  // Current month days
+  for (var i = 1; i <= daysInMonth; i++) {
+    var cls = 'cal-day';
+    var dateStr = year + '-' + String(month + 1).padStart(2,'0') + '-' + String(i).padStart(2,'0');
+    if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === i) cls += ' today';
+    if (calendarState.start === dateStr) cls += ' range-start';
+    if (calendarState.end === dateStr) cls += ' range-end';
+    if (calendarState.start && calendarState.end && dateStr > calendarState.start && dateStr < calendarState.end) cls += ' in-range';
+    html += '<div class=\"' + cls + '\" onclick=\"window.pickDate(\'' + dateStr + '\')\">' + i + '</div>';
+  }
+  // Next month empty cells to fill row
+  var remaining = 7 - ((startDow + daysInMonth) % 7);
+  if (remaining < 7) {
+    for (var j = 1; j <= remaining; j++) {
+      html += '<div class=\"cal-day other-month\">' + j + '</div>';
+    }
+  }
+  $('#' + gridId).innerHTML = html;
+}
+
+window.pickDate = function (dateStr) {
+  if (calendarState.picking === 'start') {
+    calendarState.start = dateStr;
+    calendarState.end = null;
+    calendarState.picking = 'end';
+    $('#calRangeText').textContent = 'Desde: ' + dateStr + ' — Toca fecha final';
+  } else {
+    if (dateStr < calendarState.start) {
+      calendarState.end = calendarState.start;
+      calendarState.start = dateStr;
+    } else {
+      calendarState.end = dateStr;
+    }
+    calendarState.picking = 'done';
+    $('#calRangeText').textContent = calendarState.start + ' → ' + calendarState.end;
+  }
+  renderCalendar();
+};
+
+// Calendar navigation
+document.addEventListener('click', function (e) {
+  var nav = e.target.closest('[data-cal-nav]');
+  if (nav) {
+    calendarState.monthOffset += nav.dataset.calNav === 'next' ? 1 : -1;
+    renderCalendar();
+  }
+});
+
+// Calendar presets
+document.addEventListener('click', function (e) {
+  var preset = e.target.closest('[data-preset]');
+  if (!preset) return;
+  var p = preset.dataset.preset;
+  var today = new Date();
+  var tzToday = Utils.todayInAppTZ();
+  if (p === 'today') {
+    calendarState.start = tzToday; calendarState.end = tzToday; calendarState.picking = 'done';
+  } else if (p === 'week') {
+    var dow = today.getDay();
+    var start = new Date(today); start.setDate(today.getDate() - dow);
+    calendarState.start = start.toISOString().split('T')[0];
+    var end = new Date(start); end.setDate(start.getDate() + 6);
+    calendarState.end = end.toISOString().split('T')[0];
+    calendarState.picking = 'done';
+  } else if (p === 'month') {
+    var first = new Date(today.getFullYear(), today.getMonth(), 1);
+    calendarState.start = first.toISOString().split('T')[0];
+    var last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    calendarState.end = last.toISOString().split('T')[0];
+    calendarState.picking = 'done';
+  } else if (p === 'clear') {
+    calendarState.start = null; calendarState.end = null; calendarState.picking = 'start';
+    $('#calRangeText').textContent = 'Toca una fecha de inicio';
+  }
+  if (calendarState.picking === 'done') {
+    $('#calRangeText').textContent = calendarState.start + ' → ' + calendarState.end;
+  }
+  renderCalendar();
+});
+
+// Apply date range
+document.getElementById('applyDateRange').addEventListener('click', function () {
+  if (!calendarState.start || !calendarState.end) { showToast('Selecciona un rango de fechas', 'error'); return; }
+  var from = calendarState.start;
+  var to = calendarState.end;
+  if (calendarState.fromId) {
+    var fromEl = $(calendarState.fromId); if (fromEl) fromEl.value = from;
+  }
+  if (calendarState.toId) {
+    var toEl = $(calendarState.toId); if (toEl) toEl.value = to;
+  }
+  if (calendarState.periodId) {
+    var pEl = $(calendarState.periodId); if (pEl) pEl.value = '';
+  }
+  $('#dateRangeModal').classList.add('hidden');
+  if (calendarState.callback) calendarState.callback();
+});
+
+// Close calendar
+document.addEventListener('click', function (e) {
+  if (e.target.closest('[data-close-calendar]')) {
+    $('#dateRangeModal').classList.add('hidden');
+  }
+});
 
 function initModals() {
   // Confirm discard: click afuera o "Seguir editando" cierra el confirm
