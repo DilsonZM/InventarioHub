@@ -529,17 +529,53 @@ async function handleDishSale(req, res) {
       });
     }
 
+    // Procesar productos directos (items) si vienen en el mismo pedido
+    var items = req.body.items;
+    if (items && Array.isArray(items)) {
+      for (var ni = 0; ni < items.length; ni++) {
+        var it = items[ni];
+        if (!it.productId || !it.quantity) continue;
+        var { data: prod } = await supabase.from('productos').select('nombre, precio_venta, stock_actual').eq('id', it.productId).single();
+        if (!prod) continue;
+        var itemQty = parseFloat(it.quantity) || 0;
+        if (itemQty <= 0) continue;
+        var itemSub = itemQty * parseFloat(prod.precio_venta);
+        totalVenta += itemSub;
+        await supabase.from('venta_detalles').insert({
+          venta_id: venta.id, producto_id: it.productId, producto_nombre: prod.nombre,
+          cantidad: itemQty, precio_unitario: prod.precio_venta, subtotal: itemSub,
+          es_plato: false
+        });
+      }
+      // Actualizar total de la venta
+      await supabase.from('ventas').update({
+        subtotal: totalVenta, impuesto: totalVenta * 0.19, total: totalVenta * 1.19
+      }).eq('id', venta.id);
+    }
+
     if (saleEstado !== 'pendiente') {
       var idsDesc = Object.keys(ingredientesTotales);
       for (var p = 0; p < idsDesc.length; p++) {
         var pid2 = idsDesc[p];
-        var { error: moveErr } = await supabase.rpc('registrar_movimiento', {
+        await supabase.rpc('registrar_movimiento', {
           p_producto_id: pid2, p_tipo: 'salida',
           p_cantidad: ingredientesTotales[pid2].cantidad_total,
           p_motivo: 'Venta de platos ' + numVenta,
           p_usuario_id: req.user ? req.user.id : null
         });
-        if (moveErr) throw moveErr;
+      }
+      // Descontar productos directos
+      if (items) {
+        for (var qi = 0; qi < items.length; qi++) {
+          var it2 = items[qi];
+          if (!it2.productId || !it2.quantity) continue;
+          await supabase.rpc('registrar_movimiento', {
+            p_producto_id: it2.productId, p_tipo: 'salida',
+            p_cantidad: parseFloat(it2.quantity) || 0,
+            p_motivo: 'Venta ' + numVenta,
+            p_usuario_id: req.user ? req.user.id : null
+          });
+        }
       }
     }
 
