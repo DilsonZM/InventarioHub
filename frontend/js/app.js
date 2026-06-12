@@ -827,6 +827,7 @@ async function loadDashboard() {
 
     console.log('[Dashboard] Renderizando grafico de salidas...');
     renderCategoryChart(movsRes.data || [], productsRes.data);
+    loadTopDishes();
     console.log('[Dashboard] Dashboard cargado correctamente');
   } catch (err) {
     console.error('[Dashboard] Error al cargar dashboard:', err);
@@ -954,6 +955,30 @@ function populateCategoryFilters() {
   var options = state.categories.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
   $('#filterCategory').innerHTML = '<option value="">Todas las categorias</option>' + options;
   $('#productCategory').innerHTML = '<option value="">Seleccionar</option>' + options;
+}
+
+async function loadTopDishes() {
+  try {
+    var token = API.getToken();
+    var resp = await fetch('/api/stats/dishes', { headers: { 'Authorization': 'Bearer ' + token } });
+    var res = await resp.json();
+    if (!res.success || !res.data || res.data.length === 0) return;
+    var section = $('#topDishesSection');
+    if (section) section.classList.remove('hidden');
+    var tbody = $('#topDishesTable');
+    if (!tbody) return;
+    tbody.innerHTML = res.data.map(function (d) {
+      var margen = (d.precio_venta || 0) - (d.costo || 0);
+      var margenColor = margen >= 0 ? 'text-emerald-600' : 'text-red-600';
+      return '<tr>'
+        + '<td class="py-2 font-medium text-slate-700">' + escapeHtml(d.nombre) + '</td>'
+        + '<td class="py-2 text-center text-slate-600">' + d.cantidad + '</td>'
+        + '<td class="py-2 text-right text-slate-700">' + Utils.formatCurrency(d.precio_venta * d.cantidad) + '</td>'
+        + '<td class="py-2 text-right text-slate-500">' + Utils.formatCurrency(d.costo * d.cantidad) + '</td>'
+        + '<td class="py-2 text-right font-medium ' + margenColor + '">' + Utils.formatCurrency(margen * d.cantidad) + '</td>'
+        + '</tr>';
+    }).join('');
+  } catch (e) {}
 }
 
 async function loadProducts() {

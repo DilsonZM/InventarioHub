@@ -118,6 +118,64 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
   }
 });
 
+// Stats de platos: mas vendidos, margen
+app.get('/api/stats/dishes', authMiddleware, async (req, res) => {
+  try {
+    // Platos mas vendidos (desde venta_detalles con es_plato=true)
+    var { data: topDishes, error: topErr } = await supabase
+      .from('venta_detalles')
+      .select('producto_nombre, plato_id, cantidad')
+      .eq('es_plato', true);
+
+    if (topErr) throw topErr;
+
+    // Agrupar por plato
+    var ventasPorPlato = {};
+    (topDishes || []).forEach(function (d) {
+      var key = d.plato_id || d.producto_nombre;
+      if (!ventasPorPlato[key]) ventasPorPlato[key] = { nombre: d.producto_nombre, plato_id: d.plato_id, cantidad: 0 };
+      ventasPorPlato[key].cantidad += d.cantidad;
+    });
+
+    // Ordenar por cantidad descendente y tomar top 5
+    var sorted = Object.values(ventasPorPlato).sort(function (a, b) { return b.cantidad - a.cantidad; }).slice(0, 5);
+
+    // Obtener costo de cada plato
+    for (var i = 0; i < sorted.length; i++) {
+      if (!sorted[i].plato_id) continue;
+      var { data: ings } = await supabase
+        .from('plato_ingredientes')
+        .select('cantidad, unidad, productos!inner(precio_compra, unidad_medida)')
+        .eq('plato_id', sorted[i].plato_id);
+      var costoTotal = 0;
+      (ings || []).forEach(function (ing) {
+        var prodUnidad = ing.productos ? ing.productos.unidad_medida || '' : '';
+        // Conversion simple
+        var conv = parseFloat(ing.cantidad) || 0;
+        var from = (ing.unidad || '').toLowerCase().trim();
+        var to = prodUnidad.toLowerCase().trim();
+        if (from !== to && from && to) {
+          var toGrams = { g: 1, kg: 1000, lb: 453.592, onza: 28.3495 };
+          var toML = { ml: 1, l: 1000, litro: 1000 };
+          if (toGrams[from] && toGrams[to]) conv = (conv * toGrams[from]) / toGrams[to];
+          else if (toML[from] && toML[to]) conv = (conv * toML[from]) / toML[to];
+        }
+        costoTotal += conv * parseFloat((ing.productos && ing.productos.precio_compra) || 0);
+      });
+      sorted[i].costo = costoTotal;
+      sorted[i].precio_venta = 0;
+      // Obtener precio del plato
+      var { data: plato } = await supabase.from('platos').select('precio_venta').eq('id', sorted[i].plato_id).single();
+      if (plato) sorted[i].precio_venta = parseFloat(plato.precio_venta);
+    }
+
+    res.json({ success: true, data: sorted });
+  } catch (err) {
+    console.error('Dish stats error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'InventarioHub API running', timestamp: new Date().toISOString() });
 });
