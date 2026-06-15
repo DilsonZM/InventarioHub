@@ -3911,11 +3911,28 @@ function refreshPOSVisibility() {
   var searchQ = ($('#posSearch') ? ($('#posSearch').value || '').toLowerCase().trim() : '');
 
   var cards = $$('.pos-card');
+  var visibleCount = 0;
   cards.forEach(function (card) {
     var typeMatch = filter === 'todos' || card.dataset.posType === filter;
     var searchMatch = !searchQ || (card.textContent || '').toLowerCase().includes(searchQ);
-    card.style.display = typeMatch && searchMatch ? '' : 'none';
+    var show = typeMatch && searchMatch;
+    card.style.display = show ? '' : 'none';
+    if (show) visibleCount++;
   });
+
+  // Mostrar mensaje si la categoria esta vacia
+  var emptyMsg = $('#posEmptyMsg');
+  if (emptyMsg) {
+    emptyMsg.style.display = visibleCount === 0 ? '' : 'none';
+    if (filter !== 'todos') {
+      var labels = { plato: 'Platos', bebida: 'Bebidas', producto: 'Ingredientes' };
+      emptyMsg.textContent = 'No hay ' + (labels[filter] || 'productos') + ' disponibles';
+    } else if (searchQ) {
+      emptyMsg.textContent = 'Sin resultados para "' + searchQ + '"';
+    } else {
+      emptyMsg.textContent = 'No hay productos disponibles';
+    }
+  }
 }
 
 function renderPOSGrid(items) {
