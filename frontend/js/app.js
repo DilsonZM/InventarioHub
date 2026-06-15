@@ -3878,9 +3878,16 @@ function renderPOSCategories(dishes, products) {
   var pills = $$('.pos-pill');
   pills.forEach(function (pill) {
     pill.addEventListener('click', function () {
-      pills.forEach(function (p) { p.classList.remove('pos-pill--active', 'bg-brand-600', 'text-white', 'shadow-sm'); p.classList.add('bg-slate-100', 'text-slate-600'); });
-      this.classList.add('pos-pill--active', 'bg-brand-600', 'text-white', 'shadow-sm');
-      this.classList.remove('bg-slate-100', 'text-slate-600');
+      pills.forEach(function (p) {
+        p.classList.remove('pos-pill--active');
+        p.style.background = '';
+        p.style.color = '';
+        p.style.boxShadow = '';
+      });
+      this.classList.add('pos-pill--active');
+      this.style.background = '#0d6b4e';
+      this.style.color = '#fff';
+      this.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
       var filter = this.dataset.filter;
       applyPOSFilter(filter);
     });
