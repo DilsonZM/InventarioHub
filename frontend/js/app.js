@@ -3748,17 +3748,16 @@ window.imprimirComanda = async function (pedido) {
       var name = item.productName || '';
       var qty = item.quantity || 1;
       var price = Utils.formatCurrency(item.subtotal || ((item.unitPrice || 0) * qty));
-      var line = name + ' x' + qty;
-      if (line.length + 1 + price.length <= LINE_WIDTH) {
-        // Cabe en una sola linea
-        var padding = Math.max(1, LINE_WIDTH - line.length - price.length);
-        data.push(line + ' '.repeat(padding) + price + '\n');
+      var parteIzquierda = name + ' x' + qty;
+      var parteDerecha = price;
+      if (parteIzquierda.length + parteDerecha.length + 1 <= LINE_WIDTH) {
+        var espacios = Math.max(1, LINE_WIDTH - parteIzquierda.length - parteDerecha.length);
+        data.push(parteIzquierda + ' '.repeat(espacios) + parteDerecha + '\n');
       } else {
-        // Nombre largo: nombre en una linea, cantidad + precio en la siguiente
         data.push(name + '\n');
-        var qtyLine = '  x' + qty;
-        var qtyPad = Math.max(1, LINE_WIDTH - qtyLine.length - price.length);
-        data.push(qtyLine + ' '.repeat(qtyPad) + price + '\n');
+        parteIzquierda = 'x' + qty;
+        espacios = Math.max(1, LINE_WIDTH - parteIzquierda.length - parteDerecha.length);
+        data.push(parteIzquierda + ' '.repeat(espacios) + parteDerecha + '\n');
       }
     }
 
