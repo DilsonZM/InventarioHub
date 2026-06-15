@@ -3715,7 +3715,7 @@ window.imprimirComanda = async function (pedido) {
   }
 
   var cfg = cargarConfigImpresora();
-  var LINE_WIDTH = 42;
+  var LINE_WIDTH = 32;
 
   try {
     // 1. Conectar QZ Tray
@@ -3729,21 +3729,23 @@ window.imprimirComanda = async function (pedido) {
     // 3. Comandos ESC/POS
     var data = [];
     data.push('\x1B\x40');                      // Init
+
+    // Encabezado centrado
     data.push('\x1B\x61\x01');                  // Centrar
     data.push('Corner House\n');
     data.push('Sabores que unen\n');
     data.push('\n');
-    data.push('\x1B\x61\x00');                  // Izquierda
     data.push('Pedido: ' + (pedido.numero_venta || '') + '\n');
     data.push('Cocina: ' + (pedido.paymentMethod || '') + '\n');
     data.push('Fecha: ' + Utils.formatDate(pedido.createdAt) + '\n');
     data.push('-'.repeat(LINE_WIDTH) + '\n');
 
-    // Items
+    // Items alineados a la izquierda
+    data.push('\x1B\x61\x00');                  // Izquierda
     var items = pedido.items || [];
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var name = (item.productName || '').substring(0, 28);
+      var name = (item.productName || '').substring(0, 18);
       var qty = item.quantity || 1;
       var line = name + ' x' + qty;
       var price = Utils.formatCurrency(item.subtotal || ((item.unitPrice || 0) * qty));
