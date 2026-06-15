@@ -2272,6 +2272,7 @@ window.showTicket = async function (saleId) {
     $('#ticketTotal').textContent = Utils.formatCurrency(subtotal + tip);
 
     openModal('ticketModal');
+    state._lastTicketSale = s;
   } catch (e) {
     console.error('showTicket error:', e);
   }
@@ -2283,6 +2284,9 @@ document.addEventListener('click', function (e) {
   }
   if (e.target.closest('#printTicketBtn')) {
     window.print();
+  }
+  if (e.target.closest('#printKitchenBtn')) {
+    window.imprimirComanda(state._lastTicketSale);
   }
 });
 
@@ -2315,7 +2319,8 @@ function renderTicketFromData(sale, includeTip) {
   $('#ticketTotal').textContent = Utils.formatCurrency(totalConPropina);
 
   openModal('ticketModal');
-}
+  state._lastTicketSale = sale;
+} // renderTicketFromData
 
 function initDateRangePicker() {
   document.addEventListener('click', function (e) {
@@ -2981,6 +2986,29 @@ function initUsers() {
   // Config
   var saveConfigBtn = $('#saveConfigBtn');
   if (saveConfigBtn) saveConfigBtn.addEventListener('click', saveConfig);
+
+  // Config Impresora
+  var savePrinterBtn = $('#savePrinterConfigBtn');
+  if (savePrinterBtn) savePrinterBtn.addEventListener('click', function () {
+    var host = ($('#printerHost').value || '').trim() || '127.0.0.1';
+    var port = parseInt($('#printerPort').value) || 9100;
+    localStorage.setItem('config:impresora', JSON.stringify({ host: host, port: port }));
+    showToast('Impresora guardada: ' + host + ':' + port, 'success');
+  });
+
+  var testPrinterBtn = $('#testPrinterBtn');
+  if (testPrinterBtn) testPrinterBtn.addEventListener('click', async function () {
+    var cfg = cargarConfigImpresora();
+    try {
+      if (!qz.websocket.isActive()) await qz.websocket.connect();
+      var config = qz.configs.create(cfg.host, cfg.port);
+      var data = ['\x1B\x40', 'Corner House - Prueba OK\n', '\x0A\x0A', '\x1D\x56\x00'];
+      await qz.print(config, data);
+      showToast('Conexion exitosa con ' + cfg.host + ':' + cfg.port, 'success');
+    } catch (err) {
+      showToast('Error: ' + (err.message || 'No se pudo conectar'), 'error');
+    }
+  });
 }
 
 // ============================================================================
@@ -3634,6 +3662,7 @@ async function loadConfig() {
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
   }
+  cargarConfigImpresoraUI();
 }
 
 async function saveConfig() {
@@ -3645,6 +3674,97 @@ async function saveConfig() {
     showToast('Error: ' + err.message, 'error');
   }
 }
+
+// ============================================
+// QZ Tray - Impresora de Cocina
+// ============================================
+
+function cargarConfigImpresora() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('config:impresora') || '{}');
+    return {
+      host: saved.host || '127.0.0.1',
+      port: parseInt(saved.port) || 9100
+    };
+  } catch (e) {
+    return { host: '127.0.0.1', port: 9100 };
+  }
+}
+
+function cargarConfigImpresoraUI() {
+  var cfg = cargarConfigImpresora();
+  var hostEl = $('#printerHost');
+  var portEl = $('#printerPort');
+  if (hostEl) hostEl.value = cfg.host;
+  if (portEl) portEl.value = cfg.port;
+}
+
+window.imprimirComanda = async function (pedido) {
+  if (!pedido || !pedido.items) {
+    showToast('Sin datos del pedido para imprimir', 'error');
+    return;
+  }
+
+  var cfg = cargarConfigImpresora();
+  var LINE_WIDTH = 42;
+
+  try {
+    // 1. Conectar QZ Tray
+    if (!qz.websocket.isActive()) {
+      await qz.websocket.connect();
+    }
+
+    // 2. Configurar impresora
+    var config = qz.configs.create(cfg.host, cfg.port);
+
+    // 3. Comandos ESC/POS
+    var data = [];
+    data.push('\x1B\x40');                      // Init
+    data.push('\x1B\x61\x01');                  // Centrar
+    data.push('Corner House\n');
+    data.push('Sabores que unen\n');
+    data.push('\n');
+    data.push('\x1B\x61\x00');                  // Izquierda
+    data.push('Pedido: ' + (pedido.numero_venta || '') + '\n');
+    data.push('Cocina: ' + (pedido.paymentMethod || '') + '\n');
+    data.push('Fecha: ' + Utils.formatDate(pedido.createdAt) + '\n');
+    data.push('-'.repeat(LINE_WIDTH) + '\n');
+
+    // Items
+    var items = pedido.items || [];
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var name = (item.productName || '').substring(0, 28);
+      var qty = item.quantity || 1;
+      var line = name + ' x' + qty;
+      var price = Utils.formatCurrency(item.subtotal || ((item.unitPrice || 0) * qty));
+      var padding = Math.max(1, LINE_WIDTH - line.length - price.length);
+      data.push(line + ' '.repeat(padding) + price + '\n');
+    }
+
+    // Total
+    data.push('-'.repeat(LINE_WIDTH) + '\n');
+    data.push('\x1B\x45\x01');                  // Bold on
+    var totalLine = 'TOTAL';
+    var totalPrice = Utils.formatCurrency(pedido.total || 0);
+    var totalPad = Math.max(1, LINE_WIDTH - totalLine.length - totalPrice.length);
+    data.push(totalLine + ' '.repeat(totalPad) + totalPrice + '\n');
+    data.push('\x1B\x45\x00');                  // Bold off
+
+    // Corte
+    data.push('\x0A\x0A\x0A');
+    data.push('\x1D\x56\x00');                  // Full cut
+
+    // 4. Imprimir
+    await qz.print(config, data);
+    showToast('Comanda enviada a cocina', 'success');
+  } catch (err) {
+    console.error('QZ Print error:', err);
+    showToast('Error de impresion: ' + (err.message || 'Verifica QZ Tray'), 'error');
+  }
+};
+
+// No desconectar websocket para mantenerlo reutilizable entre impresiones
 
 // ============================================
 // Indicadores removido: stock_minimo ahora en vista Inventario
