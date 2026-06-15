@@ -812,10 +812,10 @@ async function loadDashboard() {
     } else {
       tbody.innerHTML = recentMovs.map(function (m) {
         var tipoBadge = m.movimiento === 'entrada'
-          ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800">Entrada</span>'
-          : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Salida</span>';
+          ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 movimiento-badge">Entrada</span>'
+          : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 movimiento-badge">Salida</span>';
         var cantText = m.movimiento === 'entrada' ? '+ ' + m.cantidad_entrada : '- ' + m.cantidad_salida;
-        var cantColor = m.movimiento === 'entrada' ? 'text-brand-600' : 'text-red-600';
+        var cantColor = m.movimiento === 'entrada' ? 'text-green-600' : 'text-red-600';
         return '<tr class="hover:bg-slate-50 transition-colors">'
           + '<td class="px-6 py-3 text-sm font-mono text-slate-600">' + formatDateShort(m.fecha) + '</td>'
           + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(m.producto) + '</td>'
@@ -827,10 +827,10 @@ async function loadDashboard() {
 
       cards.innerHTML = recentMovs.map(function (m) {
         var tipoBadge = m.movimiento === 'entrada'
-          ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-800">Entrada</span>'
-          : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Salida</span>';
+          ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 movimiento-badge">Entrada</span>'
+          : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 movimiento-badge">Salida</span>';
         var cantText = m.movimiento === 'entrada' ? '+ ' + m.cantidad_entrada : '- ' + m.cantidad_salida;
-        var cantColor = m.movimiento === 'entrada' ? 'text-brand-600' : 'text-red-600';
+        var cantColor = m.movimiento === 'entrada' ? 'text-green-600' : 'text-red-600';
         return '<div class="bg-slate-50 rounded-xl p-4 space-y-2">'
           + '<div class="flex items-center justify-between">'
           + '<div class="flex items-center gap-2">' + tipoBadge + '<span class="text-sm font-medium">' + escapeHtml(m.producto) + '</span></div>'
@@ -2869,9 +2869,9 @@ async function loadMovimientos() {
     }
 
     tbody.innerHTML = movs.map(function (m) {
-      var tipoBadge = m.movimiento === 'entrada' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800">Entrada</span>'
-        : m.movimiento === 'salida' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Salida</span>'
-        : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Ajuste</span>';
+      var tipoBadge = m.movimiento === 'entrada' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 movimiento-badge">Entrada</span>'
+        : m.movimiento === 'salida' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 movimiento-badge">Salida</span>'
+        : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 movimiento-badge">Ajuste</span>';
       var unidad = m.unidad || '';
       return '<tr class="hover:bg-slate-50 transition-colors">'
         + '<td class="px-6 py-3 text-sm text-slate-600">' + formatDate(m.fecha) + '</td>'
@@ -2889,7 +2889,7 @@ async function loadMovimientos() {
       var unidad = m.unidad || '';
       return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
         + '<div class="flex justify-between"><span class="text-xs text-slate-500">' + formatDate(m.fecha) + '</span>'
-        + (m.movimiento === 'entrada' ? '<span class="text-brand-600 text-sm font-bold">+ ' + m.cantidad_entrada + ' ' + escapeHtml(unidad) + '</span>' : m.movimiento === 'salida' ? '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + ' ' + escapeHtml(unidad) + '</span>' : '<span class="text-amber-600 text-sm font-bold">Ajuste</span>')
+        + (m.movimiento === 'entrada' ? '<span class="text-green-600 text-sm font-bold">+ ' + m.cantidad_entrada + ' ' + escapeHtml(unidad) + '</span>' : m.movimiento === 'salida' ? '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + ' ' + escapeHtml(unidad) + '</span>' : '<span class="text-amber-600 text-sm font-bold">Ajuste</span>')
         + '</div>'
         + '<p class="text-sm font-medium">' + escapeHtml(m.producto) + '</p>'
         + '<div class="flex justify-between text-xs text-slate-500"><span>' + escapeHtml(m.codigo) + '</span><span>Stock: ' + (m.cantidad_stock != null ? m.cantidad_stock + ' ' + escapeHtml(unidad) : '-') + '</span></div>'
