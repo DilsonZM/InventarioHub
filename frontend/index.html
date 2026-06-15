@@ -681,6 +681,18 @@
       color: #fff !important;
       box-shadow: 0 6px 18px rgba(7, 54, 38, 0.4);
     }
+
+    /* KPI cards en dark mode */
+    [data-theme="dark"] .sales-kpi-card {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+    }
+    [data-theme="dark"] .sales-kpi-card p:first-child {
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .sales-kpi-card p:last-child {
+      color: #f1f5f9 !important;
+    }
     [data-theme="dark"] .sale-type-btn.text-slate-600 { color: #94a3b8 !important; }
     [data-theme="dark"] .sale-type-btn.active-tab { color: var(--color-text-primary) !important; }
   </style>
@@ -1155,21 +1167,21 @@
         </div>
 
         <div id="salesSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Salidas</p>
-            <p class="text-xl font-bold text-slate-800 mt-1" id="summaryCount">0</p>
+          <div class="sales-kpi-card bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Salidas</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1" id="summaryCount">0</p>
           </div>
-          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Cantidad Usada</p>
-            <p class="text-xl font-bold text-brand-600 mt-1" id="summaryTotal">0</p>
+          <div class="sales-kpi-card bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Cantidad Usada</p>
+            <p class="text-2xl font-bold text-brand-700 mt-1" id="summaryTotal">0</p>
           </div>
-          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Promedio x Salida</p>
-            <p class="text-xl font-bold text-brand-600 mt-1" id="summaryAvg">0</p>
+          <div class="sales-kpi-card bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Promedio x Salida</p>
+            <p class="text-2xl font-bold text-brand-700 mt-1" id="summaryAvg">0</p>
           </div>
-          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Productos Usados</p>
-            <p class="text-xl font-bold text-violet-600 mt-1" id="summaryItems">0</p>
+          <div class="sales-kpi-card bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Productos Usados</p>
+            <p class="text-2xl font-bold text-violet-600 mt-1" id="summaryItems">0</p>
           </div>
         </div>
 
