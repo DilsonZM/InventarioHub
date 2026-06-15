@@ -3728,51 +3728,56 @@ window.imprimirComanda = async function (pedido) {
 
     // 3. Comandos ESC/POS
     var data = [];
-    data.push('\x1B\x40');                      // Init
+    data.push('\x1B\x40');                      // 1. Inicializar impresora
 
-    // Encabezado centrado
-    data.push('\x1B\x61\x01');                  // Centrar
+    // 2. Encabezado (Centrado)
+    data.push('\x1B\x61\x01');
     data.push('Corner House\n');
-    data.push('Sabores que unen\n');
-    data.push('\n');
+    data.push('Sabores que unen\n\n');
+
+    // 3. Info del pedido (Alineado a la izquierda)
+    data.push('\x1B\x61\x00');
     data.push('Pedido: ' + (pedido.numero_venta || '') + '\n');
     data.push('Cocina: ' + (pedido.paymentMethod || '') + '\n');
     data.push('Fecha: ' + Utils.formatDate(pedido.createdAt) + '\n');
     data.push('-'.repeat(LINE_WIDTH) + '\n');
 
-    // Items alineados a la izquierda
-    data.push('\x1B\x61\x00');                  // Izquierda
+    // 4. Productos (Izquierda con precios justificados a la derecha)
     var items = pedido.items || [];
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var name = item.productName || '';
-      var qty = item.quantity || 1;
-      var price = Utils.formatCurrency(item.subtotal || ((item.unitPrice || 0) * qty));
-      var parteIzquierda = name + ' x' + qty;
-      var parteDerecha = price;
-      if (parteIzquierda.length + parteDerecha.length + 1 <= LINE_WIDTH) {
-        var espacios = Math.max(1, LINE_WIDTH - parteIzquierda.length - parteDerecha.length);
-        data.push(parteIzquierda + ' '.repeat(espacios) + parteDerecha + '\n');
+      var nombre = item.productName || '';
+      var cantidad = 'x' + (item.quantity || 1);
+      var precio = Utils.formatCurrency(item.subtotal || ((item.unitPrice || 0) * (item.quantity || 1)));
+
+      var textoDerecha = cantidad + ' ' + precio;
+
+      // Verificar si todo cabe en una sola línea (Nombre + Cantidad + Precio + espacios)
+      if ((nombre.length + textoDerecha.length + 1) <= LINE_WIDTH) {
+        var espacios = LINE_WIDTH - nombre.length - textoDerecha.length;
+        data.push(nombre + ' '.repeat(espacios) + textoDerecha + '\n');
       } else {
-        data.push(name + '\n');
-        parteIzquierda = 'x' + qty;
-        espacios = Math.max(1, LINE_WIDTH - parteIzquierda.length - parteDerecha.length);
-        data.push(parteIzquierda + ' '.repeat(espacios) + parteDerecha + '\n');
+        // El nombre es largo: Se imprime el nombre en una línea
+        data.push(nombre + '\n');
+        // Y en la siguiente línea se empuja la cantidad y el precio a la derecha
+        var espacios = LINE_WIDTH - textoDerecha.length;
+        data.push(' '.repeat(espacios) + textoDerecha + '\n');
       }
     }
 
-    // Total
+    // 5. Total
     data.push('-'.repeat(LINE_WIDTH) + '\n');
-    data.push('\x1B\x45\x01');                  // Bold on
-    var totalLine = 'TOTAL';
-    var totalPrice = Utils.formatCurrency(pedido.total || 0);
-    var totalPad = Math.max(1, LINE_WIDTH - totalLine.length - totalPrice.length);
-    data.push(totalLine + ' '.repeat(totalPad) + totalPrice + '\n');
-    data.push('\x1B\x45\x00');                  // Bold off
+    var totalLabel = 'TOTAL';
+    var totalVal = Utils.formatCurrency(pedido.total || 0);
+    var paddingTotal = Math.max(1, LINE_WIDTH - totalLabel.length - totalVal.length);
 
-    // Corte
+    data.push('\x1B\x45\x01');                  // Activar Negrita
+    data.push(totalLabel + ' '.repeat(paddingTotal) + totalVal + '\n');
+    data.push('\x1B\x45\x00');                  // Desactivar Negrita
+
+    // 6. Corte de papel
     data.push('\x0A\x0A\x0A');
-    data.push('\x1D\x56\x00');                  // Full cut
+    data.push('\x1D\x56\x00');
 
     // 4. Imprimir
     await qz.print(config, data);
