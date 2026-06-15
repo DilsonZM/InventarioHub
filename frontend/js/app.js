@@ -3807,6 +3807,7 @@ window.openPOS = function () {
 };
 
 async function loadPOS() {
+  console.log('[POS] Cargando vista POS...');
   state.posItems = [];
   state.posMesaId = null;
 
@@ -3817,9 +3818,13 @@ async function loadPOS() {
       API.mesas.list()
     ]);
 
+    console.log('[POS] APIs completadas');
+
     var allProducts = (results[0].data || []).filter(function (p) { return p.activo !== false && p.stock > 0; });
     var allDishes = (results[1].data || []).filter(function (d) { return d.activo && d.disponible !== false; });
     var mesas = (results[2].data || []).filter(function (m) { return m.activa; });
+
+    console.log('[POS] Products:', allProducts.length, 'Dishes:', allDishes.length, 'Mesas:', mesas.length);
 
     // Cache for rendering
     state._posProducts = allProducts;
@@ -3829,8 +3834,9 @@ async function loadPOS() {
     renderPOSCategories(allDishes, allProducts);
     renderPOSOrder();
     renderPOSMesas(mesas);
+    console.log('[POS] Vista POS renderizada');
   } catch (e) {
-    console.error('POS load error:', e);
+    console.error('[POS] Error al cargar:', e);
   }
 }
 
