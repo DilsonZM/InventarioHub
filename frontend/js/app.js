@@ -3878,8 +3878,8 @@ function renderPOSCategories(dishes, products) {
   var pills = $$('.pos-pill');
   pills.forEach(function (pill) {
     pill.addEventListener('click', function () {
-      pills.forEach(function (p) { p.classList.remove('active', 'bg-brand-600', 'text-white', 'shadow-sm'); p.classList.add('bg-slate-100', 'text-slate-600'); });
-      this.classList.add('active', 'bg-brand-600', 'text-white', 'shadow-sm');
+      pills.forEach(function (p) { p.classList.remove('pos-pill--active', 'bg-brand-600', 'text-white', 'shadow-sm'); p.classList.add('bg-slate-100', 'text-slate-600'); });
+      this.classList.add('pos-pill--active', 'bg-brand-600', 'text-white', 'shadow-sm');
       this.classList.remove('bg-slate-100', 'text-slate-600');
       var filter = this.dataset.filter;
       applyPOSFilter(filter);
@@ -3895,14 +3895,19 @@ function renderPOSCategories(dishes, products) {
 }
 
 function applyPOSFilter(filter) {
+  state._posFilter = filter;
+  refreshPOSVisibility();
+}
+
+function refreshPOSVisibility() {
+  var filter = state._posFilter || 'todos';
+  var searchQ = ($('#posSearch') ? ($('#posSearch').value || '').toLowerCase().trim() : '');
+
   var cards = $$('.pos-card');
   cards.forEach(function (card) {
-    if (filter === 'todos') {
-      card.style.display = '';
-    } else {
-      var cardType = card.dataset.posType;
-      card.style.display = cardType === filter ? '' : 'none';
-    }
+    var typeMatch = filter === 'todos' || card.dataset.posType === filter;
+    var searchMatch = !searchQ || (card.textContent || '').toLowerCase().includes(searchQ);
+    card.style.display = typeMatch && searchMatch ? '' : 'none';
   });
 }
 
@@ -3928,12 +3933,7 @@ function renderPOSGrid(items) {
 }
 
 function posSearchHandler() {
-  var q = (this.value || '').toLowerCase().trim();
-  var cards = $$('.pos-card');
-  cards.forEach(function (card) {
-    var text = (card.textContent || '').toLowerCase();
-    card.style.display = !q || text.includes(q) ? '' : 'none';
-  });
+  refreshPOSVisibility();
 }
 
 window.addPOSItem = function (id, type) {
@@ -3967,11 +3967,41 @@ window.addPOSItem = function (id, type) {
   renderPOSOrder();
 };
 
+window.openPOSOrder = function () {
+  var panel = $('#posOrderPanel');
+  if (panel) {
+    panel.classList.remove('hidden');
+    panel.classList.add('fixed', 'inset-0', 'z-40');
+    panel.classList.remove('lg:flex');
+  }
+};
+
+window.closePOSOrder = function () {
+  var panel = $('#posOrderPanel');
+  if (panel) {
+    if (window.innerWidth < 1024) {
+      panel.classList.add('hidden');
+      panel.classList.remove('fixed', 'inset-0', 'z-40');
+      panel.classList.add('lg:flex');
+    }
+  }
+};
+
 function renderPOSOrder() {
   var container = $('#posOrderItems');
   var total = 0;
   var btn = $('#posRegisterBtn');
   var btnText = $('#posRegisterText');
+
+  // Mobile FAB
+  var fab = $('#posMobileFab');
+  var fabCount = $('#posMobileFabCount');
+  var count = state.posItems.reduce(function (sum, i) { return sum + i.qty; }, 0);
+
+  if (fab) {
+    fab.classList.toggle('hidden', count === 0);
+    if (fabCount) fabCount.textContent = count;
+  }
 
   if (state.posItems.length === 0) {
     container.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">Toca un producto para agregarlo</p>';
