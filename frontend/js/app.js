@@ -3745,12 +3745,21 @@ window.imprimirComanda = async function (pedido) {
     var items = pedido.items || [];
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var name = (item.productName || '').substring(0, 18);
+      var name = item.productName || '';
       var qty = item.quantity || 1;
-      var line = name + ' x' + qty;
       var price = Utils.formatCurrency(item.subtotal || ((item.unitPrice || 0) * qty));
-      var padding = Math.max(1, LINE_WIDTH - line.length - price.length);
-      data.push(line + ' '.repeat(padding) + price + '\n');
+      var line = name + ' x' + qty;
+      if (line.length + 1 + price.length <= LINE_WIDTH) {
+        // Cabe en una sola linea
+        var padding = Math.max(1, LINE_WIDTH - line.length - price.length);
+        data.push(line + ' '.repeat(padding) + price + '\n');
+      } else {
+        // Nombre largo: nombre en una linea, cantidad + precio en la siguiente
+        data.push(name + '\n');
+        var qtyLine = '  x' + qty;
+        var qtyPad = Math.max(1, LINE_WIDTH - qtyLine.length - price.length);
+        data.push(qtyLine + ' '.repeat(qtyPad) + price + '\n');
+      }
     }
 
     // Total
