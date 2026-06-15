@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('compras')
-      .select('*, productos(nombre, sku), proveedores(nombre), perfiles(username, nombre_completo)')
+      .select('*, productos(nombre, sku, unidad_medida), proveedores(nombre), perfiles(username, nombre_completo)')
       .order('creado_en', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
@@ -42,6 +42,7 @@ router.get('/', async (req, res) => {
       producto_id: c.producto_id,
       producto_nombre: c.productos?.nombre || '',
       producto_sku: c.productos?.sku || '',
+      producto_unidad: c.productos?.unidad_medida || 'unidad',
       cantidad: c.cantidad,
       valor_unitario: c.valor_unitario,
       valor_total: c.valor_total,
@@ -94,7 +95,7 @@ router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => 
         unidad_presentacion: unidad_presentacion || null,
         factor_conversion: factor_conversion || 1
       })
-      .select('*, productos(nombre, sku), proveedores(nombre), perfiles(username, nombre_completo)')
+      .select('*, productos(nombre, sku, unidad_medida), proveedores(nombre), perfiles(username, nombre_completo)')
       .single();
 
     if (error) throw error;
@@ -115,6 +116,7 @@ router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => 
         fecha_compra: data.fecha_compra,
         producto_nombre: data.productos?.nombre || '',
         producto_sku: data.productos?.sku || '',
+        producto_unidad: data.productos?.unidad_medida || 'unidad',
         cantidad: data.cantidad,
         valor_unitario: data.valor_unitario,
         valor_total: data.valor_total,
@@ -201,7 +203,7 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
         factor_conversion: factor_conversion || 1
       })
       .eq('id', req.params.id)
-      .select('*, productos(nombre, sku), proveedores(nombre), perfiles(username, nombre_completo)')
+      .select('*, productos(nombre, sku, unidad_medida), proveedores(nombre), perfiles(username, nombre_completo)')
       .single();
     if (updateError) throw updateError;
 
@@ -210,6 +212,7 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
       fecha_compra: updated.fecha_compra,
       producto_nombre: updated.productos?.nombre || '',
       producto_sku: updated.productos?.sku || '',
+      producto_unidad: updated.productos?.unidad_medida || 'unidad',
       cantidad: updated.cantidad,
       valor_unitario: updated.valor_unitario,
       valor_total: updated.valor_total,

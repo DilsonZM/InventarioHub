@@ -1260,17 +1260,28 @@ window.editSale = async function (id) {
     var res = await API.sales.get(id);
     var sale = res.data;
     state.editingSaleId = id;
-    state.saleItems = sale.items.map(function (it) {
-      return {
-        productId: it.productId,
-        productName: it.productName,
-        cantidadPresentacion: it.cantidadPresentacion || it.quantity,
-        cantidadBase: it.quantity,
-        unidadBase: 'unidad',
-        unidadPresentacion: it.unidadPresentacion || null,
-        unidadPresentacionLabel: it.unidadPresentacion || null,
-        factorConversion: it.factorConversion || 1
-      };
+    state.saleDishItems = [];
+    state.saleItems = [];
+    sale.items.forEach(function (it) {
+      if (it.esPlato) {
+        state.saleDishItems.push({
+          plato_id: it.platoId,
+          nombre: it.productName,
+          cantidad: it.quantity,
+          precioUnitario: it.unitPrice
+        });
+      } else if (it.productId) {
+        state.saleItems.push({
+          productId: it.productId,
+          productName: it.productName,
+          cantidadPresentacion: it.cantidadPresentacion || it.quantity,
+          cantidadBase: it.quantity,
+          unidadBase: 'unidad',
+          unidadPresentacion: it.unidadPresentacion || null,
+          unidadPresentacionLabel: it.unidadPresentacion || null,
+          factorConversion: it.factorConversion || 1
+        });
+      }
     });
     // Setear la cocina ANTES de abrir
     var pmEl = $('#salePaymentMethod');
@@ -1758,15 +1769,17 @@ async function openSaleModal() {
   var presSel = $('#saleUnidadPresentacion');
   if (presSel) presSel.innerHTML = '<option value="">Misma unidad base</option>';
 
-  // En edicion, auto-seleccionar el primer item del state para que el usuario vea
-  // su cantidad y el stock disponible, y poder cambiarla
+  // En edicion, auto-seleccionar el primer item (solo productos, no platos)
   if (isEditing && state.saleItems.length > 0) {
     var firstItem = state.saleItems[0];
     var sel = $('#saleProductSelect');
-    if (sel) {
-      sel.value = firstItem.productId;
-      // Disparar change manualmente para que se setee max y se actualice la UI
-      sel.dispatchEvent(new Event('change'));
+    if (sel && firstItem.productId) {
+      // Verificar que el producto existe en las opciones antes de seleccionarlo
+      var optExists = Array.from(sel.options).some(function (o) { return o.value === firstItem.productId; });
+      if (optExists) {
+        sel.value = firstItem.productId;
+        sel.dispatchEvent(new Event('change'));
+      }
     }
   }
 
@@ -1777,6 +1790,13 @@ async function openSaleModal() {
 }
 
 $('#saleProductSelect').addEventListener('change', function () {
+  if (this.selectedIndex < 0 || !this.options[this.selectedIndex]) {
+    $('#saleUnidadPresentacion').innerHTML = '<option value="">Misma unidad base</option>';
+    $('#saleQuantity').value = 1;
+    $('#saleQuantity').removeAttribute('max');
+    $('#saleConversionPreview').classList.add('hidden');
+    return;
+  }
   var opt = this.options[this.selectedIndex];
   var stockDisponible = parseFloat(opt.dataset.stock) || 0;
   var unidad = opt.dataset.unidad || 'unidad';
@@ -2181,12 +2201,6 @@ document.getElementById('confirmOrderBtn').addEventListener('click', async funct
     payload.platos = state.saleDishItems;
   }
   if (state.saleItems.length > 0) {
-    // Si hay platos Y productos, enviar items como producto normal (se usa procesar_venta)
-    // Si solo hay productos, igual
-    // Para mezclar ambos, el backend handleDishSale no maneja items. 
-    // Solucion: enviar solo platos si hay platos, solo items si no hay
-  }
-  if (state.saleDishItems.length === 0 && state.saleItems.length > 0) {
     payload.items = state.saleItems.map(function (i) {
       return { productId: i.productId, quantity: i.cantidadBase, cantidadPresentacion: i.unidadPresentacion ? i.cantidadPresentacion : null, unidadPresentacion: i.unidadPresentacion || null, factorConversion: i.factorConversion || 1 };
     });
@@ -2420,7 +2434,8 @@ function renderCalGrid(gridId, year, month, today) {
 }
 
 window.pickDate = function (dateStr) {
-  if (calendarState.picking === 'start') {
+  if (calendarState.picking === 'start' || calendarState.picking === 'done') {
+    // Si ya habia un rango, reiniciar: la fecha clickeada es el nuevo inicio
     calendarState.start = dateStr;
     calendarState.end = null;
     calendarState.picking = 'end';
@@ -2741,10 +2756,10 @@ async function loadCompras() {
     }
 
     tbody.innerHTML = compras.map(function (c) {
-      var cantHtml = c.cantidad;
+      var cantHtml = c.cantidad + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(c.producto_unidad || 'unid') + '</span>';
       if (c.cantidad_presentacion && c.factor_conversion && c.factor_conversion !== 1) {
-        cantHtml = c.cantidad_presentacion + ' <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium">' + escapeHtml(c.unidad_presentacion || '') + '</span>'
-          + ' <span class="text-xs text-slate-400">= ' + c.cantidad + '</span>';
+        cantHtml = c.cantidad_presentacion + ' <span class=\"inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium\">' + escapeHtml(c.unidad_presentacion || '') + '</span>'
+          + ' <span class=\"text-xs text-slate-400\">= ' + c.cantidad + ' ' + escapeHtml(c.producto_unidad || 'unid') + '</span>';
       }
       return '<tr class="hover:bg-slate-50 transition-colors">'
         + '<td class="px-6 py-3 text-sm text-slate-600">' + (c.fecha_compra || '') + '</td>'
@@ -2769,9 +2784,9 @@ async function loadCompras() {
     }).join('');
 
     cards.innerHTML = compras.map(function (c) {
-      var cantHtml = c.cantidad + ' unid';
+      var cantHtml = c.cantidad + ' ' + escapeHtml(c.producto_unidad || 'unid');
       if (c.cantidad_presentacion && c.factor_conversion && c.factor_conversion !== 1) {
-        cantHtml = c.cantidad_presentacion + ' ' + escapeHtml(c.unidad_presentacion || '') + ' = ' + c.cantidad + ' base';
+        cantHtml = c.cantidad_presentacion + ' ' + escapeHtml(c.unidad_presentacion || '') + ' = ' + c.cantidad + ' ' + escapeHtml(c.producto_unidad || 'unid');
       }
       var actionsHtml = '<div class="flex items-center gap-1">'
         + (window.can && window.can('puedeEditarEntradas') ?
@@ -2843,25 +2858,27 @@ async function loadMovimientos() {
       var tipoBadge = m.movimiento === 'entrada' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Entrada</span>'
         : m.movimiento === 'salida' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Salida</span>'
         : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Ajuste</span>';
+      var unidad = m.unidad || '';
       return '<tr class="hover:bg-slate-50 transition-colors">'
         + '<td class="px-6 py-3 text-sm text-slate-600">' + formatDate(m.fecha) + '</td>'
         + '<td class="px-6 py-3">' + tipoBadge + '</td>'
         + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(m.producto) + '</td>'
         + '<td class="px-6 py-3 text-sm font-mono text-center text-slate-500">' + escapeHtml(m.codigo) + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center text-emerald-600 font-medium">' + (m.cantidad_entrada || '-') + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center text-red-600 font-medium">' + (m.cantidad_salida || '-') + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center font-semibold">' + m.cantidad_stock + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center text-emerald-600 font-medium">' + (m.cantidad_entrada ? m.cantidad_entrada + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center text-red-600 font-medium">' + (m.cantidad_salida ? m.cantidad_salida + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center font-semibold">' + (m.cantidad_stock != null ? m.cantidad_stock + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
         + '<td class="px-6 py-3 text-sm text-slate-600"><div class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(m.usuario_nombre || '') + '</div></td>'
         + '</tr>';
     }).join('');
 
     cards.innerHTML = movs.map(function (m) {
+      var unidad = m.unidad || '';
       return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
         + '<div class="flex justify-between"><span class="text-xs text-slate-500">' + formatDate(m.fecha) + '</span>'
-        + (m.movimiento === 'entrada' ? '<span class="text-emerald-600 text-sm font-bold">+ ' + m.cantidad_entrada + '</span>' : m.movimiento === 'salida' ? '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + '</span>' : '<span class="text-amber-600 text-sm font-bold">Ajuste</span>')
+        + (m.movimiento === 'entrada' ? '<span class="text-emerald-600 text-sm font-bold">+ ' + m.cantidad_entrada + ' ' + escapeHtml(unidad) + '</span>' : m.movimiento === 'salida' ? '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + ' ' + escapeHtml(unidad) + '</span>' : '<span class="text-amber-600 text-sm font-bold">Ajuste</span>')
         + '</div>'
         + '<p class="text-sm font-medium">' + escapeHtml(m.producto) + '</p>'
-        + '<div class="flex justify-between text-xs text-slate-500"><span>' + escapeHtml(m.codigo) + '</span><span>Stock: ' + m.cantidad_stock + '</span></div>'
+        + '<div class="flex justify-between text-xs text-slate-500"><span>' + escapeHtml(m.codigo) + '</span><span>Stock: ' + (m.cantidad_stock != null ? m.cantidad_stock + ' ' + escapeHtml(unidad) : '-') + '</span></div>'
         + '<div class="flex items-center gap-1.5 text-xs text-slate-500"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(m.usuario_nombre || '') + '</div>'
         + '</div>';
     }).join('');

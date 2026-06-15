@@ -154,9 +154,11 @@ router.get('/:id', async (req, res) => {
 // PUT /api/sales/:id - editar salida con recalculo de stock
 router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) => {
   try {
-    const { items, paymentMethod } = req.body;
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, message: 'La salida debe contener al menos un producto' });
+    const { items, platos, paymentMethod } = req.body;
+    const hasItems = items && Array.isArray(items) && items.length > 0;
+    const hasPlatos = platos && Array.isArray(platos) && platos.length > 0;
+    if (!hasItems && !hasPlatos) {
+      return res.status(400).json({ success: false, message: 'La salida debe contener al menos un producto o plato' });
     }
     if (!paymentMethod) {
       return res.status(400).json({ success: false, message: 'Cocina requerida' });
@@ -172,108 +174,196 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
       return res.status(404).json({ success: false, message: 'Salida no encontrada' });
     }
 
-    // Construir mapa de cantidades originales por producto
+    // === 1. Revertir stock de platos originales ===
+    for (const d of original.venta_detalles) {
+      if (d.es_plato && d.plato_id) {
+        const { data: receta } = await supabase
+          .from('plato_ingredientes')
+          .select('producto_id, cantidad, unidad, productos!inner(unidad_medida)')
+          .eq('plato_id', d.plato_id);
+        if (receta) {
+          for (const ing of receta) {
+            var conv = convertToBaseUnit(ing.cantidad * d.cantidad, ing.unidad, ing.productos.unidad_medida);
+            await supabase.rpc('registrar_movimiento', {
+              p_producto_id: ing.producto_id,
+              p_tipo: 'entrada',
+              p_cantidad: conv,
+              p_motivo: 'Ajuste por edicion de venta ' + original.numero_venta,
+              p_usuario_id: req.user ? req.user.id : null
+            });
+          }
+        }
+      }
+    }
+
+    // === 2. Revertir stock de productos directos originales ===
     const originalMap = {};
     for (const d of original.venta_detalles) {
-      originalMap[d.producto_id] = (originalMap[d.producto_id] || 0) + d.cantidad;
+      if (!d.es_plato && d.producto_id) {
+        originalMap[d.producto_id] = (originalMap[d.producto_id] || 0) + d.cantidad;
+      }
     }
-
-    // Construir mapa de cantidades nuevas
-    const newMap = {};
-    for (const item of items) {
-      newMap[item.productId] = (newMap[item.productId] || 0) + item.quantity;
-    }
-
-    // Devolver al stock las cantidades que se redujeron
     for (const prodId of Object.keys(originalMap)) {
       const origQty = originalMap[prodId];
-      const newQty = newMap[prodId] || 0;
-      if (newQty < origQty) {
-        const diff = origQty - newQty;
-        await supabase.rpc('registrar_movimiento', {
-          p_producto_id: prodId,
-          p_tipo: 'entrada',
-          p_cantidad: diff,
-          p_motivo: 'Ajuste por edicion de venta ' + original.numero_venta,
-          p_usuario_id: req.user ? req.user.id : null
-        });
-      }
-    }
-
-    // Validar que las cantidades nuevas no excedan stock
-    for (const prodId of Object.keys(newMap)) {
-      const origQty = originalMap[prodId] || 0;
-      const newQty = newMap[prodId];
-      // Stock disponible = stock_actual + lo que se devuelve de este producto
-      const { data: prod } = await supabase
-        .from('productos')
-        .select('stock_actual, nombre')
-        .eq('id', prodId)
-        .single();
-      if (!prod) {
-        return res.status(400).json({ success: false, message: 'Producto no encontrado' });
-      }
-      const stockDisponible = prod.stock_actual + (origQty > 0 ? origQty : 0);
-      if (newQty > stockDisponible) {
-        return res.status(400).json({
-          success: false,
-          message: 'Stock insuficiente para ' + prod.nombre + '. Disponible: ' + stockDisponible
-        });
-      }
-    }
-
-    // Descontar las nuevas cantidades (o la diferencia si aumento)
-    for (const prodId of Object.keys(newMap)) {
-      const origQty = originalMap[prodId] || 0;
-      const newQty = newMap[prodId];
-      if (newQty > origQty) {
-        const diff = newQty - origQty;
-        await supabase.rpc('registrar_movimiento', {
-          p_producto_id: prodId,
-          p_tipo: 'salida',
-          p_cantidad: diff,
-          p_motivo: 'Ajuste por edicion de venta ' + original.numero_venta,
-          p_usuario_id: req.user ? req.user.id : null
-        });
-      }
-    }
-
-    // Eliminar detalles viejos y crear nuevos
-    await supabase.from('venta_detalles').delete().eq('venta_id', req.params.id);
-
-    let subtotal = 0;
-    const detallesNuevos = [];
-    for (const item of items) {
-      const { data: prod } = await supabase
-        .from('productos')
-        .select('id, nombre, precio_venta')
-        .eq('id', item.productId)
-        .single();
-      if (!prod) {
-        return res.status(400).json({ success: false, message: 'Producto no encontrado' });
-      }
-      const cant = item.quantity;
-      const sub = prod.precio_venta * cant;
-      subtotal += sub;
-      detallesNuevos.push({
-        venta_id: req.params.id,
-        producto_id: prod.id,
-        producto_nombre: prod.nombre,
-        cantidad: cant,
-        precio_unitario: prod.precio_venta,
-        subtotal: sub,
-        cantidad_presentacion: item.cantidadPresentacion || null,
-        unidad_presentacion: item.unidadPresentacion || null,
-        factor_conversion: item.factorConversion || 1
+      const newQty = 0; // Se recalcula abajo
+      // Devolver todo el stock original (despues se descuenta lo nuevo)
+      await supabase.rpc('registrar_movimiento', {
+        p_producto_id: prodId,
+        p_tipo: 'entrada',
+        p_cantidad: origQty,
+        p_motivo: 'Ajuste por edicion de venta ' + original.numero_venta,
+        p_usuario_id: req.user ? req.user.id : null
       });
     }
-    const { error: detallesError } = await supabase.from('venta_detalles').insert(detallesNuevos);
+
+    var subtotal = 0;
+
+    // === 3. Validar y preparar nuevos platos ===
+    var ingredientesTotales = {};
+    if (hasPlatos) {
+      for (var i = 0; i < platos.length; i++) {
+        var pd = platos[i];
+        var cantPlato = Math.max(1, parseInt(pd.cantidad) || 1);
+        var { data: receta, error: recetaErr } = await supabase
+          .from('plato_ingredientes')
+          .select('producto_id, cantidad, unidad, productos!inner(nombre, unidad_medida)')
+          .eq('plato_id', pd.plato_id);
+        if (recetaErr) throw recetaErr;
+        if (!receta || receta.length === 0) continue;
+        for (var j = 0; j < receta.length; j++) {
+          var ing = receta[j];
+          var pid = ing.producto_id;
+          var prodUnidad = ing.productos.unidad_medida || '';
+          var converted = convertToBaseUnit(ing.cantidad * cantPlato, ing.unidad, prodUnidad);
+          if (ingredientesTotales[pid]) {
+            ingredientesTotales[pid].cantidad_total += converted;
+          } else {
+            ingredientesTotales[pid] = { nombre: ing.productos.nombre, cantidad_total: converted, unidad: prodUnidad };
+          }
+        }
+      }
+      // Validar stock para ingredientes
+      var ingIds = Object.keys(ingredientesTotales);
+      for (var k = 0; k < ingIds.length; k++) {
+        var pid = ingIds[k];
+        var needed = ingredientesTotales[pid].cantidad_total;
+        var { data: prod, error: prodErr } = await supabase.from('productos').select('stock_actual').eq('id', pid).single();
+        if (prodErr || !prod) return res.status(400).json({ success: false, message: 'Producto no encontrado' });
+        if (parseFloat(prod.stock_actual) < needed) {
+          return res.status(400).json({ success: false, message: 'Stock insuficiente de ' + ingredientesTotales[pid].nombre + '. Disponible: ' + parseFloat(prod.stock_actual) + ', Necesario: ' + Math.round(needed * 1000) / 1000 });
+        }
+      }
+    }
+
+    // === 4. Validar y preparar nuevos productos directos ===
+    var newProductMap = {};
+    if (hasItems) {
+      for (var ni = 0; ni < items.length; ni++) {
+        var it = items[ni];
+        if (!it.productId || !it.quantity) continue;
+        newProductMap[it.productId] = (newProductMap[it.productId] || 0) + it.quantity;
+      }
+      for (var pi of Object.keys(newProductMap)) {
+        var { data: prod, error: prodErr } = await supabase.from('productos').select('stock_actual, nombre').eq('id', pi).single();
+        if (prodErr || !prod) return res.status(400).json({ success: false, message: 'Producto no encontrado' });
+        if (parseFloat(prod.stock_actual) < newProductMap[pi]) {
+          return res.status(400).json({ success: false, message: 'Stock insuficiente de ' + prod.nombre + '. Disponible: ' + prod.stock_actual });
+        }
+      }
+    }
+
+    // === 5. Aplicar deducciones de ingredientes ===
+    if (hasPlatos) {
+      var ingIds2 = Object.keys(ingredientesTotales);
+      for (var p = 0; p < ingIds2.length; p++) {
+        var pid2 = ingIds2[p];
+        await supabase.rpc('registrar_movimiento', {
+          p_producto_id: pid2, p_tipo: 'salida',
+          p_cantidad: ingredientesTotales[pid2].cantidad_total,
+          p_motivo: 'Ajuste por edicion de venta ' + original.numero_venta,
+          p_usuario_id: req.user ? req.user.id : null
+        });
+      }
+    }
+
+    // === 6. Aplicar deducciones de productos directos ===
+    if (hasItems) {
+      for (var qi of Object.keys(newProductMap)) {
+        await supabase.rpc('registrar_movimiento', {
+          p_producto_id: qi, p_tipo: 'salida',
+          p_cantidad: newProductMap[qi],
+          p_motivo: 'Ajuste por edicion de venta ' + original.numero_venta,
+          p_usuario_id: req.user ? req.user.id : null
+        });
+      }
+    }
+
+    // === 7. Eliminar detalles viejos y crear nuevos ===
+    await supabase.from('venta_detalles').delete().eq('venta_id', req.params.id);
+
+    var detallesNuevos = [];
+
+    // Insertar detalles de platos
+    if (hasPlatos) {
+      for (var n = 0; n < platos.length; n++) {
+        var pd2 = platos[n];
+        var cant2 = Math.max(1, parseInt(pd2.cantidad) || 1);
+        var precio2 = parseFloat(pd2.precioUnitario) || 0;
+        var { data: pi2 } = await supabase.from('platos').select('nombre, precio_venta').eq('id', pd2.plato_id).single();
+        if (!pi2) continue;
+        if (!precio2) precio2 = parseFloat(pi2.precio_venta);
+        var subDish = precio2 * cant2;
+        subtotal += subDish;
+        detallesNuevos.push({
+          venta_id: req.params.id,
+          producto_id: null,
+          producto_nombre: pi2.nombre,
+          cantidad: cant2,
+          precio_unitario: precio2,
+          subtotal: subDish,
+          plato_id: pd2.plato_id,
+          es_plato: true
+        });
+      }
+    }
+
+    // Insertar detalles de productos directos
+    if (hasItems) {
+      for (var mi = 0; mi < items.length; mi++) {
+        var item = items[mi];
+        if (!item.productId || !item.quantity) continue;
+        var { data: prod } = await supabase
+          .from('productos')
+          .select('id, nombre, precio_venta')
+          .eq('id', item.productId)
+          .single();
+        if (!prod) {
+          return res.status(400).json({ success: false, message: 'Producto no encontrado' });
+        }
+        var cant = item.quantity;
+        var sub = prod.precio_venta * cant;
+        subtotal += sub;
+        detallesNuevos.push({
+          venta_id: req.params.id,
+          producto_id: prod.id,
+          producto_nombre: prod.nombre,
+          cantidad: cant,
+          precio_unitario: prod.precio_venta,
+          subtotal: sub,
+          cantidad_presentacion: item.cantidadPresentacion || null,
+          unidad_presentacion: item.unidadPresentacion || null,
+          factor_conversion: item.factorConversion || 1
+        });
+      }
+    }
+
+    var { error: detallesError } = await supabase.from('venta_detalles').insert(detallesNuevos);
     if (detallesError) throw detallesError;
 
-    // Actualizar cabecera
-    const impuesto = subtotal * 0.19;
-    const total = subtotal * 1.19;
-    const { data: updated, error: updateError } = await supabase
+    // === 8. Actualizar cabecera ===
+    var impuesto = subtotal * 0.19;
+    var total = subtotal * 1.19;
+    var { data: updated, error: updateError } = await supabase
       .from('ventas')
       .update({
         metodo_pago: paymentMethod,
@@ -286,27 +376,7 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
       .single();
     if (updateError) throw updateError;
 
-    res.json({ success: true, data: {
-      id: updated.id,
-      numero_venta: updated.numero_venta,
-      total: updated.total,
-      subtotal: updated.subtotal,
-      impuesto: updated.impuesto,
-      paymentMethod: updated.metodo_pago,
-      userId: updated.usuario_id,
-      usuario_nombre: updated.perfiles?.nombre_completo || updated.perfiles?.username || '',
-      createdAt: updated.creado_en,
-      items: (updated.venta_detalles || []).map(item => ({
-        productId: item.producto_id,
-        productName: item.producto_nombre,
-        quantity: item.cantidad,
-        unitPrice: item.precio_unitario,
-        subtotal: item.subtotal,
-        cantidadPresentacion: item.cantidad_presentacion,
-        unidadPresentacion: item.unidad_presentacion,
-        factorConversion: item.factor_conversion
-      }))
-    }});
+    res.json({ success: true, data: mapSaleResponse(updated) });
   } catch (err) {
     console.error('Sale update error:', err);
     res.status(500).json({ success: false, message: err.message || 'Error del servidor' });
