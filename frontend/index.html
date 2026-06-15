@@ -1970,14 +1970,18 @@
       #ticketPrint { 
         box-shadow: none !important; 
         border-radius: 0 !important; 
-        width: 72mm !important; 
-        max-width: 72mm !important;
+        width: 80mm !important; 
+        max-width: 80mm !important;
+        box-sizing: border-box !important;
+        padding: 5mm !important;
         margin: 0 auto !important; 
         border: none !important;
         font-size: 10px !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
       }
       .ticket-actions { display: none !important; }
-      @page { size: 80mm auto; margin: 2mm; }
+      @page { size: 80mm auto; margin: 0; }
     }
 
     /* Calendar date picker */
