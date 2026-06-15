@@ -1,6 +1,6 @@
 {
-  "name": "InventarioHub",
-  "short_name": "InventarioHub",
+  "name": "Corner House",
+  "short_name": "Corner House",
   "description": "Gestion de inventario para comida rapida",
   "start_url": "/index.html",
   "scope": "/",
