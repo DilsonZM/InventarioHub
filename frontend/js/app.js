@@ -3811,33 +3811,35 @@ async function loadPOS() {
   state.posItems = [];
   state.posMesaId = null;
 
+  var allProducts = [];
+  var allDishes = [];
+  var mesas = [];
+
   try {
-    var results = await Promise.all([
-      API.products.list(),
-      API.dishes.list(),
-      API.mesas.list()
-    ]);
+    var res = await API.products.list();
+    allProducts = (res.data || []).filter(function (p) { return p.activo !== false && p.stock > 0; });
+  } catch (e) { console.error('[POS] Error products:', e); }
 
-    console.log('[POS] APIs completadas');
+  try {
+    var res = await API.dishes.list();
+    allDishes = (res.data || []).filter(function (d) { return d.activo && d.disponible !== false; });
+  } catch (e) { console.error('[POS] Error dishes:', e); }
 
-    var allProducts = (results[0].data || []).filter(function (p) { return p.activo !== false && p.stock > 0; });
-    var allDishes = (results[1].data || []).filter(function (d) { return d.activo && d.disponible !== false; });
-    var mesas = (results[2].data || []).filter(function (m) { return m.activa; });
+  try {
+    var res = await API.mesas.list();
+    mesas = (res.data || []).filter(function (m) { return m.activa; });
+  } catch (e) { console.error('[POS] Error mesas:', e); }
 
-    console.log('[POS] Products:', allProducts.length, 'Dishes:', allDishes.length, 'Mesas:', mesas.length);
+  console.log('[POS] Products:', allProducts.length, 'Dishes:', allDishes.length, 'Mesas:', mesas.length);
 
-    // Cache for rendering
-    state._posProducts = allProducts;
-    state._posDishes = allDishes;
-    state._posMesas = mesas;
+  state._posProducts = allProducts;
+  state._posDishes = allDishes;
+  state._posMesas = mesas;
 
-    renderPOSCategories(allDishes, allProducts);
-    renderPOSOrder();
-    renderPOSMesas(mesas);
-    console.log('[POS] Vista POS renderizada');
-  } catch (e) {
-    console.error('[POS] Error al cargar:', e);
-  }
+  renderPOSCategories(allDishes, allProducts);
+  renderPOSOrder();
+  renderPOSMesas(mesas);
+  console.log('[POS] Vista POS renderizada');
 }
 
 function renderPOSCategories(dishes, products) {
