@@ -1029,12 +1029,17 @@ function renderProductsTable() {
   var isAdmin = state.user && state.user.role === 'admin';
 
   var desktopRows = state.products.map(function (p) {
-    var stockClass = p.stock === 0 ? 'text-red-600 bg-red-100' : p.stock <= p.minStock ? 'text-amber-600 bg-amber-100' : 'text-brand-600 bg-brand-100';
-    var statusBadge = p.stock === 0
-      ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Agotado</span>'
-      : p.stock <= p.minStock
-        ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Stock bajo</span>'
-        : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800">Disponible</span>';
+    var stockBadge, statusBadge;
+    if (p.stock <= 0) {
+      stockBadge = 'inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold text-red-600 stock-badge-red';
+      statusBadge = '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium items-center bg-red-100 text-red-700 estado-badge-red">Agotado</span>';
+    } else if (p.stock <= p.minStock) {
+      stockBadge = 'inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold text-orange-500 stock-badge-orange';
+      statusBadge = '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium items-center bg-orange-100 text-orange-700 estado-badge-orange">Stock bajo</span>';
+    } else {
+      stockBadge = 'inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold text-green-600 stock-badge-green';
+      statusBadge = '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium items-center bg-green-100 text-green-700 estado-badge-green">Disponible</span>';
+    }
 
     return '<tr class="hover:bg-slate-50 transition-colors">'
       + '<td class="px-6 py-4">'
@@ -1051,7 +1056,7 @@ function renderProductsTable() {
       + '<td class="px-6 py-4 text-sm font-mono text-slate-600">' + escapeHtml(p.sku) + '</td>'
       + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700">' + escapeHtml(p.category) + '</span></td>'
       + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + formatCurrency(p.price) + '</td>'
-      + '<td class="px-6 py-4 text-center"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ' + stockClass + '">' + p.stock + '</span></td>'
+      + '<td class="px-6 py-4 text-center"><span class="' + stockBadge + '">' + p.stock + '</span></td>'
       + '<td class="px-6 py-4 text-center text-sm text-slate-500">' + p.minStock + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-600"><span class="inline-flex px-2 py-0.5 rounded-md text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200">' + escapeHtml(p.unidad || 'unidad') + '</span></td>'
       + '<td class="px-6 py-4 text-center">' + statusBadge + '</td>'
@@ -1071,7 +1076,7 @@ function renderProductsTable() {
   tbody.innerHTML = desktopRows;
 
   var mobileCards = state.products.map(function (p) {
-    var stockColor = p.stock === 0 ? 'text-red-600' : p.stock <= p.minStock ? 'text-amber-600' : 'text-brand-600';
+    var stockColor = p.stock <= 0 ? 'text-red-600 stock-badge-red' : p.stock <= p.minStock ? 'text-orange-500 stock-badge-orange' : 'text-green-600 stock-badge-green';
     return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
       + '<div class="flex items-start justify-between">'
       + '<div class="flex items-center gap-3">'
