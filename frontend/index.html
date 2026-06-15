@@ -1961,27 +1961,60 @@
 
   <style>
     @media print {
-      html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
+      @page { size: 80mm auto; margin: 0; }
+
+      html, body {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 80mm !important;
+      }
+
       body > *:not(#ticketModal) { display: none !important; }
-      #ticketModal { position: static !important; display: block !important; background: white !important; margin: 0 !important; padding: 0 !important; }
-      #ticketModal > div { display: block !important; }
-      #ticketModal .fixed { position: static !important; background: none !important; backdrop-filter: none !important; display: none !important; }
-      #ticketModal .relative.z-10 { position: static !important; }
-      #ticketPrint { 
-        box-shadow: none !important; 
-        border-radius: 0 !important; 
-        width: 80mm !important; 
+
+      #ticketModal {
+        display: block !important;
+        position: static !important;
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 80mm !important;
+        overflow: visible !important;
+      }
+
+      #ticketModal > div {
+        display: block !important;
+        min-height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 80mm !important;
+      }
+
+      #ticketModal .fixed { display: none !important; }
+
+      #ticketModal .relative.z-10 {
+        position: static !important;
+        width: 80mm !important;
+        max-width: 80mm !important;
+        margin: 0 !important;
+      }
+
+      #ticketPrint {
+        width: 80mm !important;
         max-width: 80mm !important;
         box-sizing: border-box !important;
         padding: 5mm !important;
-        margin: 0 auto !important; 
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
         border: none !important;
-        font-size: 10px !important;
+        font-size: 14px !important;
+        line-height: 1.3 !important;
         word-wrap: break-word !important;
         overflow-wrap: break-word !important;
       }
+
       .ticket-actions { display: none !important; }
-      @page { size: 80mm auto; margin: 0; }
     }
 
     /* Calendar date picker */
