@@ -637,7 +637,13 @@
     #sidebar.collapsed .sidebar-group-header { justify-content: center; padding: 0.5rem; }
     #sidebar.collapsed .sidebar-group-items { max-height: 0 !important; }
 
-    /* Toggle de tipo de venta */
+    /* Logo dual: claro usa fondo verde, oscuro usa sin fondo */
+    [data-theme="dark"] .logo-light { display: none !important; }
+    [data-theme="dark"] .logo-dark { display: block !important; }
+    [data-theme="light"] .logo-light,
+    :not([data-theme]) .logo-light { display: block !important; }
+    [data-theme="light"] .logo-dark,
+    :not([data-theme]) .logo-dark { display: none !important; }
     [data-theme="dark"] .sale-type-btn.text-slate-600 { color: #94a3b8 !important; }
     [data-theme="dark"] .sale-type-btn.active-tab { color: var(--color-text-primary) !important; }
   </style>
@@ -649,7 +655,8 @@
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-out">
     <div class="flex items-center gap-3 px-5 py-5 border-b sidebar-divider">
       <div class="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-brand-500/25 shrink-0">
-        <img src="LogoWeb-removebg-preview.png" alt="Corner House" class="w-full h-full object-cover">
+        <img src="LogoCornerHouse.jpeg" alt="Corner House" class="w-full h-full object-cover logo-light">
+        <img src="LogoWeb-removebg-preview.png" alt="Corner House" class="w-full h-full object-cover logo-dark hidden">
       </div>
       <div class="sidebar-header-text min-w-0 flex-1">
         <h1 class="text-base font-bold text-brand-800 tracking-tight">Corner House</h1>
@@ -806,11 +813,11 @@
           <h2 class="text-lg sm:text-xl font-bold text-brand-800 truncate" id="pageTitle">Dashboard</h2>
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
-          <button id="newOrderBtn" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md shadow-brand-500/25 hover:shadow-lg hover:shadow-brand-500/30 hover:from-brand-600 hover:to-teal-700 transition-all touch-target" title="Nuevo Pedido">
+          <button id="newOrderBtn" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-500 to-brand-700 !text-white text-sm font-semibold rounded-xl shadow-md shadow-brand-500/25 hover:shadow-lg hover:shadow-brand-500/30 hover:from-brand-600 hover:to-brand-800 transition-all touch-target" title="Nuevo Pedido">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             <span>Nuevo Pedido</span>
           </button>
-          <button id="newOrderBtnMobile" class="sm:hidden inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-brand-500 to-teal-600 text-white rounded-xl shadow-md shadow-brand-500/25 touch-target" title="Nuevo Pedido">
+          <button id="newOrderBtnMobile" class="sm:hidden inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-brand-500 to-brand-700 !text-white rounded-xl shadow-md shadow-brand-500/25 touch-target" title="Nuevo Pedido">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           </button>
           <button id="themeToggle" class="theme-toggle" aria-label="Cambiar modo" title="Modo oscuro">
