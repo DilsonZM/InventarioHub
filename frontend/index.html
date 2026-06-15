@@ -218,8 +218,8 @@
       --color-bg-elevated: #ffffff;
       --color-bg-header: rgba(255, 255, 255, 0.8);
       --color-bg-sidebar: #ffffff;
-      --color-bg-sidebar-accent: rgba(7, 54, 38, 0.08);
-      --color-bg-sidebar-hover: rgba(7, 54, 38, 0.06);
+      --color-bg-sidebar-accent: rgba(26, 138, 102, 0.15);
+      --color-bg-sidebar-hover: rgba(26, 138, 102, 0.10);
       --color-bg-input: #ffffff;
       --color-bg-hover: #f8fafc;
       --color-bg-stripe: #f8fafc;
@@ -252,8 +252,8 @@
       --color-bg-elevated: #1e293b;
       --color-bg-header: rgba(15, 23, 42, 0.85);
       --color-bg-sidebar: #111827;
-      --color-bg-sidebar-accent: rgba(61, 173, 133, 0.12);
-      --color-bg-sidebar-hover: rgba(61, 173, 133, 0.08);
+      --color-bg-sidebar-accent: rgba(61, 173, 133, 0.18);
+      --color-bg-sidebar-hover: rgba(61, 173, 133, 0.12);
       --color-bg-input: #1e293b;
       --color-bg-hover: #334155;
       --color-bg-stripe: #1e293b;
@@ -354,7 +354,9 @@
 
     [data-theme="dark"] .bg-slate-200 { background-color: #334155 !important; }
 
-    [data-theme="dark"] .text-brand-600 { color: var(--color-accent-brand) !important; }
+    [data-theme="dark"] .text-brand-600,
+    [data-theme="dark"] .text-brand-700,
+    [data-theme="dark"] .text-brand-800 { color: var(--color-accent-brand) !important; }
     [data-theme="dark"] .text-amber-600 { color: var(--color-accent-amber) !important; }
     [data-theme="dark"] .text-violet-600 { color: var(--color-accent-violet) !important; }
     [data-theme="dark"] .text-red-600 { color: var(--color-accent-red) !important; }
@@ -422,10 +424,12 @@
     .nav-link:hover {
       background-color: var(--color-bg-sidebar-hover);
       color: var(--color-text-primary);
+      box-shadow: inset 3px 0 0 var(--color-accent-brand);
     }
     .nav-link.active {
       background-color: var(--color-bg-sidebar-accent);
       color: var(--color-accent-brand);
+      box-shadow: inset 3px 0 0 var(--color-accent-brand);
     }
     .nav-link .nav-icon-bg {
       background-color: var(--color-bg-sidebar-hover);
@@ -648,7 +652,7 @@
         <img src="LogoWeb-removebg-preview.png" alt="Corner House" class="w-full h-full object-cover">
       </div>
       <div class="sidebar-header-text min-w-0 flex-1">
-        <h1 class="text-base font-bold sidebar-text-primary tracking-tight">Corner House</h1>
+        <h1 class="text-base font-bold text-brand-700 tracking-tight">Corner House</h1>
         <p class="text-xs sidebar-text-muted">Panel de control</p>
       </div>
       <button id="sidebarPinBtn" class="pin-btn shrink-0 p-1 rounded-lg sidebar-text-muted hover:sidebar-text-primary hover:bg-slate-100/50 transition-all touch-target hidden lg:flex items-center justify-center" title="Fijar menú">
@@ -799,7 +803,7 @@
           </svg>
         </button>
         <div class="flex-1 lg:flex-none min-w-0">
-          <h2 class="text-lg sm:text-xl font-bold sidebar-text-primary truncate" id="pageTitle">Dashboard</h2>
+          <h2 class="text-lg sm:text-xl font-bold text-brand-700 truncate" id="pageTitle">Dashboard</h2>
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
           <button id="newOrderBtn" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md shadow-brand-500/25 hover:shadow-lg hover:shadow-brand-500/30 hover:from-brand-600 hover:to-teal-700 transition-all touch-target" title="Nuevo Pedido">
@@ -938,7 +942,7 @@
               <canvas id="categoryChart"></canvas>
             </div>
           </div>
-          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100/50">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-brand-100">
             <h3 class="text-base font-semibold text-slate-800 mb-4">Productos con Stock Bajo</h3>
             <div id="lowStockList" class="space-y-3 overflow-y-auto max-h-64">
               <p class="text-sm text-slate-400 text-center py-8">Cargando...</p>
@@ -1107,19 +1111,19 @@
         </div>
 
         <div id="salesSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-xl p-4 border border-slate-100/50">
+          <div class="bg-brand-50/50 rounded-xl p-4 border border-brand-100/50">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Salidas</p>
             <p class="text-xl font-bold text-slate-800 mt-1" id="summaryCount">0</p>
           </div>
-          <div class="bg-white rounded-xl p-4 border border-slate-100/50">
+          <div class="bg-brand-50/50 rounded-xl p-4 border border-brand-100/50">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Cantidad Usada</p>
             <p class="text-xl font-bold text-brand-600 mt-1" id="summaryTotal">0</p>
           </div>
-          <div class="bg-white rounded-xl p-4 border border-slate-100/50">
+          <div class="bg-brand-50/50 rounded-xl p-4 border border-brand-100/50">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Promedio x Salida</p>
             <p class="text-xl font-bold text-brand-600 mt-1" id="summaryAvg">0</p>
           </div>
-          <div class="bg-white rounded-xl p-4 border border-slate-100/50">
+          <div class="bg-brand-50/50 rounded-xl p-4 border border-brand-100/50">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Productos Usados</p>
             <p class="text-xl font-bold text-violet-600 mt-1" id="summaryItems">0</p>
           </div>
