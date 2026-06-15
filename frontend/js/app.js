@@ -181,6 +181,18 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   console.log('[App] Aplicacion inicializada correctamente');
 
+  // Inicializar QZ Tray (certificado de desarrollo, sin firma)
+  try {
+    if (typeof qz !== 'undefined') {
+      qz.security.setCertificatePromise(function (resolve) { resolve(); });
+      qz.security.setSignaturePromise(function (toSign) {
+        return function (resolve) { resolve(); };
+      });
+    }
+  } catch (e) {
+    console.warn('[QZ] No se pudo inicializar QZ Tray:', e.message);
+  }
+
   // Refrescar tablas al cambiar tema (evita estilos stale)
   var themeBtn = document.getElementById('themeToggle');
   if (themeBtn) {
