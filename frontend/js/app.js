@@ -185,9 +185,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   try {
     if (typeof qz !== 'undefined') {
       qz.security.setCertificatePromise(function (resolve) { resolve(); });
-      qz.security.setSignaturePromise(function (toSign) {
-        return function (resolve) { resolve(); };
-      });
     }
   } catch (e) {
     console.warn('[QZ] No se pudo inicializar QZ Tray:', e.message);
