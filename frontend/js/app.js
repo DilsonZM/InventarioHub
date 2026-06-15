@@ -3844,39 +3844,47 @@ function renderPOSCategories(dishes, products) {
   var container = $('#posCategories');
   if (!container) return;
 
-  // Group dishes by tipo
-  var platos = dishes.filter(function (d) { return d.tipo === 'plato'; });
-  var bebidas = dishes.filter(function (d) { return d.tipo === 'bebida'; });
-
-  var sections = [];
-  if (platos.length > 0) sections.push({ title: 'Platos', items: platos, icon: '🍽️' });
-  if (bebidas.length > 0) sections.push({ title: 'Bebidas', items: bebidas, icon: '🥤' });
-  if (products.length > 0) sections.push({ title: 'Productos Directos', items: products, icon: '📦' });
-
-  var html = '';
-  sections.forEach(function (sec) {
-    html += '<div class="pos-section">'
-      + '<h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">' + sec.icon + ' ' + sec.title + ' (' + sec.items.length + ')</h3>'
-      + '<div class="pos-grid flex gap-3 overflow-x-auto pb-2">';
-
-    sec.items.forEach(function (item) {
-      var isDish = item.tipo !== undefined;
-      var name = item.nombre || item.name;
-      var price = isDish ? (item.precio_venta || 0) : (item.price || 0);
-      var icon = item.icono || '📦';
-      var id = item.id;
-
-      html += '<div class="pos-card flex-shrink-0 w-36 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-brand-300 cursor-pointer transition-all p-3" ondblclick="window.addPOSItem(\'' + id + '\', \'' + (isDish ? 'dish' : 'product') + '\')">'
-        + '<div class="w-full h-20 rounded-lg bg-slate-100 flex items-center justify-center mb-2 text-2xl">' + icon + '</div>'
-        + '<p class="text-xs font-semibold text-slate-800 truncate">' + escapeHtml(name) + '</p>'
-        + '<p class="text-xs font-bold text-brand-700 mt-0.5">' + Utils.formatCurrency(price) + '</p>'
-        + '</div>';
+  // Fusionar platos, bebidas y productos en un solo array
+  var allItems = [];
+  dishes.forEach(function (d) {
+    allItems.push({
+      id: d.id,
+      name: d.nombre,
+      price: d.precio_venta || 0,
+      icon: d.icono || (d.tipo === 'bebida' ? '🥤' : '🍽️'),
+      type: d.tipo, // 'plato' o 'bebida'
+      source: 'dish',
+      desc: d.descripcion || ''
     });
-
-    html += '</div></div>';
+  });
+  products.forEach(function (p) {
+    allItems.push({
+      id: p.id,
+      name: p.name,
+      price: p.price || 0,
+      icon: p.icono || '📦',
+      type: 'producto',
+      source: 'product',
+      desc: p.unidad || ''
+    });
   });
 
-  container.innerHTML = html;
+  // Cache para el filtro
+  state._posAllItems = allItems;
+
+  renderPOSGrid(allItems);
+
+  // Pill click handlers
+  var pills = $$('.pos-pill');
+  pills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      pills.forEach(function (p) { p.classList.remove('active', 'bg-brand-600', 'text-white', 'shadow-sm'); p.classList.add('bg-slate-100', 'text-slate-600'); });
+      this.classList.add('active', 'bg-brand-600', 'text-white', 'shadow-sm');
+      this.classList.remove('bg-slate-100', 'text-slate-600');
+      var filter = this.dataset.filter;
+      applyPOSFilter(filter);
+    });
+  });
 
   // Search handler
   var searchInput = $('#posSearch');
@@ -3886,18 +3894,45 @@ function renderPOSCategories(dishes, products) {
   }
 }
 
+function applyPOSFilter(filter) {
+  var cards = $$('.pos-card');
+  cards.forEach(function (card) {
+    if (filter === 'todos') {
+      card.style.display = '';
+    } else {
+      var cardType = card.dataset.posType;
+      card.style.display = cardType === filter ? '' : 'none';
+    }
+  });
+}
+
+function renderPOSGrid(items) {
+  var container = $('#posCategories');
+  var html = '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">';
+
+  items.forEach(function (item) {
+    var desc = item.desc ? '<p class="text-xs text-slate-400 truncate mt-1">' + escapeHtml(item.desc) + '</p>' : '';
+
+    html += '<div class="pos-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow overflow-hidden" data-pos-type="' + item.type + '" ondblclick="window.addPOSItem(\'' + item.id + '\', \'' + item.source + '\')">'
+      + '<div class="aspect-video bg-slate-100 flex items-center justify-center text-4xl">' + (item.icon || '📦') + '</div>'
+      + '<div class="p-3">'
+      + '<p class="text-sm font-bold text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
+      + desc
+      + '<p class="text-md font-bold text-brand-600 mt-2">' + Utils.formatCurrency(item.price) + '</p>'
+      + '</div>'
+      + '</div>';
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
 function posSearchHandler() {
   var q = (this.value || '').toLowerCase().trim();
   var cards = $$('.pos-card');
   cards.forEach(function (card) {
     var text = (card.textContent || '').toLowerCase();
     card.style.display = !q || text.includes(q) ? '' : 'none';
-  });
-
-  // Hide empty sections
-  $$('.pos-section').forEach(function (sec) {
-    var visible = sec.querySelectorAll('.pos-card[style*="display:"]').length < sec.querySelectorAll('.pos-card').length;
-    sec.style.display = !q || visible ? '' : 'none';
   });
 }
 
