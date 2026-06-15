@@ -1194,7 +1194,6 @@ $('#productForm').addEventListener('submit', async function (e) {
 });
 
 async function initSales() {
-  $('#newSaleBtn').addEventListener('click', function () { openSaleModal(); });
   var newOrderBtn = $('#newOrderBtn');
   if (newOrderBtn) newOrderBtn.addEventListener('click', function () { location.hash = '#pos'; });
   var newOrderBtnMobile = $('#newOrderBtnMobile');
@@ -1406,13 +1405,12 @@ function initFilters(view) {
   if (clearMobile) clearMobile.addEventListener('click', function () { clearFilters(ids, loader); });
 
   // Mobile: boton "Nueva ..." (espejo del desktop)
-  var newBtnMobileId = view === 'sales' ? 'newSaleBtnMobile' : (view === 'entradas' ? 'newCompraBtnMobile' : null);
+  var newBtnMobileId = view === 'entradas' ? 'newCompraBtnMobile' : null;
   if (newBtnMobileId) {
     var newBtnMobile = document.getElementById(newBtnMobileId);
     if (newBtnMobile) {
       newBtnMobile.addEventListener('click', function () {
-        if (view === 'sales') openSaleModal();
-        else if (view === 'entradas') openCompraModal();
+        if (view === 'entradas') openCompraModal();
       });
     }
   }
