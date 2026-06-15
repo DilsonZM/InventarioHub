@@ -3001,7 +3001,7 @@ function initUsers() {
     var cfg = cargarConfigImpresora();
     try {
       if (!qz.websocket.isActive()) await qz.websocket.connect();
-      var config = qz.configs.create(cfg.host, cfg.port);
+      var config = qz.configs.create({ host: cfg.host, port: cfg.port });
       var data = ['\x1B\x40', 'Corner House - Prueba OK\n', '\x0A\x0A', '\x1D\x56\x00'];
       await qz.print(config, data);
       showToast('Conexion exitosa con ' + cfg.host + ':' + cfg.port, 'success');
@@ -3715,7 +3715,7 @@ window.imprimirComanda = async function (pedido) {
     }
 
     // 2. Configurar impresora
-    var config = qz.configs.create(cfg.host, cfg.port);
+    var config = qz.configs.create({ host: cfg.host, port: cfg.port });
 
     // 3. Comandos ESC/POS
     var data = [];
