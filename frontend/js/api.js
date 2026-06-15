@@ -181,6 +181,13 @@ const API = (() => {
       delete: (id) =>
         request('/dishes/' + id, { method: 'DELETE' }),
     },
+
+    mesas: {
+      list: () => request('/mesas'),
+      create: (mesa) => request('/mesas', { method: 'POST', body: JSON.stringify(mesa) }),
+      update: (id, mesa) => request('/mesas/' + id, { method: 'PUT', body: JSON.stringify(mesa) }),
+      delete: (id) => request('/mesas/' + id, { method: 'DELETE' }),
+    },
   };
 
   window.API = api;

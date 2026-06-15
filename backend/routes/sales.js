@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('ventas')
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo)')
+      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
       .order('creado_en', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
@@ -86,7 +86,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('ventas')
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo)')
+      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
       .eq('id', req.params.id)
       .single();
 
@@ -372,7 +372,7 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
         total: total
       })
       .eq('id', req.params.id)
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo)')
+      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
       .single();
     if (updateError) throw updateError;
 
@@ -437,7 +437,7 @@ router.delete('/:id', requirePermission('puede_eliminar_salidas'), async (req, r
 
 router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
   try {
-    const { items, platos, paymentMethod, clienteNombre } = req.body;
+    const { items, platos, paymentMethod, clienteNombre, mesa_id } = req.body;
 
     if (platos && Array.isArray(platos) && platos.length > 0) {
       await handleDishSale(req, res);
@@ -512,6 +512,8 @@ function mapSaleResponse(sale) {
     username: sale.perfiles ? sale.perfiles.username : 'Desconocido',
     usuario_nombre: sale.perfiles ? (sale.perfiles.nombre_completo || sale.perfiles.username) : 'Desconocido',
     clienteNombre: sale.cliente_nombre, createdAt: sale.creado_en,
+    mesa_id: sale.mesa_id || null,
+    mesa_nombre: sale.mesas ? sale.mesas.nombre : null,
     items: (sale.venta_detalles || []).map(function (item) {
       return {
         productId: item.producto_id, productName: item.producto_nombre,
@@ -581,6 +583,7 @@ async function handleDishSale(req, res) {
     var { data: venta, error: ventaErr } = await supabase.from('ventas').insert({
       numero_venta: numVenta, metodo_pago: paymentMethod, usuario_id: req.user ? req.user.id : null,
       cliente_nombre: clienteNombre || null, estado: saleEstado,
+      mesa_id: req.body.mesa_id || null,
       subtotal: totalVenta, impuesto: totalVenta * 0.19, total: totalVenta * 1.19
     }).select().single();
     if (ventaErr) throw ventaErr;
@@ -650,7 +653,7 @@ async function handleDishSale(req, res) {
     }
 
     var { data: saleFull } = await supabase.from('ventas')
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo)')
+      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
       .eq('id', venta.id).single();
 
     res.status(201).json({ success: true, data: mapSaleResponse(saleFull),

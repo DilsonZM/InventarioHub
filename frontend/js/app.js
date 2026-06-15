@@ -12,7 +12,9 @@ const state = {
   activeFilters: [],
   dishes: [],
   saleType: 'productos',
-  saleDishItems: []
+  saleDishItems: [],
+  posItems: [],
+  posMesaId: null
 };
 
 let categoryChart = null;
@@ -452,7 +454,7 @@ function navigate(view) {
     link.classList.toggle('active', isActive);
   });
 
-  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Pedidos', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos', dishes: 'Platos', users: 'Usuarios', config: 'Configuracion' };
+  var titles = { dashboard: 'Dashboard', inventory: 'Inventario', sales: 'Pedidos', compras: 'Entradas', entradas: 'Entradas', movimientos: 'Movimientos', dishes: 'Platos', users: 'Usuarios', config: 'Configuracion', pos: 'POS' };
   $('#pageTitle').textContent = titles[view] || 'Corner House';
 
   if (view === 'dashboard') loadDashboard();
@@ -463,6 +465,7 @@ function navigate(view) {
   if (view === 'dishes') loadDishes();
   if (view === 'users') loadUsers();
   if (view === 'config') loadConfig();
+  if (view === 'pos') loadPOS();
 
   if (view === 'dashboard') startDashboardAutoRefresh();
   else stopDashboardAutoRefresh();
@@ -1193,9 +1196,9 @@ $('#productForm').addEventListener('submit', async function (e) {
 async function initSales() {
   $('#newSaleBtn').addEventListener('click', function () { openSaleModal(); });
   var newOrderBtn = $('#newOrderBtn');
-  if (newOrderBtn) newOrderBtn.addEventListener('click', function () { location.hash = '#sales'; setTimeout(openSaleModal, 200); });
+  if (newOrderBtn) newOrderBtn.addEventListener('click', function () { location.hash = '#pos'; });
   var newOrderBtnMobile = $('#newOrderBtnMobile');
-  if (newOrderBtnMobile) newOrderBtnMobile.addEventListener('click', function () { location.hash = '#sales'; setTimeout(openSaleModal, 200); });
+  if (newOrderBtnMobile) newOrderBtnMobile.addEventListener('click', function () { location.hash = '#pos'; });
   initFilters('sales');
   var saleForm = $('#saleForm');
   if (saleForm) {
@@ -3794,6 +3797,255 @@ window.imprimirComanda = async function (pedido) {
 };
 
 // No desconectar websocket para mantenerlo reutilizable entre impresiones
+
+// ============================================
+// POS (Punto de Venta)
+// ============================================
+
+window.openPOS = function () {
+  location.hash = '#pos';
+};
+
+async function loadPOS() {
+  state.posItems = [];
+  state.posMesaId = null;
+
+  try {
+    var results = await Promise.all([
+      API.products.list(),
+      API.dishes.list(),
+      API.mesas.list()
+    ]);
+
+    var allProducts = (results[0].data || []).filter(function (p) { return p.activo !== false && p.stock > 0; });
+    var allDishes = (results[1].data || []).filter(function (d) { return d.activo && d.disponible !== false; });
+    var mesas = (results[2].data || []).filter(function (m) { return m.activa; });
+
+    // Cache for rendering
+    state._posProducts = allProducts;
+    state._posDishes = allDishes;
+    state._posMesas = mesas;
+
+    renderPOSCategories(allDishes, allProducts);
+    renderPOSOrder();
+    renderPOSMesas(mesas);
+  } catch (e) {
+    console.error('POS load error:', e);
+  }
+}
+
+function renderPOSCategories(dishes, products) {
+  var container = $('#posCategories');
+  if (!container) return;
+
+  // Group dishes by tipo
+  var platos = dishes.filter(function (d) { return d.tipo === 'plato'; });
+  var bebidas = dishes.filter(function (d) { return d.tipo === 'bebida'; });
+
+  var sections = [];
+  if (platos.length > 0) sections.push({ title: 'Platos', items: platos, icon: '🍽️' });
+  if (bebidas.length > 0) sections.push({ title: 'Bebidas', items: bebidas, icon: '🥤' });
+  if (products.length > 0) sections.push({ title: 'Productos Directos', items: products, icon: '📦' });
+
+  var html = '';
+  sections.forEach(function (sec) {
+    html += '<div class="pos-section">'
+      + '<h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">' + sec.icon + ' ' + sec.title + ' (' + sec.items.length + ')</h3>'
+      + '<div class="pos-grid flex gap-3 overflow-x-auto pb-2">';
+
+    sec.items.forEach(function (item) {
+      var isDish = item.tipo !== undefined;
+      var name = item.nombre || item.name;
+      var price = isDish ? (item.precio_venta || 0) : (item.price || 0);
+      var icon = item.icono || '📦';
+      var id = item.id;
+
+      html += '<div class="pos-card flex-shrink-0 w-36 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-brand-300 cursor-pointer transition-all p-3" ondblclick="window.addPOSItem(\'' + id + '\', \'' + (isDish ? 'dish' : 'product') + '\')">'
+        + '<div class="w-full h-20 rounded-lg bg-slate-100 flex items-center justify-center mb-2 text-2xl">' + icon + '</div>'
+        + '<p class="text-xs font-semibold text-slate-800 truncate">' + escapeHtml(name) + '</p>'
+        + '<p class="text-xs font-bold text-brand-700 mt-0.5">' + Utils.formatCurrency(price) + '</p>'
+        + '</div>';
+    });
+
+    html += '</div></div>';
+  });
+
+  container.innerHTML = html;
+
+  // Search handler
+  var searchInput = $('#posSearch');
+  if (searchInput) {
+    searchInput.removeEventListener('input', posSearchHandler);
+    searchInput.addEventListener('input', posSearchHandler);
+  }
+}
+
+function posSearchHandler() {
+  var q = (this.value || '').toLowerCase().trim();
+  var cards = $$('.pos-card');
+  cards.forEach(function (card) {
+    var text = (card.textContent || '').toLowerCase();
+    card.style.display = !q || text.includes(q) ? '' : 'none';
+  });
+
+  // Hide empty sections
+  $$('.pos-section').forEach(function (sec) {
+    var visible = sec.querySelectorAll('.pos-card[style*="display:"]').length < sec.querySelectorAll('.pos-card').length;
+    sec.style.display = !q || visible ? '' : 'none';
+  });
+}
+
+window.addPOSItem = function (id, type) {
+  // Buscar en cache
+  var item;
+  if (type === 'dish') {
+    item = (state._posDishes || []).find(function (d) { return d.id === id; });
+  } else {
+    item = (state._posProducts || []).find(function (p) { return p.id === id; });
+  }
+  if (!item) return;
+
+  var name = item.nombre || item.name;
+  var price = (type === 'dish') ? (item.precio_venta || 0) : (item.price || 0);
+
+  // Buscar si ya existe en el pedido
+  var existing = state.posItems.find(function (i) { return i.id === id && i.type === type; });
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    state.posItems.push({
+      id: id,
+      type: type,
+      name: name,
+      price: price,
+      qty: 1,
+      platoId: type === 'dish' ? id : null
+    });
+  }
+
+  renderPOSOrder();
+};
+
+function renderPOSOrder() {
+  var container = $('#posOrderItems');
+  var total = 0;
+  var btn = $('#posRegisterBtn');
+  var btnText = $('#posRegisterText');
+
+  if (state.posItems.length === 0) {
+    container.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">Toca un producto para agregarlo</p>';
+    $('#posTotal').textContent = '$0';
+    if (btn) { btn.disabled = true; if (btnText) btnText.textContent = 'Agrega productos'; }
+    return;
+  }
+
+  var html = '';
+  state.posItems.forEach(function (item, idx) {
+    var sub = item.price * item.qty;
+    total += sub;
+    html += '<div class="flex items-center gap-2 py-2 border-b border-slate-100">'
+      + '<div class="flex-1 min-w-0">'
+      + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
+      + '<p class="text-xs text-slate-500">' + Utils.formatCurrency(item.price) + ' c/u</p>'
+      + '</div>'
+      + '<div class="flex items-center gap-1">'
+      + '<button class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm" onclick="window.updatePOSQty(' + idx + ', -1)">-</button>'
+      + '<span class="w-7 text-center text-sm font-semibold">' + item.qty + '</span>'
+      + '<button class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm" onclick="window.updatePOSQty(' + idx + ', 1)">+</button>'
+      + '</div>'
+      + '<button class="p-1 text-slate-300 hover:text-red-500" onclick="window.removePOSItem(' + idx + ')">×</button>'
+      + '</div>';
+  });
+
+  container.innerHTML = html;
+  $('#posTotal').textContent = Utils.formatCurrency(total);
+  if (btn) { btn.disabled = false; if (btnText) btnText.textContent = 'Registrar Pedido'; }
+}
+
+window.updatePOSQty = function (idx, delta) {
+  var item = state.posItems[idx];
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) {
+    state.posItems.splice(idx, 1);
+  }
+  renderPOSOrder();
+};
+
+window.removePOSItem = function (idx) {
+  state.posItems.splice(idx, 1);
+  renderPOSOrder();
+};
+
+function renderPOSMesas(mesas) {
+  var sel = $('#posMesa');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Sin mesa</option>'
+    + mesas.map(function (m) {
+      return '<option value="' + m.id + '">' + escapeHtml(m.nombre) + '</option>';
+    }).join('');
+}
+
+document.addEventListener('click', function (e) {
+  if (e.target.closest('#posRegisterBtn') && !e.target.closest('#posRegisterBtn').disabled) {
+    submitPOSOrder();
+  }
+  if (e.target.closest('#posClearBtn')) {
+    state.posItems = [];
+    renderPOSOrder();
+  }
+});
+
+async function submitPOSOrder() {
+  if (state.posItems.length === 0) return;
+
+  var btn = $('#posRegisterBtn');
+  var btnText = $('#posRegisterText');
+  if (btn) { btn.disabled = true; if (btnText) btnText.textContent = 'Registrando...'; }
+
+  var platos = [];
+  var items = [];
+
+  state.posItems.forEach(function (item) {
+    if (item.type === 'dish') {
+      platos.push({
+        plato_id: item.platoId,
+        cantidad: item.qty,
+        precioUnitario: item.price
+      });
+    } else {
+      items.push({
+        productId: item.id,
+        quantity: item.qty
+      });
+    }
+  });
+
+  var mesaId = $('#posMesa').value || null;
+  var payload = {
+    paymentMethod: 'cocina',
+    mesa_id: mesaId,
+    platos: platos.length > 0 ? platos : undefined,
+    items: items.length > 0 ? items : undefined
+  };
+
+  try {
+    var res = await API.sales.create(payload);
+    if (res.success) {
+      showToast('Pedido registrado correctamente');
+      state.posItems = [];
+      state._lastTicketSale = res.data;
+      renderPOSOrder();
+      renderTicketFromData(res.data, false);
+    } else {
+      showToast(res.message || 'Error al registrar', 'error');
+    }
+  } catch (err) {
+    showToast(err.message || 'Error al registrar', 'error');
+  }
+
+  if (btn) { btn.disabled = false; if (btnText) btnText.textContent = 'Registrar Pedido'; }
+}
 
 // ============================================
 // Indicadores removido: stock_minimo ahora en vista Inventario
