@@ -32,11 +32,11 @@ function showToast(message, type = 'success') {
   const toast = $('#toast');
   const msg = $('#toastMessage');
   const icon = $('#toastIcon');
-  const colors = { success: 'bg-emerald-50 border-emerald-200 text-emerald-800', error: 'bg-red-50 border-red-200 text-red-800', info: 'bg-emerald-50 border-emerald-200 text-emerald-800' };
+  const colors = { success: 'bg-brand-50 border-brand-200 text-brand-800', error: 'bg-red-50 border-red-200 text-red-800', info: 'bg-brand-50 border-brand-200 text-brand-800' };
   const icons = {
-    success: '<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
+    success: '<svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
     error: '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',
-    info: '<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>',
+    info: '<svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>',
   };
   toast.firstElementChild.className = `flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border ${colors[type]}`;
   icon.innerHTML = icons[type];
@@ -590,7 +590,7 @@ function updateFilterChips(ids) {
   }
 
   chipsContainer.innerHTML = chips.map(function (chip, idx) {
-    return '<button class="filter-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 transition-colors" data-chip-idx="' + idx + '">'
+    return '<button class="filter-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-medium hover:bg-brand-100 transition-colors" data-chip-idx="' + idx + '">'
       + '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
       + '<span>' + escapeHtml(chip.label) + '</span>'
       + '</button>';
@@ -635,7 +635,7 @@ function openMobileFiltersModal(view) {
 
   html += '<div>'
     + '<label class=\"block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1 mt-3\">Periodo</label>'
-    + '<select id=\"mfPeriod\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:bg-white\">'
+    + '<select id=\"mfPeriod\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:bg-white\">'
     + '<option value="">Sin periodo</option>'
     + '<option value="today">Hoy</option>'
     + '<option value="week">Esta semana</option>'
@@ -647,7 +647,7 @@ function openMobileFiltersModal(view) {
 
   if (cocinaId && $(cocinaId)) {
     html += '<div class=\"mt-3\"><label class=\"block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1\">Cocina</label>'
-      + '<select id=\"mfCocina\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:bg-white\">'
+      + '<select id=\"mfCocina\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:bg-white\">'
       + '<option value="">Todas</option>'
       + '<option value="Cocina 1">Cocina 1</option><option value="Cocina 2">Cocina 2</option><option value="Cocina 3">Cocina 3</option><option value="Cocina 4">Cocina 4</option>'
       + '</select></div>';
@@ -656,7 +656,7 @@ function openMobileFiltersModal(view) {
 
   if (tipoId && $(tipoId)) {
     html += '<div class=\"mt-3\"><label class=\"block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1\">Tipo</label>'
-      + '<select id=\"mfTipo\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:bg-white\">'
+      + '<select id=\"mfTipo\" data-view=\"' + view + '\" class=\"w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:bg-white\">'
       + '<option value="">Todos</option><option value="entrada">Entradas</option><option value="salida">Salidas</option>'
       + '</select></div>';
     setTimeout(function () { var el = $('#mfTipo'); if (el && $(tipoId)) el.value = $(tipoId).value; }, 0);
@@ -669,11 +669,11 @@ function openMobileFiltersModal(view) {
         return '<option value="' + o.value + '"' + (o.selected ? ' selected' : '') + '>' + escapeHtml(o.textContent) + '</option>';
       }).join('');
       html += '<div class="mt-4"><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Producto</label>'
-        + '<select id="mfProduct" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:bg-white">'
+        + '<select id="mfProduct" data-view="' + view + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:bg-white">'
         + '<option value="">Todos los productos</option>' + opts + '</select></div>';
     } else {
       html += '<div class="mt-4"><label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Buscar producto</label>'
-        + '<input type="text" id="mfProduct" data-view="' + view + '" placeholder="Nombre o SKU" value="' + escapeHtml($(productId).value || '') + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:bg-white">'
+        + '<input type="text" id="mfProduct" data-view="' + view + '" placeholder="Nombre o SKU" value="' + escapeHtml($(productId).value || '') + '" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:bg-white">'
         + '</div>';
     }
   }
@@ -812,10 +812,10 @@ async function loadDashboard() {
     } else {
       tbody.innerHTML = recentMovs.map(function (m) {
         var tipoBadge = m.movimiento === 'entrada'
-          ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Entrada</span>'
+          ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700">Entrada</span>'
           : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Salida</span>';
         var cantText = m.movimiento === 'entrada' ? '+ ' + m.cantidad_entrada : '- ' + m.cantidad_salida;
-        var cantColor = m.movimiento === 'entrada' ? 'text-emerald-600' : 'text-red-600';
+        var cantColor = m.movimiento === 'entrada' ? 'text-brand-600' : 'text-red-600';
         return '<tr class="hover:bg-slate-50 transition-colors">'
           + '<td class="px-6 py-3 text-sm font-mono text-slate-600">' + formatDateShort(m.fecha) + '</td>'
           + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(m.producto) + '</td>'
@@ -827,10 +827,10 @@ async function loadDashboard() {
 
       cards.innerHTML = recentMovs.map(function (m) {
         var tipoBadge = m.movimiento === 'entrada'
-          ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Entrada</span>'
+          ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-brand-50 text-brand-700">Entrada</span>'
           : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700">Salida</span>';
         var cantText = m.movimiento === 'entrada' ? '+ ' + m.cantidad_entrada : '- ' + m.cantidad_salida;
-        var cantColor = m.movimiento === 'entrada' ? 'text-emerald-600' : 'text-red-600';
+        var cantColor = m.movimiento === 'entrada' ? 'text-brand-600' : 'text-red-600';
         return '<div class="bg-slate-50 rounded-xl p-4 space-y-2">'
           + '<div class="flex items-center justify-between">'
           + '<div class="flex items-center gap-2">' + tipoBadge + '<span class="text-sm font-medium">' + escapeHtml(m.producto) + '</span></div>'
@@ -988,7 +988,7 @@ async function loadTopDishes() {
     if (!tbody) return;
     tbody.innerHTML = res.data.map(function (d) {
       var margen = (d.precio_venta || 0) - (d.costo || 0);
-      var margenColor = margen >= 0 ? 'text-emerald-600' : 'text-red-600';
+      var margenColor = margen >= 0 ? 'text-brand-600' : 'text-red-600';
       return '<tr>'
         + '<td class="py-2 font-medium text-slate-700">' + escapeHtml(d.nombre) + '</td>'
         + '<td class="py-2 text-center text-slate-600">' + d.cantidad + '</td>'
@@ -1029,12 +1029,12 @@ function renderProductsTable() {
   var isAdmin = state.user && state.user.role === 'admin';
 
   var desktopRows = state.products.map(function (p) {
-    var stockClass = p.stock === 0 ? 'text-red-600 bg-red-50' : p.stock <= p.minStock ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50';
+    var stockClass = p.stock === 0 ? 'text-red-600 bg-red-50' : p.stock <= p.minStock ? 'text-amber-600 bg-amber-50' : 'text-brand-600 bg-brand-50';
     var statusBadge = p.stock === 0
       ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Agotado</span>'
       : p.stock <= p.minStock
         ? '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Stock bajo</span>'
-        : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Disponible</span>';
+        : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700">Disponible</span>';
 
     return '<tr class="hover:bg-slate-50 transition-colors">'
       + '<td class="px-6 py-4">'
@@ -1057,7 +1057,7 @@ function renderProductsTable() {
       + '<td class="px-6 py-4 text-center">' + statusBadge + '</td>'
       + '<td class="px-6 py-4 text-right">'
       + (isAdmin ? '<div class="flex items-center justify-end gap-1">'
-        + '<button onclick="window.editProduct(\'' + p.id + '\')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Editar">'
+        + '<button onclick="window.editProduct(\'' + p.id + '\')" class="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors" title="Editar">'
         + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
         + '</button>'
         + '<button onclick="window.deleteProduct(\'' + p.id + '\')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">'
@@ -1071,7 +1071,7 @@ function renderProductsTable() {
   tbody.innerHTML = desktopRows;
 
   var mobileCards = state.products.map(function (p) {
-    var stockColor = p.stock === 0 ? 'text-red-600' : p.stock <= p.minStock ? 'text-amber-600' : 'text-emerald-600';
+    var stockColor = p.stock === 0 ? 'text-red-600' : p.stock <= p.minStock ? 'text-amber-600' : 'text-brand-600';
     return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
       + '<div class="flex items-start justify-between">'
       + '<div class="flex items-center gap-3">'
@@ -1091,7 +1091,7 @@ function renderProductsTable() {
       + '</div>'
       + '<div class="text-xs text-slate-500">Stock min.: ' + p.minStock + ' ' + escapeHtml(p.unidad || 'unidad') + '</div>'
       + (isAdmin ? '<div class="flex gap-2 pt-2 border-t border-slate-100">'
-        + '<button onclick="window.editProduct(\'' + p.id + '\')" class="flex-1 py-2.5 text-sm font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors touch-target">Editar</button>'
+        + '<button onclick="window.editProduct(\'' + p.id + '\')" class="flex-1 py-2.5 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors touch-target">Editar</button>'
         + '<button onclick="window.deleteProduct(\'' + p.id + '\')" class="flex-1 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors touch-target">Eliminar</button>'
         + '</div>' : '')
       + '</div>';
@@ -1215,7 +1215,7 @@ async function initSales() {
       if (dishMatches.length > 0) {
         html += '<div class=\"px-3 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider\">Platos</div>';
         dishMatches.forEach(function (d) {
-          html += '<div class=\"search-result flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50 cursor-pointer text-sm\" data-type=\"dish\" data-id=\"' + d.value + '\" data-price=\"' + d.price + '\"><span class=\"text-slate-700\">' + escapeHtml(d.label.split(' — ')[0]) + '</span><span class=\"text-xs text-slate-400\">' + d.label.split(' — ')[1] + '</span></div>';
+          html += '<div class=\"search-result flex items-center justify-between px-3 py-2.5 hover:bg-brand-50 cursor-pointer text-sm\" data-type=\"dish\" data-id=\"' + d.value + '\" data-price=\"' + d.price + '\"><span class=\"text-slate-700\">' + escapeHtml(d.label.split(' — ')[0]) + '</span><span class=\"text-xs text-slate-400\">' + d.label.split(' — ')[1] + '</span></div>';
         });
       }
       // Buscar en productos
@@ -1223,7 +1223,7 @@ async function initSales() {
       if (prodMatches.length > 0) {
         html += '<div class=\"px-3 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-t border-slate-100\">Productos</div>';
         prodMatches.forEach(function (p) {
-          html += '<div class=\"search-result flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50 cursor-pointer text-sm\" data-type=\"product\" data-id=\"' + p.value + '\" data-unidad=\"' + p.unidad + '\"><span class=\"text-slate-700\">' + escapeHtml(p.label.split(' (Stock:')[0]) + '</span><span class=\"text-xs text-slate-400\">Stock: ' + p.stock + ' ' + p.unidad + '</span></div>';
+          html += '<div class=\"search-result flex items-center justify-between px-3 py-2.5 hover:bg-brand-50 cursor-pointer text-sm\" data-type=\"product\" data-id=\"' + p.value + '\" data-unidad=\"' + p.unidad + '\"><span class=\"text-slate-700\">' + escapeHtml(p.label.split(' (Stock:')[0]) + '</span><span class=\"text-xs text-slate-400\">Stock: ' + p.stock + ' ' + p.unidad + '</span></div>';
         });
       }
       searchDropdown.innerHTML = html || '<div class=\"px-3 py-3 text-center text-sm text-slate-400\">Sin resultados</div>';
@@ -1525,12 +1525,12 @@ function renderSalesTable() {
       }).join('')
       + '</td>'
       + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + s.items.reduce(function (sum, i) { return sum + i.quantity; }, 0) + ' unid.</td>'
-      + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">' + escapeHtml(s.paymentMethod) + '</span></td>'
+      + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700">' + escapeHtml(s.paymentMethod) + '</span></td>'
       + '<td class="px-6 py-4 text-sm text-slate-500">' + formatDate(s.createdAt) + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-600"><div class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(s.usuario_nombre || '') + '</div></td>'
       + '<td class="px-6 py-4 text-right">'
       + '<div class="flex items-center justify-end gap-1">'
-      + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors touch-target" title="Ver detalle">'
+      + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors touch-target" title="Ver detalle">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
       + '<button onclick="window.showTicket(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 hover:scale-110 rounded-lg transition-all active:scale-95 touch-target" title="Imprimir ticket">'
@@ -1570,12 +1570,12 @@ function renderSalesTable() {
       + '</div>'
       + '<div class="flex items-center justify-between pt-2 border-t border-slate-100">'
       + '<div class="flex items-center gap-2 flex-wrap">'
-      + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">' + escapeHtml(s.paymentMethod) + '</span>'
+      + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-brand-50 text-brand-700">' + escapeHtml(s.paymentMethod) + '</span>'
       + '<span class="text-xs text-slate-400">' + formatDate(s.createdAt) + '</span>'
       + '<span class="text-xs text-slate-500 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(s.usuario_nombre || '') + '</span>'
       + '</div>'
       + '<div class="flex items-center gap-1">'
-      + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors touch-target" title="Ver">'
+      + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-brand-500 hover:bg-brand-50 rounded-lg transition-colors touch-target" title="Ver">'
       + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
       + '<button onclick="window.showTicket(\'' + s.id + '\')" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 hover:scale-110 rounded-lg transition-all active:scale-95 touch-target" title="Imprimir">'
@@ -1607,7 +1607,7 @@ window.viewSale = async function (id) {
 
     var itemsHtml = sale.items.map(function (item) {
       var badge = item.esPlato
-        ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-medium ml-1">Plato</span>'
+        ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 text-[10px] font-medium ml-1">Plato</span>'
         : '';
       return '<div class="flex items-center justify-between px-4 py-3">'
         + '<div class="flex-1 min-w-0">'
@@ -2037,8 +2037,8 @@ function renderSaleItems() {
     var sub = item.precioUnitario * item.cantidad;
     totalAmount += sub;
     html += '<tr>'
-      + '<td class=\"px-4 py-2\"><span class=\"text-sm text-slate-700 font-medium\">' + escapeHtml(item.nombre) + '</span> <span class=\"text-[10px] text-emerald-600\">🍽️</span></td>'
-      + '<td class=\"px-2 py-2\"><input type=\"number\" class=\"item-qty w-14 px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/50\" value=\"' + item.cantidad + '\" min=\"1\" data-type=\"dish\" data-idx=\"' + idx + '\" onchange=\"window.updateSaleItemQty(this)\"></td>'
+      + '<td class=\"px-4 py-2\"><span class=\"text-sm text-slate-700 font-medium\">' + escapeHtml(item.nombre) + '</span> <span class=\"text-[10px] text-brand-600\">🍽️</span></td>'
+      + '<td class=\"px-2 py-2\"><input type=\"number\" class=\"item-qty w-14 px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center focus:outline-none focus:ring-2 focus:ring-brand-500/50\" value=\"' + item.cantidad + '\" min=\"1\" data-type=\"dish\" data-idx=\"' + idx + '\" onchange=\"window.updateSaleItemQty(this)\"></td>'
       + '<td class=\"px-2 py-2 text-center text-xs text-slate-400\">—</td>'
       + '<td class=\"px-2 py-2 text-right\"><button onclick=\"window.removeDishSaleItem(' + idx + ')\" class=\"p-1 text-slate-300 hover:text-red-500\">×</button></td>'
       + '</tr>';
@@ -2048,7 +2048,7 @@ function renderSaleItems() {
   state.saleItems.forEach(function (item, idx) {
     totalAmount += item.cantidadBase;
     var label = item.unidadPresentacion ? item.cantidadPresentacion + ' ' + item.unidadPresentacionLabel : item.cantidadBase + ' ' + item.unidadBase;
-    var unidadOptions = '<select class=\"item-unit w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[10px] text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/50 bg-white\" data-type=\"product\" data-idx=\"' + idx + '\" onchange=\"window.updateSaleItemUnit(this)\">'
+    var unidadOptions = '<select class=\"item-unit w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[10px] text-center focus:outline-none focus:ring-2 focus:ring-brand-500/50 bg-white\" data-type=\"product\" data-idx=\"' + idx + '\" onchange=\"window.updateSaleItemUnit(this)\">'
       + '<option value=\"\">' + escapeHtml(item.unidadBase) + ' base</option>';
     var presList = window.getPresentaciones(item.unidadBase);
     presList.forEach(function (p) {
@@ -2058,7 +2058,7 @@ function renderSaleItems() {
     var qtyVal = item.unidadPresentacion ? item.cantidadPresentacion : item.cantidadBase;
     html += '<tr>'
       + '<td class=\"px-4 py-2\"><span class=\"text-sm text-slate-700\">' + escapeHtml(item.productName) + '</span></td>'
-      + '<td class=\"px-2 py-2\"><input type=\"number\" class=\"item-qty w-14 px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/50\" value=\"' + qtyVal + '\" min=\"0.001\" step=\"0.001\" data-type=\"product\" data-idx=\"' + idx + '\" onchange=\"window.updateSaleItemQty(this)\"></td>'
+      + '<td class=\"px-2 py-2\"><input type=\"number\" class=\"item-qty w-14 px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center focus:outline-none focus:ring-2 focus:ring-brand-500/50\" value=\"' + qtyVal + '\" min=\"0.001\" step=\"0.001\" data-type=\"product\" data-idx=\"' + idx + '\" onchange=\"window.updateSaleItemQty(this)\"></td>'
       + '<td class=\"px-2 py-2\">' + unidadOptions + '</td>'
       + '<td class=\"px-2 py-2 text-right\"><button onclick=\"window.removeSaleItem(' + idx + ')\" class=\"p-1 text-slate-300 hover:text-red-500\">×</button></td>'
       + '</tr>';
@@ -2265,7 +2265,7 @@ window.showTicket = async function (saleId) {
     var itemsHtml = items.map(function (item) {
       var sub = item.subtotal || ((item.unitPrice || 0) * (item.quantity || 0));
       subtotal += sub;
-      var badge = item.esPlato ? ' <span class=\"text-[9px] text-emerald-600\">🍽️</span>' : '';
+      var badge = item.esPlato ? ' <span class=\"text-[9px] text-brand-600\">🍽️</span>' : '';
       return '<div class=\"flex items-center justify-between text-[13px]\">'
         + '<span class=\"text-slate-700\">' + escapeHtml(item.productName) + ' x' + item.quantity + badge + '</span>'
         + '<span class=\"text-slate-700 font-mono\">' + Utils.formatCurrency(sub) + '</span>'
@@ -2869,7 +2869,7 @@ async function loadMovimientos() {
     }
 
     tbody.innerHTML = movs.map(function (m) {
-      var tipoBadge = m.movimiento === 'entrada' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Entrada</span>'
+      var tipoBadge = m.movimiento === 'entrada' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700">Entrada</span>'
         : m.movimiento === 'salida' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Salida</span>'
         : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Ajuste</span>';
       var unidad = m.unidad || '';
@@ -2878,7 +2878,7 @@ async function loadMovimientos() {
         + '<td class="px-6 py-3">' + tipoBadge + '</td>'
         + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(m.producto) + '</td>'
         + '<td class="px-6 py-3 text-sm font-mono text-center text-slate-500">' + escapeHtml(m.codigo) + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center text-emerald-600 font-medium">' + (m.cantidad_entrada ? m.cantidad_entrada + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center text-brand-600 font-medium">' + (m.cantidad_entrada ? m.cantidad_entrada + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
         + '<td class="px-6 py-3 text-sm text-center text-red-600 font-medium">' + (m.cantidad_salida ? m.cantidad_salida + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
         + '<td class="px-6 py-3 text-sm text-center font-semibold">' + (m.cantidad_stock != null ? m.cantidad_stock + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
         + '<td class="px-6 py-3 text-sm text-slate-600"><div class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(m.usuario_nombre || '') + '</div></td>'
@@ -2889,7 +2889,7 @@ async function loadMovimientos() {
       var unidad = m.unidad || '';
       return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
         + '<div class="flex justify-between"><span class="text-xs text-slate-500">' + formatDate(m.fecha) + '</span>'
-        + (m.movimiento === 'entrada' ? '<span class="text-emerald-600 text-sm font-bold">+ ' + m.cantidad_entrada + ' ' + escapeHtml(unidad) + '</span>' : m.movimiento === 'salida' ? '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + ' ' + escapeHtml(unidad) + '</span>' : '<span class="text-amber-600 text-sm font-bold">Ajuste</span>')
+        + (m.movimiento === 'entrada' ? '<span class="text-brand-600 text-sm font-bold">+ ' + m.cantidad_entrada + ' ' + escapeHtml(unidad) + '</span>' : m.movimiento === 'salida' ? '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + ' ' + escapeHtml(unidad) + '</span>' : '<span class="text-amber-600 text-sm font-bold">Ajuste</span>')
         + '</div>'
         + '<p class="text-sm font-medium">' + escapeHtml(m.producto) + '</p>'
         + '<div class="flex justify-between text-xs text-slate-500"><span>' + escapeHtml(m.codigo) + '</span><span>Stock: ' + (m.cantidad_stock != null ? m.cantidad_stock + ' ' + escapeHtml(unidad) : '-') + '</span></div>'
@@ -2986,7 +2986,7 @@ function initUsers() {
   if (grid) {
     grid.innerHTML = Object.keys(PERM_LABELS).map(function (k) {
       return '<label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer hover:bg-white p-1.5 rounded-lg transition-colors">'
-        + '<input type="checkbox" id="perm_' + k + '" data-perm="' + k + '" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">'
+        + '<input type="checkbox" id="perm_' + k + '" data-perm="' + k + '" class="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">'
         + '<span>' + PERM_LABELS[k] + '</span>'
         + '</label>';
     }).join('');
@@ -3138,10 +3138,10 @@ function renderDishRow(d, isActive) {
 
   var actions;
   if (isActive) {
-    actions = '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors touch-target" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>'
+    actions = '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors touch-target" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>'
       + '<button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target" title="Archivar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>';
   } else {
-    actions = '<button onclick="window.reactivateDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="px-2.5 py-1 text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors touch-target" title="Reactivar">Reactivar</button>';
+    actions = '<button onclick="window.reactivateDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="px-2.5 py-1 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Reactivar">Reactivar</button>';
   }
 
   return '<tr class="hover:bg-slate-50 transition-colors">'
@@ -3150,7 +3150,7 @@ function renderDishRow(d, isActive) {
     + '<td class="px-6 py-3 text-center"><span class="text-sm text-slate-600">' + (d.num_ingredientes || 0) + '</span></td>'
     + '<td class="px-6 py-3 text-right"><span class="text-sm font-semibold text-slate-800">' + Utils.formatCurrency(d.precio_venta) + '</span></td>'
     + '<td class="px-6 py-3 text-right"><span class="text-sm ' + ((d.costo || 0) > 0 ? 'text-slate-600' : 'text-slate-400') + '">' + ((d.costo || 0) > 0 ? Utils.formatCurrency(d.costo) : '—') + '</span></td>'
-    + '<td class="px-6 py-3 text-center">' + (isActive ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Activo</span>' : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Archivado</span>') + '</td>'
+    + '<td class="px-6 py-3 text-center">' + (isActive ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700">Activo</span>' : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">Archivado</span>') + '</td>'
     + '<td class="px-6 py-3 text-right"><div class="flex items-center justify-end gap-1">' + actions + '</div></td>'
     + '</tr>';
 }
@@ -3163,12 +3163,12 @@ function renderDishCard(d, isActive) {
     + (d.ingredientes && d.ingredientes.length > 0 ? '<div class="text-[11px] text-slate-400 mt-0.5 space-y-0.5">' + d.ingredientes.map(function(ing) { return '<div>· ' + escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad + (ing.costo > 0 ? ' — ' + Utils.formatCurrency(ing.costo) : '') + '</div>'; }).join('') + '</div>' : '')
     + '<p class="text-xs text-slate-500 mt-0.5">' + (d.tipo === 'bebida' ? 'Bebida' : 'Plato') + ' · Venta: ' + Utils.formatCurrency(d.precio_venta) + ((d.costo || 0) > 0 ? ' · Costo: ' + Utils.formatCurrency(d.costo) : '') + '</p>'
     + '</div>'
-    + '<span class="shrink-0 text-xs px-2 py-0.5 rounded-full ' + (isActive ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50') + '">' + (isActive ? 'Activo' : 'Archivado') + '</span>'
+    + '<span class="shrink-0 text-xs px-2 py-0.5 rounded-full ' + (isActive ? 'text-brand-700 bg-brand-50' : 'text-red-700 bg-red-50') + '">' + (isActive ? 'Activo' : 'Archivado') + '</span>'
     + '</div>'
     + '<div class="flex items-center justify-end gap-1">'
     + (isActive
-      ? '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>'
-      : '<button onclick="window.reactivateDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors touch-target">Reactivar</button>')
+      ? '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>'
+      : '<button onclick="window.reactivateDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="px-3 py-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors touch-target">Reactivar</button>')
     + '</div>'
     + '</div>';
 }
@@ -3226,7 +3226,7 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
     + '<div class="flex items-end gap-3 p-3">'
     + '<div class="flex-1 min-w-0">'
     + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Producto</label>'
-    + '<select class="ing-product w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all">'
+    + '<select class="ing-product w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">'
     + '<option value="">Seleccionar producto</option>'
     + (window._dishProducts || []).map(function (p) {
       var stockInfo = ' (' + (p.stock || 0) + ' ' + (p.unidad || 'unid') + ')';
@@ -3236,11 +3236,11 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
     + '</div>'
     + '<div class="w-24 shrink-0">'
     + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
-    + '<input type="number" class="ing-qty w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + (cantidadPreset || '') + '">'
+    + '<input type="number" class="ing-qty w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + (cantidadPreset || '') + '">'
     + '</div>'
     + '<div class="w-28 shrink-0">'
     + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Unidad</label>'
-    + '<select class="ing-unit w-full px-2 py-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all">'
+    + '<select class="ing-unit w-full px-2 py-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">'
     + '<option value="">--</option>'
     + '</select>'
     + '</div>'
@@ -3320,7 +3320,7 @@ function renderIngredientList(ingredientes) {
       + '<div class="flex items-end gap-3 p-3">'
       + '<div class="flex-1 min-w-0">'
       + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Producto</label>'
-      + '<select class="ing-product w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all">'
+      + '<select class="ing-product w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">'
       + '<option value="">Seleccionar producto</option>'
       + (window._dishProducts || []).map(function (pr) {
         var info = ' (' + (pr.stock || 0) + ' ' + (pr.unidad || 'unid') + ')';
@@ -3330,11 +3330,11 @@ function renderIngredientList(ingredientes) {
       + '</div>'
       + '<div class="w-24 shrink-0">'
       + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
-      + '<input type="number" class="ing-qty w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + ing.cantidad + '">'
+      + '<input type="number" class="ing-qty w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + ing.cantidad + '">'
       + '</div>'
       + '<div class="w-28 shrink-0">'
       + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Unidad</label>'
-      + '<select class="ing-unit w-full px-2 py-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all">'
+      + '<select class="ing-unit w-full px-2 py-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">'
       + '<option value="">--</option>'
       + '</select>'
       + '</div>'
@@ -3463,7 +3463,7 @@ function estadoBadge(estado) {
   if (estado === 'rechazado') return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">'
     + '<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/></svg>'
     + 'Rechazado</span>';
-  return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">'
+  return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700">'
     + '<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>'
     + 'Aprobado</span>';
 }
@@ -3488,12 +3488,12 @@ async function loadUsers() {
       return '<tr class="hover:bg-slate-50 transition-colors' + (pendiente ? ' bg-amber-50/30' : '') + '">'
         + '<td class="px-6 py-3"><div class="text-sm font-medium text-slate-800">' + escapeHtml(u.username) + '</div><div class="text-xs text-slate-400">' + escapeHtml(u.email || '') + '</div></td>'
         + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(u.nombreCompleto || '-') + '</td>'
-        + '<td class="px-6 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-emerald-50 text-emerald-700') + '">' + u.role + '</span></td>'
+        + '<td class="px-6 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-brand-50 text-brand-700') + '">' + u.role + '</span></td>'
         + '<td class="px-6 py-3 text-center"><span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">' + activeCount + '/13</span></td>'
         + '<td class="px-6 py-3">' + estadoBadge(u.estadoAprobacion) + '</td>'
         + '<td class="px-6 py-3 text-right">'
         + '<div class="flex items-center justify-end gap-1">'
-        + (pendiente ? '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors touch-target" title="Aprobar">'
+        + (pendiente ? '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Aprobar">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>'
           + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Rechazar">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>' : '')
@@ -3510,7 +3510,7 @@ async function loadUsers() {
       var actionsHtml = '';
       if (pendiente) {
         actionsHtml = '<div class="flex gap-2 pt-2">'
-          + '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-sm font-medium touch-target flex items-center justify-center gap-1.5">'
+          + '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg text-sm font-medium touch-target flex items-center justify-center gap-1.5">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Aprobar</button>'
           + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-red-700 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium touch-target flex items-center justify-center gap-1.5">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> Rechazar</button>'
@@ -3523,7 +3523,7 @@ async function loadUsers() {
       }
       return '<div class="bg-white border ' + (pendiente ? 'border-amber-300' : 'border-slate-200') + ' rounded-xl p-4 space-y-2">'
         + '<div class="flex items-start justify-between"><div><p class="text-sm font-semibold text-slate-800">' + escapeHtml(u.username) + '</p><p class="text-xs text-slate-500">' + escapeHtml(u.email || '') + '</p></div>'
-        + '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-emerald-50 text-emerald-700') + '">' + u.role + '</span></div>'
+        + '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-brand-50 text-brand-700') + '">' + u.role + '</span></div>'
         + '<p class="text-xs text-slate-500">' + escapeHtml(u.nombreCompleto || '-') + '</p>'
         + '<div class="flex items-center justify-between text-xs">'
         + '<span class="text-slate-500">Permisos: ' + activeCount + '/13</span>'

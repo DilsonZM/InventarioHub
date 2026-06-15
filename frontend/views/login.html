@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#064e3b" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#073626" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#022c22" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Gestion de inventario para comida rapida">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -110,9 +110,9 @@
 
     .gradient-mesh {
       background:
-        radial-gradient(ellipse at 20% 80%, rgba(5, 150, 105, 0.18) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 50%, rgba(251, 146, 60, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse at 20% 80%, rgba(7, 54, 38, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(223, 172, 133, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(61, 173, 133, 0.08) 0%, transparent 70%),
         linear-gradient(180deg, #020617 0%, #0f172a 100%);
     }
     .bg-noise {
@@ -251,20 +251,20 @@
   <div class="login-layout min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative gap-6 overflow-hidden" style="z-index: 2;">
     <div class="absolute inset-0 gradient-mesh bg-noise pointer-events-none"></div>
 
-    <div class="absolute top-0 left-1/4 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute bottom-0 right-1/4 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-0 left-1/4 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-warm-400/10 rounded-full blur-3xl pointer-events-none"></div>
 
     <!-- Columna izquierda: branding (visible en landscape) -->
     <div class="login-aside hidden flex-col items-center justify-center text-center shrink-0 max-w-xs">
-      <div id="burgerContainerL" class="burger-icon jelly inline-flex items-center justify-center w-32 h-32 rounded-3xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 backdrop-blur-xl border border-orange-400/20 mb-4" style="animation: pulse-glow 3s ease-in-out infinite;">
+      <div id="burgerContainerL" class="burger-icon jelly inline-flex items-center justify-center w-32 h-32 rounded-3xl bg-gradient-to-br from-warm-400/20 to-warm-500/20 backdrop-blur-xl border border-warm-400/20 mb-4" style="animation: pulse-glow 3s ease-in-out infinite;">
         <svg viewBox="0 0 100 100" class="w-20 h-20" fill="none">
-          <g class="burger-bun-top close"><path d="M18 38 Q18 18, 50 18 Q82 18, 82 38 L82 42 L18 42 Z" fill="url(#bunGradL)" stroke="#d97706" stroke-width="1.2"/><circle cx="38" cy="28" r="1.4" fill="#fde68a"/><circle cx="55" cy="25" r="1.2" fill="#fde68a"/><circle cx="68" cy="30" r="1.4" fill="#fde68a"/><circle cx="46" cy="33" r="1" fill="#fde68a"/></g>
-          <g class="burger-lettuce"><path d="M14 48 Q20 44, 26 48 T38 48 T50 48 T62 48 T74 48 T86 48 L86 54 L14 54 Z" fill="#86efac" stroke="#16a34a" stroke-width="1"/></g>
+          <g class="burger-bun-top close"><path d="M18 38 Q18 18, 50 18 Q82 18, 82 38 L82 42 L18 42 Z" fill="url(#bunGradL)" stroke="#c28f65" stroke-width="1.2"/><circle cx="38" cy="28" r="1.4" fill="#fae8d9"/><circle cx="55" cy="25" r="1.2" fill="#fae8d9"/><circle cx="68" cy="30" r="1.4" fill="#fae8d9"/><circle cx="46" cy="33" r="1" fill="#fae8d9"/></g>
+          <g class="burger-lettuce"><path d="M14 48 Q20 44, 26 48 T38 48 T50 48 T62 48 T74 48 T86 48 L86 54 L14 54 Z" fill="#9ad7bd" stroke="#0d6b4e" stroke-width="1"/></g>
           <g class="burger-tomato"><rect x="16" y="55" width="68" height="6" rx="2" fill="#fb7185" stroke="#be123c" stroke-width="0.8"/><circle cx="28" cy="58" r="0.8" fill="#fecdd3"/><circle cx="50" cy="58" r="0.8" fill="#fecdd3"/><circle cx="72" cy="58" r="0.8" fill="#fecdd3"/></g>
           <g class="burger-cheese"><path d="M14 62 L86 62 L82 70 L18 70 Z" fill="#fde047" stroke="#ca8a04" stroke-width="0.8"/><path d="M22 70 L20 74" stroke="#ca8a04" stroke-width="0.8"/><path d="M50 70 L48 74" stroke="#ca8a04" stroke-width="0.8"/><path d="M78 70 L76 74" stroke="#ca8a04" stroke-width="0.8"/></g>
           <g class="burger-patty"><rect x="14" y="71" width="72" height="8" rx="3" fill="#78350f" stroke="#451a03" stroke-width="0.8"/><ellipse cx="30" cy="75" rx="1" ry="0.6" fill="#451a03" opacity="0.5"/><ellipse cx="55" cy="74" rx="1" ry="0.6" fill="#451a03" opacity="0.5"/><ellipse cx="72" cy="76" rx="1" ry="0.6" fill="#451a03" opacity="0.5"/></g>
-          <g class="burger-bun-bottom close"><path d="M18 80 L82 80 L82 84 Q82 88, 78 88 L22 88 Q18 88, 18 84 Z" fill="url(#bunGradL)" stroke="#d97706" stroke-width="1.2"/></g>
-          <defs><linearGradient id="bunGradL" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#fcd34d"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs>
+          <g class="burger-bun-bottom close"><path d="M18 80 L82 80 L82 84 Q82 88, 78 88 L22 88 Q18 88, 18 84 Z" fill="url(#bunGradL)" stroke="#c28f65" stroke-width="1.2"/></g>
+          <defs><linearGradient id="bunGradL" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#efbf9a"/><stop offset="1" stop-color="#DFAC85"/></linearGradient></defs>
         </svg>
       </div>
       <h1 class="text-2xl font-bold title-shine">Corner House</h1>
@@ -275,19 +275,19 @@
 
       <!-- Header: hamburguesa animada + titulo (oculto en landscape) -->
       <div class="login-header text-center mb-6 sm:mb-8 animate-fade-up">
-        <div id="burgerContainer" class="burger-icon jelly inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 backdrop-blur-xl border border-orange-400/20 mb-4" style="animation: pulse-glow 3s ease-in-out infinite;">
+        <div id="burgerContainer" class="burger-icon jelly inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-warm-400/20 to-warm-500/20 backdrop-blur-xl border border-warm-400/20 mb-4" style="animation: pulse-glow 3s ease-in-out infinite;">
           <svg viewBox="0 0 100 100" class="w-12 h-12 sm:w-14 sm:h-14" fill="none">
             <!-- Pan superior -->
             <g class="burger-bun-top close">
-              <path d="M18 38 Q18 18, 50 18 Q82 18, 82 38 L82 42 L18 42 Z" fill="url(#bunGrad)" stroke="#d97706" stroke-width="1.2"/>
-              <circle cx="38" cy="28" r="1.4" fill="#fde68a"/>
-              <circle cx="55" cy="25" r="1.2" fill="#fde68a"/>
-              <circle cx="68" cy="30" r="1.4" fill="#fde68a"/>
-              <circle cx="46" cy="33" r="1" fill="#fde68a"/>
+              <path d="M18 38 Q18 18, 50 18 Q82 18, 82 38 L82 42 L18 42 Z" fill="url(#bunGrad)" stroke="#c28f65" stroke-width="1.2"/>
+              <circle cx="38" cy="28" r="1.4" fill="#fae8d9"/>
+              <circle cx="55" cy="25" r="1.2" fill="#fae8d9"/>
+              <circle cx="68" cy="30" r="1.4" fill="#fae8d9"/>
+              <circle cx="46" cy="33" r="1" fill="#fae8d9"/>
             </g>
             <!-- Lechuga ondulada -->
             <g class="burger-lettuce">
-              <path d="M14 48 Q20 44, 26 48 T38 48 T50 48 T62 48 T74 48 T86 48 L86 54 L14 54 Z" fill="#86efac" stroke="#16a34a" stroke-width="1"/>
+              <path d="M14 48 Q20 44, 26 48 T38 48 T50 48 T62 48 T74 48 T86 48 L86 54 L14 54 Z" fill="#9ad7bd" stroke="#0d6b4e" stroke-width="1"/>
             </g>
             <!-- Tomate -->
             <g class="burger-tomato">
@@ -312,12 +312,12 @@
             </g>
             <!-- Pan inferior -->
             <g class="burger-bun-bottom close">
-              <path d="M18 80 L82 80 L82 84 Q82 88, 78 88 L22 88 Q18 88, 18 84 Z" fill="url(#bunGrad)" stroke="#d97706" stroke-width="1.2"/>
+              <path d="M18 80 L82 80 L82 84 Q82 88, 78 88 L22 88 Q18 88, 18 84 Z" fill="url(#bunGrad)" stroke="#c28f65" stroke-width="1.2"/>
             </g>
             <defs>
               <linearGradient id="bunGrad" x1="0" y1="0" x2="100" y2="100">
-                <stop offset="0" stop-color="#fcd34d"/>
-                <stop offset="1" stop-color="#f59e0b"/>
+                <stop offset="0" stop-color="#efbf9a"/>
+                <stop offset="1" stop-color="#DFAC85"/>
               </linearGradient>
             </defs>
           </svg>
@@ -330,7 +330,7 @@
       <div class="bg-white/[0.03] backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-6 sm:p-8 animate-fade-up animate-fade-up-delay-1">
 
         <div class="flex bg-white/5 rounded-xl p-1 mb-6">
-          <button id="tabLogin" class="auth-tab flex-1 py-3 text-sm font-semibold rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-white transition-all shadow-lg shadow-emerald-500/20">Iniciar Sesión</button>
+          <button id="tabLogin" class="auth-tab flex-1 py-3 text-sm font-semibold rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 text-white transition-all shadow-lg shadow-brand-500/20">Iniciar Sesión</button>
           <button id="tabRegister" class="auth-tab flex-1 py-3 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Solicitar acceso</button>
         </div>
 
@@ -342,18 +342,18 @@
           <div>
             <label for="loginUsername" class="block text-sm font-medium text-slate-300 mb-2">Usuario</label>
             <input type="text" id="loginUsername" name="username" required autocomplete="username" placeholder="Tu usuario"
-              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
           </div>
           <div>
             <label for="loginPassword" class="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
             <input type="password" id="loginPassword" name="password" required autocomplete="current-password" placeholder="Tu contraseña"
-              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
           </div>
           <div id="loginError" class="hidden p-4 bg-red-500/10 border border-red-500/20 rounded-xl backdrop-blur-sm">
             <p class="text-sm text-red-300 text-center"></p>
           </div>
           <button type="submit" id="loginBtn"
-            class="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-target">
+            class="w-full py-3.5 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-target">
             <svg class="hidden w-5 h-5 animate-spin" data-spinner fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -366,28 +366,28 @@
           <div>
             <label for="regUsername" class="block text-sm font-medium text-slate-300 mb-2">Usuario</label>
             <input type="text" id="regUsername" name="username" required autocomplete="username" placeholder="Elige un usuario (min. 3 chars)"
-              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
           </div>
           <div>
             <label for="regPassword" class="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
             <input type="password" id="regPassword" name="password" required autocomplete="new-password" placeholder="Mínimo 6 caracteres"
-              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
           </div>
           <div>
             <label for="regNombreCompleto" class="block text-sm font-medium text-slate-300 mb-2">Nombre completo</label>
             <input type="text" id="regNombreCompleto" name="nombreCompleto" placeholder="Tu nombre"
-              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
           </div>
           <div>
             <label for="regEmail" class="block text-sm font-medium text-slate-300 mb-2">Email (opcional)</label>
             <input type="email" id="regEmail" name="email" placeholder="tu@correo.com"
-              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
+              class="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white/[0.07] transition-all duration-200 touch-target">
           </div>
           <div id="registerError" class="hidden p-4 bg-red-500/10 border border-red-500/20 rounded-xl backdrop-blur-sm">
             <p class="text-sm text-red-300 text-center"></p>
           </div>
           <button type="submit" id="registerBtn"
-            class="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-target">
+            class="w-full py-3.5 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-target">
             <svg class="hidden w-5 h-5 animate-spin" data-spinner fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>

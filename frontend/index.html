@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#059669" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#064e3b" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#073626" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#073626" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Gestion de inventario para comida rapida">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -16,6 +16,41 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
   <link rel="manifest" href="/manifest.json">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#e6f5ef',
+              100: '#c2e6d6',
+              200: '#9ad7bd',
+              300: '#6cc2a1',
+              400: '#3dad85',
+              500: '#1a8a66',
+              600: '#0d6b4e',
+              700: '#0a5a3f',
+              800: '#073626',
+              900: '#052b1d',
+              950: '#031f14',
+            },
+            warm: {
+              50: '#fdf5ef',
+              100: '#fae8d9',
+              200: '#f5d4bd',
+              300: '#efbf9a',
+              400: '#e9aa78',
+              500: '#DFAC85',
+              600: '#c28f65',
+              700: '#a0724b',
+              800: '#7d5532',
+              900: '#5a3b1f',
+            }
+          }
+        }
+      }
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     (function(){try{var t=localStorage.getItem('theme:v1');if(!t&&window.matchMedia('(prefers-color-scheme:dark)').matches)t='dark';t&&document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
@@ -108,26 +143,26 @@
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      background: linear-gradient(135deg, #073626 0%, #052b1d 100%);
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .btn-primary:hover {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: linear-gradient(135deg, #1a8a66 0%, #073626 100%);
       transform: translateY(-1px);
-      box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3);
+      box-shadow: 0 10px 25px -5px rgba(7, 54, 38, 0.3);
     }
     .btn-primary:active {
       transform: translateY(0) scale(0.98);
     }
 
     .btn-success {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: linear-gradient(135deg, #1a8a66 0%, #073626 100%);
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .btn-success:hover {
-      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      background: linear-gradient(135deg, #3dad85 0%, #1a8a66 100%);
       transform: translateY(-1px);
-      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 10px 25px -5px rgba(26, 138, 102, 0.3);
     }
 
     .touch-target {
@@ -183,8 +218,8 @@
       --color-bg-elevated: #ffffff;
       --color-bg-header: rgba(255, 255, 255, 0.8);
       --color-bg-sidebar: #ffffff;
-      --color-bg-sidebar-accent: rgba(5, 150, 105, 0.08);
-      --color-bg-sidebar-hover: rgba(5, 150, 105, 0.06);
+      --color-bg-sidebar-accent: rgba(7, 54, 38, 0.08);
+      --color-bg-sidebar-hover: rgba(7, 54, 38, 0.06);
       --color-bg-input: #ffffff;
       --color-bg-hover: #f8fafc;
       --color-bg-stripe: #f8fafc;
@@ -194,7 +229,7 @@
       --color-text-tertiary: #64748b;
       --color-text-muted: #94a3b8;
       --color-text-inverse: #ffffff;
-      --color-text-link: #059669;
+      --color-text-link: #073626;
 
       --color-border-subtle: rgba(226, 232, 240, 0.5);
       --color-border-default: rgba(226, 232, 240, 0.8);
@@ -202,7 +237,7 @@
       --color-border-input: #e2e8f0;
       --color-border-sidebar: #e2e8f0;
 
-      --color-accent-emerald: #059669;
+      --color-accent-brand: #073626;
       --color-accent-amber: #f59e0b;
       --color-accent-violet: #8b5cf6;
       --color-accent-red: #ef4444;
@@ -217,8 +252,8 @@
       --color-bg-elevated: #1e293b;
       --color-bg-header: rgba(15, 23, 42, 0.85);
       --color-bg-sidebar: #111827;
-      --color-bg-sidebar-accent: rgba(52, 211, 153, 0.12);
-      --color-bg-sidebar-hover: rgba(52, 211, 153, 0.08);
+      --color-bg-sidebar-accent: rgba(61, 173, 133, 0.12);
+      --color-bg-sidebar-hover: rgba(61, 173, 133, 0.08);
       --color-bg-input: #1e293b;
       --color-bg-hover: #334155;
       --color-bg-stripe: #1e293b;
@@ -228,7 +263,7 @@
       --color-text-tertiary: #64748b;
       --color-text-muted: #475569;
       --color-text-inverse: #0f172a;
-      --color-text-link: #34d399;
+      --color-text-link: #3dad85;
 
       --color-border-subtle: rgba(51, 65, 85, 0.5);
       --color-border-default: rgba(51, 65, 85, 0.8);
@@ -236,7 +271,7 @@
       --color-border-input: #334155;
       --color-border-sidebar: rgba(51, 65, 85, 0.6);
 
-      --color-accent-emerald: #34d399;
+      --color-accent-brand: #3dad85;
       --color-accent-amber: #fbbf24;
       --color-accent-violet: #a78bfa;
       --color-accent-red: #f87171;
@@ -262,8 +297,8 @@
     .theme-toggle:hover {
       background: var(--color-bg-hover);
       color: var(--color-text-primary);
-      border-color: var(--color-accent-emerald);
-      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+      border-color: var(--color-accent-brand);
+      box-shadow: 0 0 0 3px rgba(7, 54, 38, 0.15);
     }
 
     .theme-toggle:active {
@@ -271,7 +306,7 @@
     }
 
     [data-theme="dark"] .theme-toggle:hover {
-      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.25);
+      box-shadow: 0 0 0 3px rgba(61, 173, 133, 0.25);
     }
 
     /* Dark mode overrides for Tailwind utility classes */
@@ -319,13 +354,13 @@
 
     [data-theme="dark"] .bg-slate-200 { background-color: #334155 !important; }
 
-    [data-theme="dark"] .text-emerald-600 { color: var(--color-accent-emerald) !important; }
+    [data-theme="dark"] .text-brand-600 { color: var(--color-accent-brand) !important; }
     [data-theme="dark"] .text-amber-600 { color: var(--color-accent-amber) !important; }
     [data-theme="dark"] .text-violet-600 { color: var(--color-accent-violet) !important; }
     [data-theme="dark"] .text-red-600 { color: var(--color-accent-red) !important; }
 
-    [data-theme="dark"] .from-emerald-50 { --tw-gradient-from: rgba(16, 185, 129, 0.1) var(--tw-gradient-from-position) !important; }
-    [data-theme="dark"] .to-emerald-100 { --tw-gradient-to: rgba(16, 185, 129, 0.2) var(--tw-gradient-to-position) !important; }
+    [data-theme="dark"] .from-brand-50 { --tw-gradient-from: rgba(26, 138, 102, 0.1) var(--tw-gradient-from-position) !important; }
+    [data-theme="dark"] .to-brand-100 { --tw-gradient-to: rgba(26, 138, 102, 0.2) var(--tw-gradient-to-position) !important; }
     [data-theme="dark"] .from-amber-50 { --tw-gradient-from: rgba(245, 158, 11, 0.1) var(--tw-gradient-from-position) !important; }
     [data-theme="dark"] .to-amber-100 { --tw-gradient-to: rgba(245, 158, 11, 0.2) var(--tw-gradient-to-position) !important; }
     [data-theme="dark"] .from-violet-50 { --tw-gradient-from: rgba(139, 92, 246, 0.1) var(--tw-gradient-from-position) !important; }
@@ -349,8 +384,8 @@
     [data-theme="dark"] input:focus,
     [data-theme="dark"] select:focus,
     [data-theme="dark"] textarea:focus {
-      border-color: var(--color-accent-emerald) !important;
-      box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.3) !important;
+      border-color: var(--color-accent-brand) !important;
+      box-shadow: 0 0 0 2px rgba(61, 173, 133, 0.3) !important;
     }
 
     [data-theme="dark"] #categoryChart {
@@ -390,7 +425,7 @@
     }
     .nav-link.active {
       background-color: var(--color-bg-sidebar-accent);
-      color: var(--color-accent-emerald);
+      color: var(--color-accent-brand);
     }
     .nav-link .nav-icon-bg {
       background-color: var(--color-bg-sidebar-hover);
@@ -402,10 +437,10 @@
       color: var(--color-text-tertiary);
     }
     .nav-link:hover .nav-icon {
-      color: var(--color-accent-emerald);
+      color: var(--color-accent-brand);
     }
     .nav-link.active .nav-icon {
-      color: var(--color-accent-emerald);
+      color: var(--color-accent-brand);
     }
     .nav-link.active .nav-icon-bg {
       background-color: var(--color-bg-sidebar-accent);
@@ -485,8 +520,8 @@
     input[type="date"]:focus::-webkit-datetime-edit-month-field,
     input[type="date"]:focus::-webkit-datetime-edit-day-field,
     input[type="date"]:focus::-webkit-datetime-edit-year-field {
-      background: rgba(5, 150, 105, 0.12);
-      color: var(--color-accent-emerald, #059669);
+      background: rgba(7, 54, 38, 0.12);
+      color: var(--color-accent-brand, #073626);
     }
     /* Hide spinner arrows in number inputs */
     input[type="number"]::-webkit-outer-spin-button,
@@ -609,8 +644,8 @@
 
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-out">
     <div class="flex items-center gap-3 px-5 py-5 border-b sidebar-divider">
-      <div class="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-emerald-500/25 shrink-0">
-        <img src="LogoWeb.jpeg" alt="Corner House" class="w-full h-full object-cover">
+      <div class="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-brand-500/25 shrink-0">
+        <img src="LogoWeb-removebg-preview.png" alt="Corner House" class="w-full h-full object-cover">
       </div>
       <div class="sidebar-header-text min-w-0 flex-1">
         <h1 class="text-base font-bold sidebar-text-primary tracking-tight">Corner House</h1>
@@ -735,7 +770,7 @@
 
     <div class="absolute bottom-0 left-0 right-0 border-t sidebar-user-bg backdrop-blur-sm p-3">
         <div id="userInfoRow" class="sidebar-user-row flex items-center gap-3 px-2 py-1">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-violet-600 flex items-center justify-center shadow-md shrink-0">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-violet-600 flex items-center justify-center shadow-md shrink-0">
             <span class="text-xs font-bold text-white" id="userInitial">A</span>
           </div>
           <div class="sidebar-user-info flex-1 min-w-0">
@@ -745,7 +780,7 @@
           <button id="logoutBtn" class="p-2 sidebar-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all touch-target" title="Cerrar sesion">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
           </button>
-          <a id="loginLink" href="/views/login.html" class="hidden p-2 sidebar-text-muted hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all touch-target" title="Iniciar sesion">
+          <a id="loginLink" href="/views/login.html" class="hidden p-2 sidebar-text-muted hover:text-brand-500 hover:bg-brand-500/10 rounded-lg transition-all touch-target" title="Iniciar sesion">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
           </a>
         </div>
@@ -767,11 +802,11 @@
           <h2 class="text-lg sm:text-xl font-bold sidebar-text-primary truncate" id="pageTitle">Dashboard</h2>
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
-          <button id="newOrderBtn" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md shadow-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/30 hover:from-emerald-600 hover:to-teal-700 transition-all touch-target" title="Nuevo Pedido">
+          <button id="newOrderBtn" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-500 to-teal-600 text-white text-sm font-semibold rounded-xl shadow-md shadow-brand-500/25 hover:shadow-lg hover:shadow-brand-500/30 hover:from-brand-600 hover:to-teal-700 transition-all touch-target" title="Nuevo Pedido">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             <span>Nuevo Pedido</span>
           </button>
-          <button id="newOrderBtnMobile" class="sm:hidden inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl shadow-md shadow-emerald-500/25 touch-target" title="Nuevo Pedido">
+          <button id="newOrderBtnMobile" class="sm:hidden inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-brand-500 to-teal-600 text-white rounded-xl shadow-md shadow-brand-500/25 touch-target" title="Nuevo Pedido">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           </button>
           <button id="themeToggle" class="theme-toggle" aria-label="Cambiar modo" title="Modo oscuro">
@@ -794,7 +829,7 @@
           <div class="hidden md:grid md:grid-cols-12 gap-3">
             <div class="md:col-span-4">
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
-              <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/50 focus-within:border-emerald-500/50 transition-all">
+              <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500/50 transition-all">
                 <input type="date" id="filterDateFromDash" data-view="dashboard" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
                 <div class="w-px bg-slate-200 self-stretch"></div>
                 <input type="date" id="filterDateToDash" data-view="dashboard" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
@@ -802,7 +837,7 @@
             </div>
             <div class="md:col-span-2">
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
-              <select id="filterQuickPeriodDash" data-view="dashboard" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+              <select id="filterQuickPeriodDash" data-view="dashboard" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                 <option value="">Seleccionar</option>
                 <option value="today">Hoy</option>
                 <option value="week">Esta semana</option>
@@ -813,7 +848,7 @@
             </div>
             <div class="md:col-span-2">
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Cocina</label>
-              <select id="filterCocinaDash" data-view="dashboard" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+              <select id="filterCocinaDash" data-view="dashboard" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                 <option value="">Todas</option>
                 <option value="Cocina 1">Cocina 1</option>
                 <option value="Cocina 2">Cocina 2</option>
@@ -823,7 +858,7 @@
             </div>
             <div class="md:col-span-3">
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Producto</label>
-              <select id="filterProductDash" data-view="dashboard" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+              <select id="filterProductDash" data-view="dashboard" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                 <option value="">Todos los productos</option>
               </select>
             </div>
@@ -841,7 +876,7 @@
             <button data-open-filters="dashboard" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
               <span>Filtros</span>
-              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
+              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
             </button>
             <button id="clearFiltersBtnDashMobile" data-view="dashboard" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -850,10 +885,10 @@
           <div class="active-filter-chips md:hidden mt-2 flex flex-wrap gap-1.5" data-chips="dashboard"></div>
         </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-emerald-100 animate-stagger animate-stagger-1">
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-brand-100 animate-stagger animate-stagger-1">
             <div class="flex items-center justify-between mb-3">
-              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
               </div>
@@ -861,10 +896,10 @@
             <p class="text-2xl font-bold text-slate-800" id="stat-products">0</p>
             <p class="text-sm text-slate-500">Productos</p>
           </div>
-          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-emerald-100 animate-stagger animate-stagger-2">
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-100/50 hover:shadow-lg hover:border-brand-100 animate-stagger animate-stagger-2">
             <div class="flex items-center justify-between mb-3">
-              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </div>
@@ -932,7 +967,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100/50 overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 class="text-base font-semibold text-slate-800">Últimos Movimientos</h3>
-            <a href="#movimientos" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">Ver todos</a>
+            <a href="#movimientos" class="text-sm text-brand-600 hover:text-brand-700 font-medium">Ver todos</a>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full table-desktop">
@@ -961,9 +996,9 @@
               <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
-              <input type="text" id="searchProducts" placeholder="Buscar por nombre o SKU..." class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="text" id="searchProducts" placeholder="Buscar por nombre o SKU..." class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
-            <select id="filterCategory" class="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 hidden sm:block touch-target">
+            <select id="filterCategory" class="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 hidden sm:block touch-target">
               <option value="">Todas las categorías</option>
             </select>
           </div>
@@ -1006,7 +1041,7 @@
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div class="lg:col-span-2">
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
-                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/50 focus-within:border-emerald-500/50 transition-all">
+                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500/50 transition-all">
                   <input type="date" id="filterDateFrom" data-view="sales" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
                   <div class="w-px bg-slate-200 self-stretch"></div>
                   <input type="date" id="filterDateTo" data-view="sales" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
@@ -1014,7 +1049,7 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
-                <select id="filterQuickPeriod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+                <select id="filterQuickPeriod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                   <option value="">Seleccionar</option>
                   <option value="today">Hoy</option>
                   <option value="week">Esta semana</option>
@@ -1025,7 +1060,7 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Cocina</label>
-                <select id="filterCocina" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+                <select id="filterCocina" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                   <option value="">Todas</option>
                   <option value="Cocina 1">Cocina 1</option>
                   <option value="Cocina 2">Cocina 2</option>
@@ -1037,7 +1072,7 @@
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Producto</label>
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                  <input type="text" id="filterProductSearch" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+                  <input type="text" id="filterProductSearch" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                 </div>
               </div>
             </div>
@@ -1061,7 +1096,7 @@
               <button data-open-filters="sales" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                 <span>Filtros</span>
-                <span class="mobile-filters-count hidden px-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
+                <span class="mobile-filters-count hidden px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
               </button>
               <button id="clearFiltersBtnMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -1078,11 +1113,11 @@
           </div>
           <div class="bg-white rounded-xl p-4 border border-slate-100/50">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Cantidad Usada</p>
-            <p class="text-xl font-bold text-emerald-600 mt-1" id="summaryTotal">0</p>
+            <p class="text-xl font-bold text-brand-600 mt-1" id="summaryTotal">0</p>
           </div>
           <div class="bg-white rounded-xl p-4 border border-slate-100/50">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Promedio x Salida</p>
-            <p class="text-xl font-bold text-emerald-600 mt-1" id="summaryAvg">0</p>
+            <p class="text-xl font-bold text-brand-600 mt-1" id="summaryAvg">0</p>
           </div>
           <div class="bg-white rounded-xl p-4 border border-slate-100/50">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Productos Usados</p>
@@ -1120,7 +1155,7 @@
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div class="lg:col-span-2">
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
-                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/50 focus-within:border-emerald-500/50 transition-all">
+                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500/50 transition-all">
                   <input type="date" id="filterDateFromEntradas" data-view="entradas" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
                   <div class="w-px bg-slate-200 self-stretch"></div>
                   <input type="date" id="filterDateToEntradas" data-view="entradas" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
@@ -1128,7 +1163,7 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
-                <select id="filterQuickPeriodEntradas" data-view="entradas" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+                <select id="filterQuickPeriodEntradas" data-view="entradas" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                   <option value="">Seleccionar</option>
                   <option value="today">Hoy</option>
                   <option value="week">Esta semana</option>
@@ -1141,7 +1176,7 @@
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Producto</label>
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                  <input type="text" id="filterProductSearchEntradas" data-view="entradas" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+                  <input type="text" id="filterProductSearchEntradas" data-view="entradas" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                 </div>
               </div>
             </div>
@@ -1162,7 +1197,7 @@
               <button data-open-filters="entradas" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                 <span>Filtros</span>
-                <span class="mobile-filters-count hidden px-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
+                <span class="mobile-filters-count hidden px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
               </button>
               <button id="clearFiltersBtnEntradasMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -1197,7 +1232,7 @@
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div class="lg:col-span-2">
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
-                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/50 focus-within:border-emerald-500/50 transition-all">
+                <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500/50 transition-all">
                   <input type="date" id="filterDateFromMov" data-view="movimientos" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
                   <div class="w-px bg-slate-200 self-stretch"></div>
                   <input type="date" id="filterDateToMov" data-view="movimientos" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
@@ -1205,7 +1240,7 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
-                <select id="filterQuickPeriodMov" data-view="movimientos" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+                <select id="filterQuickPeriodMov" data-view="movimientos" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                   <option value="">Seleccionar</option>
                   <option value="today">Hoy</option>
                   <option value="week">Esta semana</option>
@@ -1216,7 +1251,7 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Tipo</label>
-                <select id="filterTipoMov" data-view="movimientos" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+                <select id="filterTipoMov" data-view="movimientos" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
 
                   <option value="">Todos</option>
                   <option value="entrada">Entradas</option>
@@ -1228,7 +1263,7 @@
                 <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Producto</label>
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                  <input type="text" id="filterProductSearchMov" data-view="movimientos" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-white transition-all touch-target">
+                  <input type="text" id="filterProductSearchMov" data-view="movimientos" placeholder="Nombre o SKU" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                 </div>
               </div>
             </div>
@@ -1240,7 +1275,7 @@
             <button data-open-filters="movimientos" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
               <span>Filtros</span>
-              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
+              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
             </button>
             <button id="clearFiltersBtnMovMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -1285,37 +1320,37 @@
           <div class="grid grid-cols-2 gap-4">
             <div class="col-span-2">
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Nombre *</label>
-              <input type="text" id="productName" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="text" id="productName" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">SKU *</label>
-              <input type="text" id="productSku" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="text" id="productSku" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Categoría *</label>
-              <select id="productCategory" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <select id="productCategory" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
                 <option value="">Seleccionar</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Precio Venta *</label>
-              <input type="number" id="productPrice" required min="0" step="0.01" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="number" id="productPrice" required min="0" step="0.01" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Costo *</label>
-              <input type="number" id="productCost" required min="0" step="0.01" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="number" id="productCost" required min="0" step="0.01" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Stock *</label>
-              <input type="number" id="productStock" required min="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="number" id="productStock" required min="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Stock Mínimo</label>
-              <input type="number" id="productMinStock" min="0" value="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="number" id="productMinStock" min="0" value="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-500 mb-1.5">Unidad de medida <span class="text-xs font-normal text-slate-400" id="productUnidadHint"></span></label>
-              <select id="productUnidad" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white">
+              <select id="productUnidad" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target bg-white">
                 <option value="">Seleccionar unidad</option>
                 <option value="kg">Kilogramo (kg)</option>
                 <option value="g">Gramo (g)</option>
@@ -1331,7 +1366,7 @@
             </div>
             <div class="col-span-2">
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
-              <textarea id="productDescription" rows="2" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all resize-none touch-target"></textarea>
+              <textarea id="productDescription" rows="2" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all resize-none touch-target"></textarea>
             </div>
           </div>
           <div id="productFormError" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl">
@@ -1384,24 +1419,24 @@
             <div class="relative flex gap-2">
               <div class="relative flex-1">
                 <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input type="text" id="saleSearch" autocomplete="off" placeholder="Buscar y agregar plato, bebida o producto..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white">
+                <input type="text" id="saleSearch" autocomplete="off" placeholder="Buscar y agregar plato, bebida o producto..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target bg-white">
                 <div id="saleSearchDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-60 overflow-y-auto"></div>
               </div>
-              <input type="number" id="saleSearchQty" value="1" min="1" step="1" class="w-16 px-3 py-3 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all touch-target bg-white" title="Cantidad">
+              <input type="number" id="saleSearchQty" value="1" min="1" step="1" class="w-16 px-3 py-3 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all touch-target bg-white" title="Cantidad">
             </div>
             <!-- Seccion: Platos -->
             <div class="bg-white rounded-xl p-4 border border-slate-200">
               <h4 class="text-sm font-semibold text-slate-700 mb-3">Platos y Bebidas</h4>
               <div class="flex gap-2 items-end">
                 <div class="flex-1">
-                  <select id="saleDishSelect" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white">
+                  <select id="saleDishSelect" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target bg-white">
                     <option value="">Seleccionar plato o bebida</option>
                   </select>
                 </div>
                 <div>
-                  <input type="number" id="saleDishQuantity" min="1" step="1" value="1" class="w-20 px-3 py-3 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white" placeholder="Cant">
+                  <input type="number" id="saleDishQuantity" min="1" step="1" value="1" class="w-20 px-3 py-3 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target bg-white" placeholder="Cant">
                 </div>
-                <button type="button" id="addDishSaleItem" class="px-4 py-3 border border-emerald-300 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-50 transition-colors touch-target shrink-0 flex items-center gap-1.5">
+                <button type="button" id="addDishSaleItem" class="px-4 py-3 border border-brand-300 text-brand-700 rounded-xl text-sm font-medium hover:bg-brand-50 transition-colors touch-target shrink-0 flex items-center gap-1.5">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                   Agregar
                 </button>
@@ -1413,15 +1448,15 @@
               <h4 class="text-sm font-semibold text-slate-700 mb-3">Productos de inventario</h4>
               <div class="grid grid-cols-12 gap-2 items-end">
                 <div class="col-span-6">
-                  <select id="saleProductSelect" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white">
+                  <select id="saleProductSelect" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target bg-white">
                     <option value="">Seleccionar producto</option>
                   </select>
                 </div>
                 <div class="col-span-2">
-                  <input type="number" id="saleQuantity" min="0.001" step="0.001" value="1" class="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white" placeholder="Cant">
+                  <input type="number" id="saleQuantity" min="0.001" step="0.001" value="1" class="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target bg-white" placeholder="Cant">
                 </div>
                 <div class="col-span-4">
-                  <select id="saleUnidadPresentacion" class="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target bg-white">
+                  <select id="saleUnidadPresentacion" class="w-full px-3 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target bg-white">
                     <option value="">Unidad base</option>
                   </select>
                 </div>
@@ -1430,7 +1465,7 @@
                   <span id="saleConversionText" class="font-medium"></span>
                 </div>
                 <div class="col-span-12">
-                  <button type="button" id="addSaleItem" class="w-full px-4 py-3 border border-emerald-300 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-50 transition-colors touch-target flex items-center justify-center gap-1.5">
+                  <button type="button" id="addSaleItem" class="w-full px-4 py-3 border border-brand-300 text-brand-700 rounded-xl text-sm font-medium hover:bg-brand-50 transition-colors touch-target flex items-center justify-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Agregar producto
                   </button>
@@ -1459,12 +1494,12 @@
             <!-- Total sutil -->
             <div class="text-right">
               <span class="text-sm font-semibold text-slate-700">Total: </span>
-              <span class="text-lg font-bold text-emerald-700" id="saleTotal">$0</span>
+              <span class="text-lg font-bold text-brand-700" id="saleTotal">$0</span>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">Cocina *</label>
-              <select id="salePaymentMethod" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <select id="salePaymentMethod" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
                 <option value="">Seleccionar</option>
                 <option value="Cocina 1">Cocina 1</option>
                 <option value="Cocina 2">Cocina 2</option>
@@ -1474,7 +1509,7 @@
             </div>
 
             <div>
-              <input type="text" id="saleWaiterNote" placeholder="Nota del mesero (opcional)..." class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="text" id="saleWaiterNote" placeholder="Nota del mesero (opcional)..." class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
 
             <div id="saleFormError" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl">
@@ -1483,7 +1518,7 @@
 
             <div class="flex gap-3 pt-2">
               <button type="button" data-close-modal class="px-5 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors touch-target">Cancelar</button>
-              <button type="submit" class="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Registrar Pedido</button>
+              <button type="submit" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Registrar Pedido</button>
             </div>
           </div>
         </form>
@@ -1536,8 +1571,8 @@
                 <p class="text-xs font-medium text-slate-600 uppercase tracking-wider">Cantidad Total</p>
                 <p class="text-2xl font-bold text-slate-800 mt-0.5" id="detailSaleTotal">0</p>
               </div>
-              <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-12 h-12 rounded-full bg-brand-500/20 flex items-center justify-center">
+                <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
               </div>
@@ -1567,22 +1602,22 @@
           <div id="compraFormError" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl"><p class="text-xs text-red-600"></p></div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1.5">Fecha de compra</label>
-            <input type="date" id="compraFecha" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+            <input type="date" id="compraFecha" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1.5">Producto *</label>
-            <select id="compraProducto" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+            <select id="compraProducto" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
               <option value="">Seleccionar producto</option>
             </select>
           </div>
           <div class="grid grid-cols-12 gap-3">
             <div class="col-span-5">
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Cantidad *</label>
-              <input type="number" id="compraCantidad" required min="0.001" step="0.001" value="1" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="number" id="compraCantidad" required min="0.001" step="0.001" value="1" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div class="col-span-7">
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Unidad de presentacion</label>
-              <select id="compraUnidadPresentacion" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <select id="compraUnidadPresentacion" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
                 <option value="">Misma unidad base</option>
               </select>
             </div>
@@ -1595,7 +1630,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1.5">Valor Unitario (por unidad base) *</label>
-            <input type="number" id="compraValor" required min="0" step="0.01" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+            <input type="number" id="compraValor" required min="0" step="0.01" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
           </div>
           <div class="text-right">
             <span class="text-xs text-slate-500">Valor Total: </span>
@@ -1623,9 +1658,9 @@
     <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
       <div class="relative flex-1 max-w-md">
         <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" id="searchDishes" placeholder="Buscar plato o bebida..." class="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+        <input type="text" id="searchDishes" placeholder="Buscar plato o bebida..." class="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
       </div>
-      <select id="filterDishType" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+      <select id="filterDishType" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
         <option value="">Todos los tipos</option>
         <option value="plato">Platos</option>
         <option value="bebida">Bebidas</option>
@@ -1719,7 +1754,7 @@
       <h2 class="text-base font-semibold text-slate-800 mb-4">Acceso publico</h2>
       <p class="text-sm text-slate-600 mb-4">Permite que cualquier persona vea el dashboard sin iniciar sesion. Las acciones de crear/editar/eliminar requieren autenticacion.</p>
       <label class="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" id="modoPublicoCheck" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+        <input type="checkbox" id="modoPublicoCheck" class="w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
         <span class="text-sm font-medium text-slate-700">Habilitar acceso publico (visitante)</span>
       </label>
       <div class="mt-4">
@@ -1732,18 +1767,18 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1.5">Host (IP)</label>
-          <input type="text" id="printerHost" value="127.0.0.1" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all">
+          <input type="text" id="printerHost" value="127.0.0.1" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all">
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1.5">Puerto</label>
-          <input type="number" id="printerPort" value="9100" min="1" max="65535" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all">
+          <input type="number" id="printerPort" value="9100" min="1" max="65535" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all">
         </div>
       </div>
       <div class="mt-4 flex items-center gap-3">
         <button id="savePrinterConfigBtn" class="btn-primary px-5 py-2.5 text-white rounded-xl text-sm font-semibold shadow-md">Guardar</button>
-        <button id="testPrinterBtn" class="px-4 py-2.5 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-50 transition-colors">Probar conexion</button>
+        <button id="testPrinterBtn" class="px-4 py-2.5 border border-brand-200 text-brand-700 rounded-xl text-sm font-medium hover:bg-brand-50 transition-colors">Probar conexion</button>
       </div>
-      <p class="text-[11px] text-slate-400 mt-3">Requiere <a href="https://qz.io/download/" target="_blank" class="text-emerald-500 underline">QZ Tray</a> instalado y corriendo en esta maquina.</p>
+      <p class="text-[11px] text-slate-400 mt-3">Requiere <a href="https://qz.io/download/" target="_blank" class="text-brand-500 underline">QZ Tray</a> instalado y corriendo en esta maquina.</p>
     </div>
   </div>
 
@@ -1765,23 +1800,23 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Usuario *</label>
-              <input type="text" id="userUsername" required minlength="3" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="text" id="userUsername" required minlength="3" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Contrasena <span id="userPassHint" class="text-xs text-slate-400"></span></label>
-              <input type="password" id="userPassword" minlength="6" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target" placeholder="Dejar vacio para mantener">
+              <input type="password" id="userPassword" minlength="6" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target" placeholder="Dejar vacio para mantener">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Nombre completo</label>
-              <input type="text" id="userNombreCompleto" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="text" id="userNombreCompleto" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-              <input type="email" id="userEmail" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="email" id="userEmail" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
             <div class="sm:col-span-2">
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Rol (plantilla de permisos)</label>
-              <select id="userRole" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <select id="userRole" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
                 <option value="vendedor">Vendedor (crear ventas, ver)</option>
                 <option value="admin">Administrador (todo)</option>
               </select>
@@ -1793,7 +1828,7 @@
             <div class="flex items-center justify-between mb-2">
               <label class="block text-sm font-medium text-slate-700">Permisos</label>
               <div class="flex gap-2">
-                <button type="button" id="permAllBtn" class="text-xs px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100">Todos</button>
+                <button type="button" id="permAllBtn" class="text-xs px-2 py-1 rounded-md bg-brand-50 text-brand-700 hover:bg-brand-100">Todos</button>
                 <button type="button" id="permNoneBtn" class="text-xs px-2 py-1 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200">Ninguno</button>
               </div>
             </div>
@@ -1831,11 +1866,11 @@
           <div class="grid grid-cols-3 gap-4">
             <div class="col-span-2">
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Nombre *</label>
-              <input type="text" id="dishName" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target" placeholder="Ej: Bandeja Paisa">
+              <input type="text" id="dishName" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target" placeholder="Ej: Bandeja Paisa">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Tipo *</label>
-              <select id="dishType" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <select id="dishType" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
                 <option value="">Seleccionar</option>
                 <option value="plato">Plato</option>
                 <option value="bebida">Bebida</option>
@@ -1847,11 +1882,11 @@
           <div class="grid grid-cols-3 gap-4">
             <div class="col-span-2">
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
-              <textarea id="dishDescription" rows="2" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all resize-none touch-target" placeholder="Descripción breve del plato o bebida"></textarea>
+              <textarea id="dishDescription" rows="2" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all resize-none touch-target" placeholder="Descripción breve del plato o bebida"></textarea>
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1.5">Precio venta *</label>
-              <input type="number" id="dishPrice" required min="0" step="0.01" value="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all touch-target">
+              <input type="number" id="dishPrice" required min="0" step="0.01" value="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
             </div>
           </div>
 
@@ -1859,7 +1894,7 @@
           <div class="border-t border-slate-100 pt-5">
             <div class="flex items-center justify-between mb-4">
               <h4 class="text-sm font-semibold text-slate-800">Receta — Ingredientes</h4>
-              <button type="button" id="addIngredientBtn" class="px-3.5 py-2 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors touch-target inline-flex items-center gap-1.5">
+              <button type="button" id="addIngredientBtn" class="px-3.5 py-2 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-xl transition-colors touch-target inline-flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Agregar ingrediente
               </button>
@@ -1887,13 +1922,13 @@
     <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
       <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-close-preview></div>
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto z-10 animate-scale-in overflow-hidden">
-        <div class="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-5">
+        <div class="bg-gradient-to-r from-brand-600 to-teal-700 px-6 py-5">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-xs font-medium text-emerald-200 uppercase tracking-wider">Resumen del Pedido</p>
+              <p class="text-xs font-medium text-brand-200 uppercase tracking-wider">Resumen del Pedido</p>
               <p class="text-lg font-bold text-white mt-0.5" id="previewCocina">Cocina 1</p>
             </div>
-            <button data-close-preview class="p-2 text-emerald-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors touch-target">
+            <button data-close-preview class="p-2 text-brand-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors touch-target">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
@@ -1905,13 +1940,13 @@
             <span class="text-xl font-bold text-slate-800" id="previewTotal">$0</span>
           </div>
           <label class="flex items-center gap-2 pt-2 cursor-pointer">
-            <input type="checkbox" id="previewIncludeTip" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" checked>
+            <input type="checkbox" id="previewIncludeTip" class="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" checked>
             <span class="text-xs text-slate-600">Incluir propina 10% en ticket</span>
           </label>
         </div>
         <div class="px-5 pb-5 flex gap-3">
           <button data-close-preview class="flex-1 px-4 py-3 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
-          <button id="confirmOrderBtn" class="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target flex items-center justify-center gap-2">
+          <button id="confirmOrderBtn" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target flex items-center justify-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             Confirmar Pedido
           </button>
@@ -1963,7 +1998,7 @@
         <!-- Actions -->
         <div class="flex gap-3 mt-4 ticket-actions">
           <button data-close-ticket class="flex-1 px-4 py-3 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cerrar</button>
-          <button id="printKitchenBtn" class="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target flex items-center justify-center gap-2">
+          <button id="printKitchenBtn" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target flex items-center justify-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
             Cocina
           </button>
@@ -2042,8 +2077,8 @@
     }
     .cal-day:hover { background: #e2e8f0; }
     .cal-day.other-month { color: #cbd5e1; }
-    .cal-day.today { font-weight: 700; border: 2px solid #059669; }
-    .cal-day.range-start, .cal-day.range-end { background: #059669; color: white; font-weight: 700; border-radius: 6px; }
+    .cal-day.today { font-weight: 700; border: 2px solid #073626; }
+    .cal-day.range-start, .cal-day.range-end { background: #073626; color: white; font-weight: 700; border-radius: 6px; }
     .cal-day.in-range { background: #d1fae5; color: #065f46; border-radius: 0; }
     .cal-day.range-start { border-radius: 6px 0 0 6px; }
     .cal-day.range-end { border-radius: 0 6px 6px 0; }
@@ -2051,7 +2086,7 @@
     [data-theme="dark"] .cal-day { color: #e2e8f0; }
     [data-theme="dark"] .cal-day:hover { background: #334155; }
     [data-theme="dark"] .cal-day.other-month { color: #475569; }
-    [data-theme="dark"] .cal-day.in-range { background: #064e3b; color: #6ee7b7; }
+    [data-theme="dark"] .cal-day.in-range { background: #073626; color: #6cc2a1; }
     [data-theme="dark"] .calendar-preset { background: #334155; color: #cbd5e1; }
     [data-theme="dark"] .calendar-preset:hover { background: #475569; }
   </style>
