@@ -13,76 +13,113 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (e) {}
 
-  const tabLogin = document.getElementById('tabLogin');
-  const tabRegister = document.getElementById('tabRegister');
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
-  const registerNotice = document.getElementById('registerNotice');
+  const forgotForm = document.getElementById('forgotForm');
+  const panelHeader = document.getElementById('panelHeader');
+  const views = {
+    login: document.querySelector('[data-view="login"]'),
+    register: document.querySelector('[data-view="register"]'),
+    forgot: document.querySelector('[data-view="forgot"]')
+  };
 
-  // Mostrar aviso de aprobacion al cambiar a tab "Solicitar acceso"
-  if (registerNotice && tabRegister) {
-    tabRegister.addEventListener('click', function () {
-      setTimeout(function () {
-        if (!registerForm.classList.contains('hidden')) {
-          registerNotice.classList.remove('hidden');
-        }
-      }, 50);
+  const HEADER_CONTENT = {
+    login: {
+      kicker: 'Bienvenido',
+      title: 'Accede a tu panel',
+      subtitle: 'Ingresa con tu usuario para empezar a gestionar la operacion del restaurante.'
+    },
+    register: {
+      kicker: 'Crear cuenta',
+      title: 'Solicita tu acceso',
+      subtitle: 'Completa el formulario y un administrador aprobara tu solicitud.'
+    },
+    forgot: {
+      kicker: 'Recuperar acceso',
+      title: 'Restablecer contrasena',
+      subtitle: 'Te enviamos un enlace al correo asociado a tu cuenta.'
+    }
+  };
+
+  function setHeader(name) {
+    const c = HEADER_CONTENT[name] || HEADER_CONTENT.login;
+    if (!panelHeader) return;
+    panelHeader.querySelector('[data-header-kicker]').textContent = c.kicker;
+    panelHeader.querySelector('[data-header-title]').textContent = c.title;
+    panelHeader.querySelector('[data-header-subtitle]').textContent = c.subtitle;
+  }
+
+  function switchView(name) {
+    if (!views[name]) return;
+    Object.keys(views).forEach(function (k) {
+      views[k].classList.toggle('hidden', k !== name);
     });
-  }
-  if (registerNotice && tabLogin) {
-    tabLogin.addEventListener('click', function () {
-      registerNotice.classList.add('hidden');
+    setHeader(name);
+    document.querySelectorAll('[id$="Error"], #forgotSuccess').forEach(function (el) {
+      el.classList.add('hidden');
     });
+    setTimeout(function () {
+      var firstInput = views[name].querySelector('input:not([type=hidden])');
+      if (firstInput) firstInput.focus();
+    }, 50);
   }
 
-  function switchTab(tab) {
-    const isLogin = tab === 'login';
-    tabLogin.classList.toggle('bg-gradient-to-r', isLogin);
-    tabLogin.classList.toggle('from-blue-600', isLogin);
-    tabLogin.classList.toggle('to-blue-500', isLogin);
-    tabLogin.classList.toggle('text-white', isLogin);
-    tabLogin.classList.toggle('shadow-lg', isLogin);
-    tabLogin.classList.toggle('shadow-blue-500/20', isLogin);
-    tabLogin.classList.toggle('text-slate-400', !isLogin);
-
-    tabRegister.classList.toggle('bg-gradient-to-r', !isLogin);
-    tabRegister.classList.toggle('from-emerald-600', !isLogin);
-    tabRegister.classList.toggle('to-emerald-500', !isLogin);
-    tabRegister.classList.toggle('text-white', !isLogin);
-    tabRegister.classList.toggle('shadow-lg', !isLogin);
-    tabRegister.classList.toggle('shadow-emerald-500/20', !isLogin);
-    tabRegister.classList.toggle('text-slate-400', isLogin);
-
-    loginForm.classList.toggle('hidden', !isLogin);
-    registerForm.classList.toggle('hidden', isLogin);
-
-    document.querySelectorAll('[id$="Error"]').forEach(el => el.classList.add('hidden'));
-  }
-
-  tabLogin.addEventListener('click', () => switchTab('login'));
-  tabRegister.addEventListener('click', () => switchTab('register'));
+  // Switchers (login <-> register, forgot, etc.)
+  document.querySelectorAll('[data-switch]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      switchView(btn.getAttribute('data-switch'));
+    });
+  });
 
   function setLoading(btn, loading) {
+    if (!btn) return;
     btn.disabled = loading;
-    const spinner = btn.querySelector('[data-spinner]');
+    var spinner = btn.querySelector('[data-spinner]');
     if (spinner) spinner.classList.toggle('hidden', !loading);
+    var label = btn.querySelector('[data-label]') || btn.querySelector('span');
+    if (loading) {
+      if (label) {
+        btn.setAttribute('data-original-label', label.textContent);
+        label.textContent = btn.getAttribute('data-loading-text') || 'Procesando...';
+      }
+    } else if (label && btn.getAttribute('data-original-label')) {
+      label.textContent = btn.getAttribute('data-original-label');
+    }
   }
 
   function showError(containerId, message) {
-    const el = document.getElementById(containerId);
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    if (!message) {
+      el.classList.add('hidden');
+      return;
+    }
+    el.classList.remove('hidden', 'bg-emerald-500/10', 'border-emerald-500/20');
+    el.classList.add('bg-red-500/10', 'border-red-500/20');
+    var p = el.querySelector('p');
+    if (p) {
+      p.classList.remove('text-emerald-300');
+      p.classList.add('text-red-300');
+      p.textContent = message;
+    }
+  }
+
+  function showSuccess(containerId, message) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
     el.classList.remove('hidden');
-    el.querySelector('p').textContent = message;
+    var p = el.querySelector('p');
+    if (p) p.textContent = message;
   }
 
   function animateExit(callback) {
-    // Fade out rapido del form + mostrar loading overlay (hamburguesa girando)
-    const container = document.querySelector('.min-h-\\[100dvh\\]');
+    var container = document.querySelector('.login-shell');
     if (container) {
       container.style.transition = 'opacity 0.25s ease-out, transform 0.25s ease-out';
       container.style.opacity = '0';
       container.style.transform = 'scale(0.96)';
     }
-    setTimeout(function() {
+    setTimeout(function () {
       if (typeof window.showLoadingTransition === 'function') {
         window.showLoadingTransition(callback);
       } else {
@@ -91,63 +128,123 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 250);
   }
 
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const btn = document.getElementById('loginBtn');
+  // === LOGIN ===
+  if (loginForm) {
+    loginForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var username = document.getElementById('loginUsername').value.trim();
+      var password = document.getElementById('loginPassword').value;
+      var btn = document.getElementById('loginBtn');
 
-    if (!username || !password) {
-      showError('loginError', 'Completa todos los campos');
-      return;
-    }
-
-    setLoading(btn, true);
-    try {
-      const res = await API.auth.login(username, password);
-      API.setToken(res.data.token);
-      API.setUser(res.data.user);
-      animateExit(() => { window.location.href = '/index.html'; });
-    } catch (err) {
-      showError('loginError', err.message);
-    } finally {
-      setLoading(btn, false);
-    }
-  });
-
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('regUsername').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const nombreCompleto = (document.getElementById('regNombreCompleto') || {}).value || '';
-    const email = (document.getElementById('regEmail') || {}).value || '';
-    const btn = document.getElementById('registerBtn');
-
-    if (!username || !password) {
-      showError('registerError', 'Completa todos los campos');
-      return;
-    }
-
-    setLoading(btn, true);
-    try {
-      const res = await API.auth.register(username, password, nombreCompleto, email);
-      // Mostrar mensaje de pendiente, NO iniciar sesion automaticamente
-      showError('registerError', '');
-      const ok = document.getElementById('registerError');
-      if (ok) {
-        ok.classList.remove('hidden');
-        ok.classList.remove('bg-red-500/10', 'border-red-500/20');
-        ok.classList.add('bg-emerald-500/10', 'border-emerald-500/20');
-        ok.querySelector('p').classList.remove('text-red-300');
-        ok.querySelector('p').classList.add('text-emerald-300');
-        ok.querySelector('p').textContent = (res.data && res.data.message) || 'Solicitud enviada. Un administrador la revisara.';
+      if (!username || !password) {
+        showError('loginError', 'Completa usuario y contrasena');
+        return;
       }
-      // Resetear form
-      registerForm.reset();
-    } catch (err) {
-      showError('registerError', err.message);
-    } finally {
-      setLoading(btn, false);
-    }
+
+      setLoading(btn, true);
+      try {
+        var res = await API.auth.login(username, password);
+        API.setToken(res.data.token);
+        API.setUser(res.data.user);
+        animateExit(function () { window.location.href = '/index.html'; });
+      } catch (err) {
+        showError('loginError', err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+  }
+
+  // === REGISTER ===
+  if (registerForm) {
+    registerForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var username = document.getElementById('regUsername').value.trim();
+      var password = document.getElementById('regPassword').value;
+      var nombreCompleto = (document.getElementById('regNombreCompleto') || {}).value || '';
+      var email = (document.getElementById('regEmail') || {}).value || '';
+      var btn = document.getElementById('registerBtn');
+
+      if (!username || !password) {
+        showError('registerError', 'Completa usuario y contrasena');
+        return;
+      }
+      if (!email) {
+        showError('registerError', 'El correo electronico es obligatorio');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        showError('registerError', 'El correo no tiene un formato valido');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        var res = await API.auth.register(username, password, nombreCompleto, email);
+        var okMsg = (res.data && res.data.message) || 'Solicitud enviada. Un administrador la revisara.';
+        var okEl = document.getElementById('registerError');
+        okEl.classList.remove('hidden', 'bg-red-500/10', 'border-red-500/20');
+        okEl.classList.add('bg-emerald-500/10', 'border-emerald-500/20');
+        var p = okEl.querySelector('p');
+        p.classList.remove('text-red-300');
+        p.classList.add('text-emerald-300');
+        p.textContent = okMsg;
+        registerForm.reset();
+      } catch (err) {
+        showError('registerError', err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+  }
+
+  // === FORGOT PASSWORD ===
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var email = (document.getElementById('forgotEmail') || {}).value || '';
+      var btn = document.getElementById('forgotBtn');
+
+      if (!email) {
+        showError('forgotError', 'Ingresa tu correo electronico');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        showError('forgotError', 'El correo no tiene un formato valido');
+        return;
+      }
+
+      setLoading(btn, true);
+      try {
+        var res = await API.request('/auth/forgot-password', {
+          method: 'POST',
+          body: JSON.stringify({ email: email.trim().toLowerCase() })
+        });
+        showSuccess('forgotSuccess', (res.data && res.data.message) || 'Si el correo coincide, te enviamos las instrucciones.');
+        showError('forgotError', '');
+        forgotForm.reset();
+      } catch (err) {
+        showError('forgotError', err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+  }
+
+  // Autologin: Enter dentro de un input del form dispara el submit.
+  // (Por defecto un <form> con <button type=submit> ya hace esto, pero lo
+  // dejamos explicito para inputs de password y para que cualquier Enter
+  // en el login funcione aunque el foco no este en el boton).
+  ['loginUsername', 'loginPassword'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      if (loginForm) {
+        if (typeof loginForm.requestSubmit === 'function') loginForm.requestSubmit();
+        else loginForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      }
+    });
   });
 });

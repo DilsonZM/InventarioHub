@@ -61,14 +61,18 @@ router.post('/register', async (req, res) => {
   try {
     const { username, password, nombreCompleto, email } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ success: false, message: 'Usuario y contrasena requeridos' });
+    if (!username || !password || !email) {
+      return res.status(400).json({ success: false, message: 'Usuario, contrasena y correo son obligatorios' });
     }
     if (username.length < 3) {
       return res.status(400).json({ success: false, message: 'El usuario debe tener al menos 3 caracteres' });
     }
     if (password.length < 6) {
       return res.status(400).json({ success: false, message: 'La contrasena debe tener al menos 6 caracteres' });
+    }
+    const emailNorm = String(email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+      return res.status(400).json({ success: false, message: 'El correo no tiene un formato valido' });
     }
 
     const { data: existing } = await supabase
@@ -86,6 +90,17 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Verificar que el correo no este ya registrado
+    const { data: emailExists } = await supabase
+      .from('perfiles')
+      .select('id')
+      .eq('email', emailNorm)
+      .single();
+
+    if (emailExists) {
+      return res.status(400).json({ success: false, message: 'Ya existe una cuenta registrada con ese correo' });
+    }
+
     const passwordHash = await hashPassword(password);
 
     // Los nuevos registros SIEMPRE quedan en estado 'pendiente' con rol 'vendedor' y permisos minimos.
@@ -96,7 +111,7 @@ router.post('/register', async (req, res) => {
         username,
         password_hash: passwordHash,
         role: 'vendedor',
-        email: email || null,
+        email: emailNorm,
         nombre_completo: nombreCompleto || null,
         estado_aprobacion: 'pendiente',
         solicitado_en: new Date().toISOString(),
@@ -173,6 +188,42 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Ingresa tu correo electronico' });
+    }
+    const emailNorm = String(email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+      return res.status(400).json({ success: false, message: 'El correo no tiene un formato valido' });
+    }
+
+    const { data: user } = await supabase
+      .from('perfiles')
+      .select('id, username, email, activo, estado_aprobacion')
+      .eq('email', emailNorm)
+      .single();
+
+    // Por seguridad, no exponemos si el correo existe.
+    // La idea seria disparar un correo de recuperacion.
+    // Aqui dejamos el mensaje generico y, si existe, lo logueamos para el admin.
+    if (user) {
+      console.log('[forgot-password] Solicitud de recuperacion para:', user.username, '<-', user.email);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Si el correo coincide con una cuenta activa, enviaremos instrucciones para restablecer tu contrasena.'
+      }
+    });
+  } catch (err) {
+    console.error('Forgot password error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });
   }
 });

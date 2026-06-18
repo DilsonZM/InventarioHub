@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inventariohub-v1';
+const CACHE_NAME = 'inventariohub-v2';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -36,10 +36,9 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var url = new URL(e.request.url);
 
-  // Solo cachear mismo origen
   if (url.origin !== location.origin) return;
 
-  // API: network-first, fallback a cache
+  // API: network-first
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(
       fetch(e.request).then(function (res) {
@@ -53,21 +52,39 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  // Assets: cache-first, fallback a red
-  e.respondWith(
-    caches.match(e.request).then(function (cached) {
-      if (cached) return cached;
-      return fetch(e.request).then(function (res) {
-        if (res.ok) {
+  var isNavigation = e.request.mode === 'navigate';
+  var isDynamicAsset = /\.(html|js|css)$/.test(url.pathname);
+
+  // HTML/JS/CSS y navegaciones: network-first para no servir versiones viejas en F5
+  if (isNavigation || isDynamicAsset) {
+    e.respondWith(
+      fetch(e.request).then(function (res) {
+        if (res && res.ok) {
           var clone = res.clone();
           caches.open(CACHE_NAME).then(function (cache) { cache.put(e.request, clone); });
         }
         return res;
       }).catch(function () {
-        // Fallback para navegaciones offline
-        if (e.request.mode === 'navigate') {
-          return caches.match('/index.html');
+        return caches.match(e.request).then(function (cached) {
+          return cached || (isNavigation ? caches.match('/index.html') : undefined);
+        });
+      })
+    );
+    return;
+  }
+
+  // Assets estáticos: cache-first
+  e.respondWith(
+    caches.match(e.request).then(function (cached) {
+      if (cached) return cached;
+      return fetch(e.request).then(function (res) {
+        if (res && res.ok) {
+          var clone = res.clone();
+          caches.open(CACHE_NAME).then(function (cache) { cache.put(e.request, clone); });
         }
+        return res;
+      }).catch(function () {
+        if (isNavigation) return caches.match('/index.html');
       });
     })
   );
