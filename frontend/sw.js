@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inventariohub-v2';
+const CACHE_NAME = 'inventariohub-v3';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -14,7 +14,9 @@ const PRECACHE = [
   '/js/unidades.js',
   '/js/theme.js',
   '/js/auth.js',
-  '/js/app.js',
+  // app.js NO se precachea: es un modulo ES con imports dinamicos
+  // que el SW no debe interceptar. El backend sirve la version actualizada
+  // siempre gracias a network-first.
 ];
 
 self.addEventListener('install', function (e) {

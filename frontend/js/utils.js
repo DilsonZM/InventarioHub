@@ -8,7 +8,7 @@ const APP_TIMEZONE = 'America/Bogota';
 
 const formatCache = new Map();
 
-function formatCurrency(n) {
+export function formatCurrency(n) {
   const key = `currency:${n}`;
   if (formatCache.has(key)) return formatCache.get(key);
   const num = Number(n);
@@ -26,7 +26,7 @@ function formatCurrency(n) {
   return result;
 }
 
-function formatDate(iso) {
+export function formatDate(iso) {
   const key = `date:${iso}`;
   if (formatCache.has(key)) return formatCache.get(key);
   const result = new Date(iso).toLocaleString('es-ES', {
@@ -42,7 +42,7 @@ function formatDate(iso) {
   return result;
 }
 
-function formatDateShort(iso) {
+export function formatDateShort(iso) {
   const key = `dateShort:${iso}`;
   if (formatCache.has(key)) return formatCache.get(key);
   const result = new Date(iso).toLocaleDateString('es-ES', {
@@ -77,7 +77,7 @@ function clearStorage(key) {
   } catch {}
 }
 
-function debounce(fn, ms) {
+export function debounce(fn, ms) {
   let timeoutId;
   return (...args) => {
     clearTimeout(timeoutId);
@@ -96,13 +96,13 @@ function throttle(fn, ms) {
   };
 }
 
-function escapeHtml(str) {
+export function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
 }
 
-function nowInAppTZ() {
+export function nowInAppTZ() {
   // Devuelve la fecha/hora actual en la timezone de la app (UTC-5),
   // robusta al timezone del navegador: extrae los componentes
   // directamente del timezone objetivo y construye un Date local.
@@ -125,7 +125,7 @@ function nowInAppTZ() {
   );
 }
 
-function todayInAppTZ() {
+export function todayInAppTZ() {
   // Devuelve un string YYYY-MM-DD con la fecha actual en la timezone de la app
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('en-CA', {

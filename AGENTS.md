@@ -17,7 +17,15 @@ Single Express server (`backend/server.js`) serves both the API and the frontend
 - **Persistence**: Supabase PostgreSQL (`https://zosuleqcmhwoivbjurew.supabase.co`). All CRUD operations use the `@supabase/supabase-js` client with service role key. The legacy `db.json` file has been removed.
 - **Auth**: JWT in `Authorization: Bearer <token>`. Passwords use bcrypt (bcryptjs). Middleware in `backend/middleware/auth.js`.
 - **Roles**: `admin` (full CRUD on products) and `vendedor` (read products, create sales). Product create/update/delete routes use `adminOnly` middleware.
-- **Frontend**: Vanilla JS (no framework). Single-page app with hash routing (`#dashboard`, `#inventory`, `#sales`). All JS files are plain scripts (not ES modules) loaded via `<script>` tags. Global `API` object in `js/api.js` wraps fetch calls.
+- **Frontend**: Vanilla JS **ES modules** (no framework, no build step). Single-page app with hash routing (`#dashboard`, `#inventory`, `#sales`, `#entradas`, `#movimientos`, `#dishes`, `#users`, `#config`, `#pos`). The app is organized in 5 layers:
+  - `js/core/` — primitives (DOM, store, events, permissions, router, PWA).
+  - `js/components/` — reusable UI (filters, calendar, chart, ticket, permissions-grid, table, modal, toast).
+  - `js/services/` — data access (products, dishes, sales, purchases, users, config, reports, units).
+  - `js/views/` — one file per view (dashboard, inventory, sales, purchases, movements, dishes, users, config, pos).
+  - `js/shell/` — persistent chrome (sidebar, header, user).
+  - `js/main.js` orchestrates the bootstrap (PWA registration, user bootstrap, event delegation, modal delegation, shell init, permission application, router init, view initializers).
+  - `js/compat.js` is a thin shim that re-exposes the public API in `window.*` for the inline `onclick="window.foo()"` HTML handlers and any third-party code that expects globals.
+  - Global `API` object in `js/api.js` wraps fetch calls. The `window.*` re-exports of every view keep backward compatibility with HTML inline handlers.
 - **Styling**: Tailwind CSS via CDN (`<script src="https://cdn.tailwindcss.com">`). Font: DM Sans (body) + Space Mono (monospace) via Google Fonts.
 - **Responsive**: Mobile-first design with fluid typography (CSS clamp()), responsive tables (cards on mobile), touch targets 44x44px minimum, dynamic viewport units (dvh), and prefers-reduced-motion support.
 - **Design System**: See `.interface-design/system.md` for tokens, patterns, and conventions.
