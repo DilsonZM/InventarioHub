@@ -10,13 +10,19 @@ import { store } from '../core/store.js';
 
 export function openModal(id) {
   var sidebar = $('#sidebar');
-  var overlay = $('#sidebarOverlay');
+  var sidebarOv = $('#sidebarOverlay');
   if (sidebar && window.innerWidth < 1024 && !sidebar.classList.contains('-translate-x-full')) {
     sidebar.classList.add('-translate-x-full');
-    if (overlay) overlay.classList.add('hidden');
+    if (sidebarOv) sidebarOv.classList.add('hidden');
   }
   var el = document.getElementById(id);
-  if (el) el.classList.remove('hidden');
+  if (!el) return;
+  el.classList.remove('hidden');
+  // Asegurar que el overlay oscuro interno este visible.
+  // Algunos modales (los nuevos) tienen un overlay con `hidden` por defecto;
+  // otros lo tienen siempre visible. Nos aseguramos de que se vea.
+  var innerOverlay = el.querySelector('.fixed.inset-0[data-close-modal], .fixed.inset-0[data-close-ticket], .fixed.inset-0[data-close-preview], .fixed.inset-0[data-close-calendar], .fixed.inset-0[data-confirm-cancel], .fixed.inset-0[data-confirm-action-cancel]');
+  if (innerOverlay) innerOverlay.classList.remove('hidden');
 }
 
 export function closeModal(id) {
@@ -61,19 +67,20 @@ export function initModalDelegation() {
   document.addEventListener('click', function (e) {
     var target = e.target;
     if (!target || !target.closest) return;
+
+    // Helper: dado un elemento clickeado, encuentra el contenedor del modal
+    // (el div.fixed.inset-0 mas cercano) sin importar el z-index.
+    function findModalContainer(el) {
+      // Caso 1: el click fue en un overlay interno que tiene data-close-*
+      // -> subir al contenedor padre
+      var container = el.closest('.fixed.inset-0');
+      return container;
+    }
+
     var el = target.closest('[data-close-modal]');
     if (el) {
-      var modalEl = el.closest('.fixed.inset-0.z-50, .fixed.inset-0.z-55, .fixed.inset-0.z-\\[55\\]');
-      if (modalEl) {
-        // Si el modal es el de filters mobile, aplica filtros al cerrar.
-        if (modalEl.id === 'mobileFiltersModal') {
-          // El comportamiento exacto (aplicar filtros al cerrar) se hace
-          // en components/filters.js. Aqui solo cerramos visualmente.
-          modalEl.classList.add('hidden');
-        } else {
-          modalEl.classList.add('hidden');
-        }
-      }
+      var modalEl = findModalContainer(el);
+      if (modalEl) modalEl.classList.add('hidden');
       return;
     }
     var confirmCancel = target.closest('[data-confirm-cancel]');
@@ -108,7 +115,6 @@ export function initModalDelegation() {
     }
     var applyOverlay = target.closest('[data-apply-filters-overlay]');
     if (applyOverlay) {
-      // Dispara el boton aplicar del modal mobile (que vive en app.js)
       var btn = document.getElementById('mobileFiltersApply');
       var view = btn ? btn.getAttribute('data-view') : 'sales';
       if (typeof window.applyMobileFilters === 'function') window.applyMobileFilters(view);

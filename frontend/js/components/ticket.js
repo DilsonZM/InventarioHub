@@ -37,6 +37,11 @@ export function renderTicketFromData(sale, includeTip) {
   openModal('ticketModal');
   store.state._lastTicketSale = sale;
   if (typeof window !== 'undefined') window._lastTicketSale = sale;
+
+  // Ajustar visibilidad de los botones del modal segun printer_kind
+  if (typeof window.configureTicketButtons === 'function') {
+    setTimeout(window.configureTicketButtons, 0);
+  }
 }
 
 // Compatibilidad

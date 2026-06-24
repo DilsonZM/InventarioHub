@@ -102,6 +102,11 @@ const API = (() => {
       update: (data) => request('/config', { method: 'PUT', body: JSON.stringify(data) }),
     },
 
+    print: {
+      send: (data) => request('/print', { method: 'POST', body: JSON.stringify(data) }),
+      test: (host, port) => request(`/print/test?host=${encodeURIComponent(host)}&port=${port}`),
+    },
+
     users: {
       list: () => request('/users'),
       create: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),

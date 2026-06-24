@@ -264,6 +264,22 @@ async function submitPOSOrder() {
       state._lastTicketSale = res.data;
       renderPOSOrder();
       renderTicketFromData(res.data, false);
+      // Configurar visibilidad de botones del modal segun printer_kind
+      try {
+        if (typeof configureTicketButtons === 'function') {
+          // Esperar a que el DOM se actualice
+          setTimeout(configureTicketButtons, 50);
+        }
+      } catch (e) { /* noop */ }
+      // Si comanda_enabled esta activo, enviar comanda automaticamente a la termica
+      try {
+        var cfg = await window.ServicesConfig.get();
+        if (cfg && cfg.data && cfg.data.comandaEnabled) {
+          printThermalKitchen(res.data);
+        }
+      } catch (e) {
+        console.warn('No se pudo verificar comanda_enabled:', e.message);
+      }
     } else {
       showToast(res.message || 'Error al registrar', 'error');
     }
@@ -444,6 +460,258 @@ window.showTicket = async function (saleId) {
 
 
 // ============================================
+// Impresion (Sub-paso pulido final)
+// Estilo factura/comanda para guardar como PDF via window.print().
+// printTicket = factura detallada con datos fiscales
+// printKitchen = comanda simplificada para cocina
+// ============================================
+
+function buildPrintDocument(opts) {
+  var sale = opts.sale || {};
+  var kind = opts.kind || 'ticket';   // 'ticket' (factura) o 'kitchen' (comanda)
+  var items = sale.items || [];
+  var fecha = sale.createdAt ? new Date(sale.createdAt) : new Date();
+  var fechaStr = fecha.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+
+  var html = '';
+  html += '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">';
+  html += '<title>' + (kind === 'kitchen' ? 'Comanda' : 'Factura') + ' ' + (sale.numero_venta || sale.id || '') + '</title>';
+  html += '<style>'
+    + '*{box-sizing:border-box;margin:0;padding:0}'
+    + 'body{font-family:"Courier New",monospace;color:#000;background:#fff;padding:16px;max-width:80mm;margin:0 auto;font-size:12px;line-height:1.4}'
+    + '.center{text-align:center}'
+    + '.right{text-align:right}'
+    + '.bold{font-weight:700}'
+    + '.sep{border-top:1px dashed #000;margin:6px 0}'
+    + '.sep-double{border-top:2px solid #000;margin:6px 0}'
+    + '.row{display:flex;justify-content:space-between;gap:8px;margin:1px 0}'
+    + '.item{margin:4px 0}'
+    + '.item-name{font-weight:600}'
+    + '.item-meta{font-size:10px;color:#333;margin-left:4px}'
+    + 'h1{font-size:14px;letter-spacing:1px;margin-bottom:2px}'
+    + 'h2{font-size:11px;margin:2px 0;font-weight:500}'
+    + '.meta{font-size:10px;color:#222}'
+    + 'table{width:100%;border-collapse:collapse;margin:4px 0;font-size:11px}'
+    + 'th,td{padding:2px 0;text-align:left}'
+    + 'th:last-child,td:last-child{text-align:right}'
+    + '.total{font-size:13px;font-weight:700}'
+    + '.kitchen-item{padding:6px 0;border-bottom:1px solid #000}'
+    + '.kitchen-item:last-child{border-bottom:none}'
+    + '.kitchen-qty{font-size:18px;font-weight:700;margin-right:6px}'
+    + '@media print{body{padding:0;margin:0}@page{margin:8mm;size:80mm auto}}'
+    + '</style></head><body>';
+
+  if (kind === 'kitchen') {
+    // ============ COMANDA DE COCINA ============
+    html += '<div class="center bold" style="font-size:16px;margin-bottom:4px">COMANDA</div>';
+    html += '<div class="center" style="font-size:11px;margin-bottom:4px">' + escapeHtml(sale.paymentMethod || 'cocina') + '</div>';
+    html += '<div class="sep-double"></div>';
+    html += '<div class="row bold"><span>Pedido:</span><span>' + escapeHtml(sale.numero_venta || '') + '</span></div>';
+    html += '<div class="row"><span>Fecha:</span><span>' + escapeHtml(fechaStr) + '</span></div>';
+    if (sale.mesa_nombre) {
+      html += '<div class="row bold"><span>Mesa:</span><span>' + escapeHtml(sale.mesa_nombre) + '</span></div>';
+    }
+    html += '<div class="sep-double"></div>';
+    items.forEach(function (it) {
+      var qty = it.cantidadPresentacion && it.factorConversion !== 1 ? it.cantidadPresentacion : it.quantity;
+      var unit = it.unidadPresentacion || '';
+      var platoTag = it.esPlato ? ' <span class="item-meta">[PLATO]</span>' : '';
+      html += '<div class="kitchen-item">'
+        + '<span class="kitchen-qty">' + qty + 'x</span>'
+        + '<span class="item-name">' + escapeHtml(it.productName) + '</span>' + platoTag;
+      if (it.nota) html += '<div class="item-meta">Nota: ' + escapeHtml(it.nota) + '</div>';
+      if (it.ingredientesConsumidos && it.ingredientesConsumidos.length > 0) {
+        html += '<div class="item-meta" style="font-size:10px;color:#444">'
+          + it.ingredientesConsumidos.map(function (ing) {
+            return escapeHtml(ing.nombre) + ' (' + ing.cantidad + ' ' + (ing.unidad || '') + ')';
+          }).join(', ')
+          + '</div>';
+      }
+      html += '</div>';
+    });
+    html += '<div class="sep-double"></div>';
+    html += '<div class="center meta">Impreso: ' + escapeHtml(new Date().toLocaleString('es-CO')) + '</div>';
+  } else {
+    // ============ FACTURA DETALLADA ============
+    html += '<div class="center">';
+    html += '<h1>CORNER HOUSE</h1>';
+    html += '<h2>Sabores que unen</h2>';
+    html += '<div class="meta">NIT 900.000.000-1</div>';
+    html += '<div class="meta">Calle 123 #45-67, Bogota</div>';
+    html += '<div class="meta">Tel: (601) 555-0100</div>';
+    html += '</div>';
+    html += '<div class="sep-double"></div>';
+
+    html += '<div class="bold center" style="font-size:14px;margin:4px 0">FACTURA DE VENTA</div>';
+    html += '<div class="sep"></div>';
+
+    html += '<table>';
+    html += '<tr><td>Pedido:</td><td class="bold">' + escapeHtml(sale.numero_venta || '') + '</td></tr>';
+    html += '<tr><td>Fecha:</td><td>' + escapeHtml(fechaStr) + '</td></tr>';
+    html += '<tr><td>Cocina:</td><td>' + escapeHtml(sale.paymentMethod || '') + '</td></tr>';
+    if (sale.mesa_nombre) html += '<tr><td>Mesa:</td><td>' + escapeHtml(sale.mesa_nombre) + '</td></tr>';
+    html += '<tr><td>Cliente:</td><td>' + escapeHtml(sale.cliente_nombre || 'Consumidor final') + '</td></tr>';
+    html += '<tr><td>Cajero:</td><td>' + escapeHtml(sale.usuario_nombre || '') + '</td></tr>';
+    html += '</table>';
+
+    html += '<div class="sep-double"></div>';
+
+    html += '<table>';
+    html += '<thead><tr><th>Descripcion</th><th>Cant</th><th>Vlr Unit</th><th>Total</th></tr></thead><tbody>';
+    var subtotal = 0;
+    items.forEach(function (it) {
+      var qty = it.cantidadPresentacion && it.factorConversion !== 1 ? it.cantidadPresentacion : it.quantity;
+      var unit = it.unidadPresentacion || '';
+      var unitPrice = it.unitPrice || 0;
+      var sub = it.subtotal != null ? it.subtotal : (unitPrice * (it.quantity || 0));
+      subtotal += sub;
+      var nameLine = escapeHtml(it.productName) + (it.esPlato ? ' *' : '');
+      if (unit) nameLine += ' <span class="item-meta">(' + escapeHtml(unit) + ')</span>';
+      html += '<tr>';
+      html += '<td>' + nameLine + '</td>';
+      html += '<td style="text-align:right">' + qty + '</td>';
+      html += '<td style="text-align:right">' + window.Utils.formatCurrency(unitPrice) + '</td>';
+      html += '<td style="text-align:right">' + window.Utils.formatCurrency(sub) + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+
+    html += '<div class="sep"></div>';
+    html += '<div class="row"><span>Subtotal:</span><span class="bold">' + window.Utils.formatCurrency(subtotal) + '</span></div>';
+    var tip = Math.round(subtotal * 0.1 * 100) / 100;
+    var totalConPropina = subtotal + tip;
+    html += '<div class="row meta"><span>Propina Voluntaria (10%):</span><span>' + window.Utils.formatCurrency(tip) + '</span></div>';
+    html += '<div class="sep-double"></div>';
+    html += '<div class="row total"><span>TOTAL (Sin propina):</span><span>' + window.Utils.formatCurrency(subtotal) + '</span></div>';
+    html += '<div class="row total"><span>TOTAL (Con propina):</span><span>' + window.Utils.formatCurrency(totalConPropina) + '</span></div>';
+    html += '<div class="sep-double"></div>';
+
+    // Texto legal: propina voluntaria
+    html += '<div class="center" style="font-size:10px;font-style:italic;margin:6px 4px;color:#222">';
+    html += '* La propina es voluntaria y sugerida. Usted decide el valor a pagar. *';
+    html += '</div>';
+    html += '<div class="sep"></div>';
+
+    html += '<div class="center meta" style="margin-top:8px">Forma de pago: ' + escapeHtml(sale.paymentMethod || 'efectivo') + '</div>';
+    html += '<div class="center meta">Resolucion DIAN No. 18760000000001</div>';
+    html += '<div class="center meta">Fecha: 2026-01-01  Vigencia: 24 meses</div>';
+    html += '<div class="center meta">Prefijo: CH  Rango: 1 - 999999</div>';
+
+    html += '<div class="sep"></div>';
+    html += '<div class="center meta">Gracias por su compra</div>';
+    html += '<div class="center meta" style="font-size:9px">www.cornerhouse.co</div>';
+    html += '<div class="center meta" style="font-size:9px;margin-top:4px">Impreso: ' + escapeHtml(new Date().toLocaleString('es-CO')) + '</div>';
+  }
+
+  html += '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},150)});<\/script>';
+  html += '</body></html>';
+  return html;
+}
+
+window.printTicket = function (sale) {
+  try {
+    var w = window.open('', 'cornerhouse_ticket', 'width=420,height=720,scrollbars=yes');
+    if (!w) { showToast('Permite ventanas emergentes para imprimir', 'error'); return; }
+    w.document.open();
+    w.document.write(buildPrintDocument({ sale: sale, kind: 'ticket' }));
+    w.document.close();
+    showToast('Generando factura...', 'success');
+  } catch (err) {
+    console.error('printTicket error:', err);
+    showToast('No se pudo generar la factura: ' + err.message, 'error');
+  }
+};
+
+window.printKitchen = function (sale) {
+  try {
+    var w = window.open('', 'cornerhouse_kitchen', 'width=420,height=720,scrollbars=yes');
+    if (!w) { showToast('Permite ventanas emergentes para imprimir', 'error'); return; }
+    w.document.open();
+    w.document.write(buildPrintDocument({ sale: sale, kind: 'kitchen' }));
+    w.document.close();
+    showToast('Generando comanda...', 'success');
+  } catch (err) {
+    console.error('printKitchen error:', err);
+    showToast('No se pudo generar la comanda: ' + err.message, 'error');
+  }
+};
+
+// Helper: obtiene la venta actual (la del ultimo ticket) para reimprimir
+function getCurrentSale() {
+  return store.state._lastTicketSale || window._lastTicketSale || null;
+}
+
+
+/**
+ * Ajusta la visibilidad de los botones del modal segun el printer_kind
+ * configurado:
+ *   - 'browser'  -> solo Imprimir (Navegador)
+ *   - 'thermal'  -> solo Imprimir (Termico)
+ *   - 'both'     -> ambos
+ */
+async function configureTicketButtons() {
+  try {
+    var cfg = await window.ServicesConfig.get();
+    var kind = (cfg && cfg.data && cfg.data.printerKind) || 'browser';
+    var enabled = !!(cfg && cfg.data && cfg.data.printerEnabled);
+    var thermalBtn = document.getElementById('printThermalBtn');
+    if (!thermalBtn) return;
+    if (kind === 'thermal' || (kind === 'both' && enabled)) {
+      thermalBtn.classList.remove('hidden');
+      thermalBtn.classList.add('flex');
+    } else {
+      thermalBtn.classList.add('hidden');
+      thermalBtn.classList.remove('flex');
+    }
+  } catch (e) {
+    // Mantener solo navegador en caso de error
+  }
+}
+
+
+/**
+ * Impresion HIBRIDA: envia el pedido al backend para que lo imprima
+ * la impresora termica via TCP/ESC/POS. Si la BD no tiene IP/port
+ * configurados, devuelve un error claro.
+ */
+async function printThermal(sale) {
+  if (!sale) {
+    showToast('No hay un pedido activo para imprimir', 'error');
+    return;
+  }
+  showToast('Enviando a impresora termica...', 'success');
+  try {
+    var res = await window.API.print.send({ sale: sale, kind: 'ticket' });
+    if (res && res.success) {
+      showToast('Factura enviada: ' + (res.data && res.data.message || 'OK'), 'success');
+    } else {
+      showToast('Error: ' + (res.message || 'No se pudo imprimir'), 'error');
+    }
+  } catch (err) {
+    console.error('printThermal error:', err);
+    var msg = (err && err.message) || 'Error desconocido';
+    if (err && err.hint) msg += '. ' + err.hint;
+    showToast('No se pudo imprimir: ' + msg, 'error');
+  }
+}
+
+
+/**
+ * Envia una comanda simplificada (solo items + cantidades) a la impresora
+ * termica. Se invoca automaticamente despues de confirmar el pedido si
+ * comanda_enabled esta activo.
+ */
+async function printThermalKitchen(sale) {
+  if (!sale) return;
+  try {
+    await window.API.print.send({ sale: sale, kind: 'kitchen' });
+  } catch (err) {
+    console.warn('Comanda auto: error (no bloqueante):', err.message || err);
+  }
+}
+
+
+// ============================================
 // Delegacion de clicks (Sub-paso 3.5)
 // Antes: `document.addEventListener('click', ...)` suelto en app.js.
 // Ahora: handlers via core/events.js. Se registran al cargar el modulo.
@@ -457,6 +725,37 @@ on('#posClearBtn', function () {
   state.posItems = [];
   renderPOSOrder();
 });
+
+// Botones del modal de ticket (impresion hibrida)
+// Imprimir en navegador (window.print): dialogo nativo, guardar como PDF, etc.
+on('#printBrowserBtn', function () {
+  var sale = getCurrentSale();
+  if (!sale) {
+    showToast('No hay un pedido activo para imprimir', 'error');
+    return;
+  }
+  printTicket(sale);
+});
+
+// Imprimir en termica LAN: envia al backend /api/print
+on('#printThermalBtn', function () {
+  var sale = getCurrentSale();
+  if (!sale) {
+    showToast('No hay un pedido activo para imprimir', 'error');
+    return;
+  }
+  printThermal(sale);
+});
+
+// Configurar visibilidad de los botones al abrir el ticket
+on('[data-close-ticket]', function () { /* handled by modal.js */ });
+
+// Hook: cada vez que se abre el ticket, ajustamos los botones segun config
+if (typeof window !== 'undefined') {
+  // Guardamos la funcion para que renderTicketFromData la pueda invocar
+  window.__configureTicketButtons = configureTicketButtons;
+  window.__printThermalKitchen = printThermalKitchen;
+}
 
 
 // Compatibilidad con codigo heredado (window.*)
@@ -477,4 +776,10 @@ if (typeof window !== "undefined") {
   if (typeof openPOSOrder === "function") window.openPOSOrder = openPOSOrder;
   if (typeof closePOSOrder === "function") window.closePOSOrder = closePOSOrder;
   if (typeof showTicket === "function") window.showTicket = showTicket;
+  if (typeof printTicket === "function") window.printTicket = printTicket;
+  if (typeof printKitchen === "function") window.printKitchen = printKitchen;
+  if (typeof imprimirComanda === "function") window.imprimirComanda = imprimirComanda;
+  if (typeof printThermal === "function") window.printThermal = printThermal;
+  if (typeof printThermalKitchen === "function") window.printThermalKitchen = printThermalKitchen;
+  if (typeof configureTicketButtons === "function") window.configureTicketButtons = configureTicketButtons;
 }

@@ -90,15 +90,27 @@ async function loadDashboard() {
     } else {
       lowStockList.innerHTML = lowStockProducts.map(function (p) {
         var pct = Math.min((p.stock / p.minStock) * 100, 100);
-        var color = p.stock === 0 ? 'bg-red-1000' : pct < 50 ? 'bg-amber-1000' : 'bg-yellow-400';
-        return '<div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">'
+        var isCritical = p.stock === 0 || pct < 50;
+        var badgeLabel = isCritical ? 'Stock Critico' : 'Stock Bajo';
+        return '<div class="flex items-center gap-3 p-3.5 bg-gray-800/30 rounded-xl border border-slate-200/40">'
+          // Punto de alerta naranja pulsante al lado del nombre
           + '<div class="flex-1 min-w-0">'
-          + '<p class="text-sm font-medium text-slate-700 truncate">' + escapeHtml(p.name) + '</p>'
-          + '<p class="text-xs text-slate-500">' + escapeHtml(p.sku) + '</p>'
+          + '<div class="flex items-center gap-2">'
+          + '<span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>'
+          + '<p class="text-sm font-semibold text-slate-800 truncate">' + escapeHtml(p.name) + '</p>'
           + '</div>'
-          + '<div class="text-right">'
-          + '<p class="text-sm font-bold ' + (p.stock === 0 ? 'text-red-600' : 'text-amber-600') + '">' + p.stock + '/' + p.minStock + '</p>'
-          + '<div class="w-16 h-1.5 bg-slate-200 rounded-full mt-1"><div class="h-full ' + color + ' rounded-full" style="width:' + pct + '%"></div></div>'
+          + '<p class="text-xs text-slate-500 font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
+          // Barra de progreso naranja coherente
+          + '<div class="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">'
+          + '<div class="h-full bg-amber-500 rounded-full transition-all" style="width:' + pct + '%"></div>'
+          + '</div>'
+          + '</div>'
+          + '<div class="text-right shrink-0 flex flex-col items-end gap-1.5">'
+          + '<p class="text-sm font-bold text-amber-600">' + p.stock + '/' + p.minStock + '</p>'
+          // Badge "Stock Critico" en tono naranja
+          + '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/30">'
+          + badgeLabel
+          + '</span>'
           + '</div>'
           + '</div>';
       }).join('');
