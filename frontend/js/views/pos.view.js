@@ -116,7 +116,13 @@ function renderPOSGrid(items) {
   items.forEach(function (item) {
     var desc = item.desc ? '<p class="text-xs text-slate-400 truncate mt-1">' + escapeHtml(item.desc) + '</p>' : '';
 
-    html += '<div class="pos-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow overflow-hidden" data-pos-type="' + item.type + '" ondblclick="window.addPOSItem(\'' + item.id + '\', \'' + item.source + '\')">'
+    html += '<div class="pos-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow overflow-hidden"'
+      + ' data-pos-type="' + item.type + '"'
+      + ' data-pos-id="' + item.id + '"'
+      + ' data-pos-source="' + item.source + '"'
+      + ' data-pos-name="' + escapeHtml(item.name) + '"'
+      + ' data-pos-icon="' + escapeHtml(item.icon || '📦') + '"'
+      + ' ondblclick="window.addPOSItem(\'' + item.id + '\', \'' + item.source + '\')">'
       + '<div class="aspect-video bg-slate-100 flex items-center justify-center text-4xl">' + (item.icon || '📦') + '</div>'
       + '<div class="p-3">'
       + '<p class="text-sm font-bold text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
@@ -128,6 +134,26 @@ function renderPOSGrid(items) {
 
   html += '</div>';
   container.innerHTML = html;
+
+  // Single click: agregar con animacion fly-to-order.
+  // Doble click: comportamiento original (compatibilidad).
+  var cards = container.querySelectorAll('.pos-card');
+  cards.forEach(function (card) {
+    card.addEventListener('click', function (e) {
+      // Si el doble click se dispara, evitar el click sintetico.
+      if (card.dataset.suppressClick === '1') {
+        card.dataset.suppressClick = '0';
+        return;
+      }
+      var id = card.dataset.posId;
+      var source = card.dataset.posSource;
+      window.addPOSItemAnimated(card, id, source);
+    });
+    card.addEventListener('dblclick', function () {
+      card.dataset.suppressClick = '1';
+      setTimeout(function () { card.dataset.suppressClick = '0'; }, 350);
+    });
+  });
 }
 
 function renderPOSOrder() {
@@ -147,6 +173,9 @@ function renderPOSOrder() {
   }
 
   if (state.posItems.length === 0) {
+    // Limpiar cualquier card marcada como seleccionada
+    var sel = document.querySelectorAll('.pos-card--selected');
+    sel.forEach(function (el) { el.classList.remove('pos-card--selected'); });
     container.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">Toca un producto para agregarlo</p>';
     $('#posTotal').textContent = '$0';
     if (btn) { btn.disabled = true; if (btnText) btnText.textContent = 'Agrega productos'; }
@@ -323,6 +352,68 @@ window.addPOSItem = function (id, type) {
 
   renderPOSOrder();
 }
+
+// addPOSItemAnimated: igual que addPOSItem pero dispara la animacion
+// "fly to order" desde la card clickeada hasta el panel de pedido
+// (desktop) o el FAB del carrito (mobile). Tambien marca la card
+// como seleccionada con un check verde hasta que el item se quite.
+window.addPOSItemAnimated = function (cardEl, id, type) {
+  if (!cardEl) { window.addPOSItem(id, type); return; }
+
+  // 1) Marcar como seleccionada (badge check verde)
+  cardEl.classList.add('pos-card--selected');
+
+  // 2) Crear el ghost que vuela hacia el destino
+  try {
+    var rect = cardEl.getBoundingClientRect();
+    var ghost = document.createElement('div');
+    ghost.className = 'pos-fly-ghost';
+    var label = cardEl.dataset.posName || '';
+    var icon = cardEl.dataset.posIcon || '🛒';
+    ghost.innerHTML = '<span style="font-size:18px;line-height:1;">' + icon + '</span>';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    document.body.appendChild(ghost);
+
+    // Animar via keyframes CSS: el destino depende del viewport
+    var isMobile = window.innerWidth < 1024;
+    var dest = isMobile ? document.getElementById('posMobileFab') : document.getElementById('posOrderPanel');
+    if (dest) {
+      var dRect = dest.getBoundingClientRect();
+      // Forzar end-state via CSS variables / inline transform al final
+      var dx = (dRect.left + dRect.width / 2) - (rect.left + rect.width / 2);
+      var dy = (dRect.top + dRect.height / 2) - (rect.top + rect.height / 2);
+      ghost.style.setProperty('--fly-dx', dx + 'px');
+      ghost.style.setProperty('--fly-dy', dy + 'px');
+      // Reescribir animation para incluir translate final
+      ghost.style.animation = 'none';
+      // Forzar reflow
+      void ghost.offsetWidth;
+      ghost.style.animation = 'posFlyToOrder 0.55s cubic-bezier(0.55, 0.05, 0.4, 1) forwards';
+      // Aplicar transform final al keyframe final via clase
+      setTimeout(function () {
+        ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.18) rotate(-20deg)';
+        ghost.style.opacity = '0';
+      }, 0);
+
+      // Pulse en el destino
+      dest.classList.remove('pos-destination-pulse');
+      void dest.offsetWidth;
+      dest.classList.add('pos-destination-pulse');
+      setTimeout(function () { dest.classList.remove('pos-destination-pulse'); }, 500);
+    }
+
+    // Limpiar el ghost despues de la animacion
+    setTimeout(function () {
+      if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+    }, 600);
+  } catch (e) { /* noop */ }
+
+  // 3) Agregar al pedido
+  window.addPOSItem(id, type);
+};
 
 window.removePOSItem = function (idx) {
   state.posItems.splice(idx, 1);
