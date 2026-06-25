@@ -92,16 +92,16 @@ async function loadDashboard() {
         var pct = Math.min((p.stock / p.minStock) * 100, 100);
         var isCritical = p.stock === 0 || pct < 50;
         var badgeLabel = isCritical ? 'Stock Critico' : 'Stock Bajo';
-        return '<div class="flex items-center gap-3 p-3.5 bg-gray-800/30 rounded-xl border border-slate-200/40">'
+        return '<div class="flex items-center gap-3 p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-transparent">'
           // Punto de alerta naranja pulsante al lado del nombre
           + '<div class="flex-1 min-w-0">'
           + '<div class="flex items-center gap-2">'
           + '<span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>'
-          + '<p class="text-sm font-semibold text-slate-800 truncate">' + escapeHtml(p.name) + '</p>'
+          + '<p class="text-sm font-semibold text-gray-900 dark:text-white truncate">' + escapeHtml(p.name) + '</p>'
           + '</div>'
-          + '<p class="text-xs text-slate-500 font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
+          + '<p class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
           // Barra de progreso naranja coherente
-          + '<div class="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">'
+          + '<div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-2 overflow-hidden">'
           + '<div class="h-full bg-amber-500 rounded-full transition-all" style="width:' + pct + '%"></div>'
           + '</div>'
           + '</div>'
