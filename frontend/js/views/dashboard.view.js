@@ -92,20 +92,20 @@ async function loadDashboard() {
         var pct = Math.min((p.stock / p.minStock) * 100, 100);
         var isCritical = p.stock === 0 || pct < 50;
         var badgeLabel = isCritical ? 'Stock Critico' : 'Stock Bajo';
-        return '<div class="flex items-center gap-2 bg-transparent rounded-lg py-2">'
+        return '<div class="flex items-center gap-2 bg-transparent rounded-lg py-1.5">'
           // Punto rojo pulsante
-          + '<span class="w-2 h-2 rounded-full bg-red-400 animate-pulse shrink-0"></span>'
-          // Info principal: nombre + SKU
-          + '<div class="flex-1 min-w-0">'
+          + '<span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse shrink-0"></span>'
+          // Info principal: nombre + SKU (ancho fijo para alinear barras)
+          + '<div class="w-44 shrink-0 min-w-0">'
           + '<p class="text-gray-900 dark:text-white text-sm font-semibold truncate">' + escapeHtml(p.name) + '</p>'
-          + '<p class="text-gray-500 text-[10px] font-mono">' + escapeHtml(p.sku) + '</p>'
+          + '<p class="text-gray-500 text-[10px] font-mono truncate">' + escapeHtml(p.sku) + '</p>'
           + '</div>'
-          // Barra fina inline
-          + '<div class="w-12 h-1 bg-gray-200 rounded-full overflow-hidden shrink-0">'
+          // Barra fina inline, mas larga (w-16), arrancan todas al mismo sitio
+          + '<div class="w-16 h-1 bg-gray-200 rounded-full overflow-hidden shrink-0">'
           + '<div class="h-full bg-red-400 rounded-full transition-all" style="width:' + pct + '%"></div>'
           + '</div>'
           // Cantidad
-          + '<span class="text-red-500 text-xs font-bold shrink-0 w-12 text-right">' + p.stock + '/' + p.minStock + '</span>'
+          + '<span class="text-red-500 text-xs font-bold shrink-0 w-10 text-right">' + p.stock + '/' + p.minStock + '</span>'
           // Badge
           + '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-red-100 text-red-600 shrink-0">' + badgeLabel + '</span>'
           + '</div>';
