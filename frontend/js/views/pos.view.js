@@ -343,8 +343,7 @@ async function submitPOSOrder() {
       allowEscapeKey: false,
       showConfirmButton: false,
       backdrop: 'rgba(15, 23, 42, 0.55)',
-      customClass: { popup: 'pos-loading-popup', title: 'pos-loading-title' },
-      didOpen: function () { Swal.showLoading(); }
+      customClass: { popup: 'pos-loading-popup', title: 'pos-loading-title' }
     });
   };
   var advance = function () {
@@ -354,8 +353,7 @@ async function submitPOSOrder() {
     if (titleEl) titleEl.textContent = steps[step];
   };
   var hideLoading = function () {
-    if (typeof Swal !== 'undefined' && Swal.isLoading && Swal.isLoading()) Swal.close();
-    else if (typeof Swal !== 'undefined') Swal.close();
+    if (typeof Swal !== 'undefined') Swal.close();
   };
 
   showLoading();
