@@ -35,7 +35,10 @@ async function initInventory() {
 
 function populateCategoryFilters() {
   var cats = store.state.categories || [];
-  var opts = cats.map(function (c) { return '<option value="' + c.nombre + '">' + c.nombre + '</option>'; }).join('');
+  var opts = cats.map(function (c) { 
+    var name = typeof c === 'string' ? c : (c.nombre || c.name || '');
+    return '<option value="' + name + '">' + name + '</option>';
+  }).join('');
 
   var filterCat = $('#filterCategory');
   if (filterCat) filterCat.innerHTML = '<option value="">Todas las categorías</option>' + opts;
