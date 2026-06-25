@@ -97,7 +97,7 @@ async function loadDashboard() {
           + '<div class="flex-1 min-w-0">'
           + '<div class="flex items-center gap-2">'
           + '<span class="w-2 h-2 rounded-full bg-red-400 animate-pulse shrink-0"></span>'
-          + '<p class="text-gray-900 font-semibold truncate">' + escapeHtml(p.name) + '</p>'
+          + '<p class="text-gray-900 dark:text-white font-semibold truncate">' + escapeHtml(p.name) + '</p>'
           + '</div>'
           + '<p class="text-gray-500 text-xs font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
           // Barra de progreso rojo pastel
