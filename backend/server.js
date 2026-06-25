@@ -96,8 +96,17 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
     if (from && to) label = 'Periodo';
     else if (from) label = 'Desde ' + from;
 
-    // Calcular periodo anterior para deltas
-    var prevRevenue = null, prevSalesCount = null, prevLowStock = null, prevInvValue = null;
+    // Total de entradas (compras) en el mismo periodo
+    var totalEntradas = 0;
+    try {
+      var entradasQuery = supabase.from('compras').select('valor_total');
+      entradasQuery = applyBogotaDateFilter(entradasQuery, 'fecha_compra', from, to);
+      var { data: entradasData } = await entradasQuery;
+      totalEntradas = entradasData ? entradasData.reduce(function (s, c) { return s + parseFloat(c.valor_total); }, 0) : 0;
+    } catch (e) { /* si falla, sera 0 */ }
+
+    // Periodo anterior para deltas de las otras cards
+    var prevRevenue = null, prevSalesCount = null;
     try {
       var nowBog = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
       var currFrom, currTo;
@@ -106,29 +115,20 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
         currTo = new Date(to + 'T23:59:59-05:00');
       } else {
         currTo = new Date(nowBog.getFullYear(), nowBog.getMonth(), nowBog.getDate(), 23, 59, 59);
-        currFrom = new Date(currTo);
-        currFrom.setHours(0, 0, 0, 0);
+        currFrom = new Date(currTo); currFrom.setHours(0, 0, 0, 0);
       }
       var duration = currTo.getTime() - currFrom.getTime();
       var prevTo = new Date(currFrom.getTime() - 1000);
       var prevFrom = new Date(prevTo.getTime() - duration);
-
       var prevFromStr = prevFrom.toISOString().split('T')[0];
       var prevToStr = prevTo.toISOString().split('T')[0];
-
-      var prevQuery = supabase.from('ventas').select('total').eq('estado', 'completada');
-      prevQuery = applyBogotaDateFilter(prevQuery, 'creado_en', prevFromStr, prevToStr);
-      if (cocina) prevQuery = prevQuery.eq('metodo_pago', cocina);
-      var { data: prevSales } = await prevQuery;
-      prevSalesCount = prevSales ? prevSales.length : 0;
-      prevRevenue = prevSales ? prevSales.reduce(function (s, v) { return s + parseFloat(v.total); }, 0) : 0;
-
-      var prevLowQ = supabase.from('productos').select('id, stock_actual, stock_minimo').eq('activo', true);
-      var { data: prevLowData } = await prevLowQ;
-      prevLowStock = prevLowData ? prevLowData.filter(function (p) { return p.stock_actual <= p.stock_minimo; }).length : 0;
-      prevInvValue = prevLowData ? prevLowData.reduce(function (s, p) { return s + (p.stock_actual * 0); }, 0) : 0;
-      prevInvValue = stockData ? stockData.reduce(function (s, p) { return s + (p.stock_actual * parseFloat(p.precio_compra)); }, 0) : 0;
-    } catch (e) { /* si falla, deltas seran null */ }
+      var pQuery = supabase.from('ventas').select('total').eq('estado', 'completada');
+      pQuery = applyBogotaDateFilter(pQuery, 'creado_en', prevFromStr, prevToStr);
+      if (cocina) pQuery = pQuery.eq('metodo_pago', cocina);
+      var { data: pSales } = await pQuery;
+      prevSalesCount = pSales ? pSales.length : 0;
+      prevRevenue = pSales ? pSales.reduce(function (s, v) { return s + parseFloat(v.total); }, 0) : 0;
+    } catch (e) { /* si falla, null */ }
 
     res.json({
       success: true,
@@ -140,10 +140,9 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
         periodSales: periodSalesCount,
         periodRevenue,
         periodLabel: label,
+        totalEntradas: totalEntradas,
         prevRevenue: prevRevenue,
-        prevSalesCount: prevSalesCount,
-        prevLowStockCount: prevLowStock,
-        prevInventoryValue: prevInvValue
+        prevSalesCount: prevSalesCount
       }
     });
   } catch (err) {
