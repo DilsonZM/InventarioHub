@@ -86,29 +86,29 @@ async function loadDashboard() {
     console.log('[Dashboard] Productos con stock bajo:', lowStockProducts.length);
 
     if (lowStockProducts.length === 0) {
-      lowStockList.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">Todo el inventario tiene stock suficiente</p>';
+      lowStockList.innerHTML = '<p class="text-sm text-slate-400 dark:text-gray-500 text-center py-8">Todo el inventario tiene stock suficiente</p>';
     } else {
       lowStockList.innerHTML = lowStockProducts.map(function (p) {
         var pct = Math.min((p.stock / p.minStock) * 100, 100);
         var isCritical = p.stock === 0 || pct < 50;
         var badgeLabel = isCritical ? 'Stock Critico' : 'Stock Bajo';
-        return '<div class="flex items-center gap-3 bg-white dark:bg-gray-800/40 rounded-xl p-4 mb-3 shadow-sm dark:shadow-none border border-gray-100 dark:border-transparent">'
-          // Punto de alerta naranja pulsante al lado del nombre
+        return '<div class="flex items-center gap-3 bg-white dark:bg-gray-800/40 rounded-xl p-4 mb-3 shadow-sm border border-gray-200 dark:border-transparent">'
+          // Punto de alerta verde pulsante al lado del nombre
           + '<div class="flex-1 min-w-0">'
           + '<div class="flex items-center gap-2">'
-          + '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>'
+          + '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>'
           + '<p class="text-gray-800 dark:text-white font-semibold truncate">' + escapeHtml(p.name) + '</p>'
           + '</div>'
           + '<p class="text-gray-400 dark:text-gray-500 text-xs font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
-          // Barra de progreso naranja coherente
+          // Barra de progreso verde
           + '<div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-2 overflow-hidden">'
-          + '<div class="h-full bg-amber-500 rounded-full transition-all" style="width:' + pct + '%"></div>'
+          + '<div class="h-full bg-emerald-600 rounded-full transition-all" style="width:' + pct + '%"></div>'
           + '</div>'
           + '</div>'
           + '<div class="text-right shrink-0 flex flex-col items-end gap-1.5">'
-          + '<p class="text-amber-600 dark:text-amber-500 font-bold">' + p.stock + '/' + p.minStock + '</p>'
-          // Badge "Stock Critico" en tono naranja
-          + '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/30">'
+          + '<p class="text-emerald-700 dark:text-emerald-400 font-bold">' + p.stock + '/' + p.minStock + '</p>'
+          // Badge "Stock Critico" estilo 'Completed' de la referencia
+          + '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">'
           + badgeLabel
           + '</span>'
           + '</div>'
@@ -124,7 +124,7 @@ async function loadDashboard() {
     if (recentMovs.length === 0) {
       var emptyRecent = '<tr><td colspan="5" class="px-6 py-12 text-center">'
         + '<div class="flex flex-col items-center gap-2">'
-        + '<div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">'
+        + '<div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">'
         + '<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
         + '</div>'
         + '<p class="text-sm font-medium text-slate-600">Sin movimientos recientes</p>'
@@ -132,7 +132,7 @@ async function loadDashboard() {
         + '</div></td></tr>';
       tbody.innerHTML = emptyRecent;
       cards.innerHTML = '<div class="flex flex-col items-center gap-2 py-8">'
-        + '<div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">'
+        + '<div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">'
         + '<svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
         + '</div>'
         + '<p class="text-sm font-medium text-slate-600">Sin movimientos recientes</p>'
@@ -145,12 +145,12 @@ async function loadDashboard() {
           : '<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 movimiento-badge">Salida</span>';
         var cantText = m.movimiento === 'entrada' ? '+ ' + m.cantidad_entrada : '- ' + m.cantidad_salida;
         var cantColor = m.movimiento === 'entrada' ? 'text-green-600' : 'text-red-600';
-        return '<tr class="hover:bg-slate-50 transition-colors">'
-          + '<td class="px-6 py-3 text-sm font-mono text-slate-600">' + formatDateShort(m.fecha) + '</td>'
-          + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(m.producto) + '</td>'
+        return '<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">'
+          + '<td class="px-6 py-3 text-sm font-mono text-slate-600 dark:text-gray-400">' + formatDateShort(m.fecha) + '</td>'
+          + '<td class="px-6 py-3 text-sm text-slate-700 dark:text-gray-200">' + escapeHtml(m.producto) + '</td>'
           + '<td class="px-6 py-3">' + tipoBadge + '</td>'
           + '<td class="px-6 py-3 text-sm font-semibold ' + cantColor + '">' + cantText + '</td>'
-          + '<td class="px-6 py-3 text-sm text-slate-500">Stock: ' + m.cantidad_stock + '</td>'
+          + '<td class="px-6 py-3 text-sm text-slate-500 dark:text-gray-500">Stock: ' + m.cantidad_stock + '</td>'
           + '</tr>';
       }).join('');
 
@@ -160,14 +160,14 @@ async function loadDashboard() {
           : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 movimiento-badge">Salida</span>';
         var cantText = m.movimiento === 'entrada' ? '+ ' + m.cantidad_entrada : '- ' + m.cantidad_salida;
         var cantColor = m.movimiento === 'entrada' ? 'text-green-600' : 'text-red-600';
-        return '<div class="bg-slate-50 rounded-xl p-4 space-y-2">'
+        return '<div class="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4 space-y-2">'
           + '<div class="flex items-center justify-between">'
-          + '<div class="flex items-center gap-2">' + tipoBadge + '<span class="text-sm font-medium">' + escapeHtml(m.producto) + '</span></div>'
+          + '<div class="flex items-center gap-2">' + tipoBadge + '<span class="text-sm font-medium text-slate-700 dark:text-gray-200">' + escapeHtml(m.producto) + '</span></div>'
           + '<span class="text-sm font-bold ' + cantColor + '">' + cantText + '</span>'
           + '</div>'
           + '<div class="flex items-center justify-between">'
-          + '<span class="text-xs text-slate-400">' + formatDate(m.fecha) + '</span>'
-          + '<span class="text-xs text-slate-500">Stock: ' + m.cantidad_stock + '</span>'
+          + '<span class="text-xs text-slate-400 dark:text-gray-500">' + formatDate(m.fecha) + '</span>'
+          + '<span class="text-xs text-slate-500 dark:text-gray-500">Stock: ' + m.cantidad_stock + '</span>'
           + '</div>'
           + '</div>';
       }).join('');
@@ -195,12 +195,12 @@ async function loadTopDishes() {
     if (!tbody) return;
     tbody.innerHTML = res.data.map(function (d) {
       var margen = (d.precio_venta || 0) - (d.costo || 0);
-      var margenColor = margen >= 0 ? 'text-brand-600' : 'text-red-600';
+      var margenColor = margen >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600';
       return '<tr>'
-        + '<td class="py-2 font-medium text-slate-700">' + escapeHtml(d.nombre) + '</td>'
-        + '<td class="py-2 text-center text-slate-600">' + d.cantidad + '</td>'
-        + '<td class="py-2 text-right text-slate-700">' + Utils.formatCurrency(d.precio_venta * d.cantidad) + '</td>'
-        + '<td class="py-2 text-right text-slate-500">' + Utils.formatCurrency(d.costo * d.cantidad) + '</td>'
+        + '<td class="py-2 font-medium text-slate-700 dark:text-gray-200">' + escapeHtml(d.nombre) + '</td>'
+        + '<td class="py-2 text-center text-slate-600 dark:text-gray-400">' + d.cantidad + '</td>'
+        + '<td class="py-2 text-right text-slate-700 dark:text-gray-200">' + Utils.formatCurrency(d.precio_venta * d.cantidad) + '</td>'
+        + '<td class="py-2 text-right text-slate-500 dark:text-gray-400">' + Utils.formatCurrency(d.costo * d.cantidad) + '</td>'
         + '<td class="py-2 text-right font-medium ' + margenColor + '">' + Utils.formatCurrency(margen * d.cantidad) + '</td>'
         + '</tr>';
     }).join('');

@@ -226,9 +226,9 @@
       </div>
     </header>
 
-    <main class="p-4 sm:p-6 lg:p-8">
+    <main class="p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-transparent">
       <div id="view-dashboard" class="view-section">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-6">
           <!-- Filtros: visible en desktop, oculto en mobile -->
           <div class="hidden md:grid md:grid-cols-12 gap-3">
             <div class="md:col-span-4">
@@ -289,72 +289,72 @@
           <div class="active-filter-chips md:hidden mt-2 flex flex-wrap gap-1.5" data-chips="dashboard"></div>
         </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-lg hover:border-brand-100 animate-stagger animate-stagger-1">
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-gray-200 hover:shadow-lg hover:border-emerald-100 animate-stagger animate-stagger-1">
             <div class="flex items-center justify-between mb-3">
-              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center">
-                <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
               </div>
             </div>
-            <p class="text-2xl font-bold text-slate-800" id="stat-products">0</p>
-            <p class="text-sm text-slate-500">Productos</p>
+            <p class="text-2xl font-bold text-slate-800 dark:text-white" id="stat-products">0</p>
+            <p class="text-sm text-slate-500 dark:text-gray-400">Productos</p>
           </div>
-          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-lg hover:border-brand-100 animate-stagger animate-stagger-2">
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-gray-200 hover:shadow-lg hover:border-emerald-100 animate-stagger animate-stagger-2">
             <div class="flex items-center justify-between mb-3">
-              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center">
-                <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </div>
             </div>
-            <p class="text-2xl font-bold text-slate-800" id="stat-revenue">$0</p>
-            <p class="text-sm text-slate-500" id="stat-revenue-label">Salidas hoy</p>
+            <p class="text-2xl font-bold text-slate-800 dark:text-white" id="stat-revenue">$0</p>
+            <p class="text-sm text-slate-500 dark:text-gray-400" id="stat-revenue-label">Salidas hoy</p>
           </div>
-          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-lg hover:border-amber-100 animate-stagger animate-stagger-3">
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-gray-200 hover:shadow-lg hover:border-emerald-100 animate-stagger animate-stagger-3">
             <div class="flex items-center justify-between mb-3">
-              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
-                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                 </svg>
               </div>
             </div>
-            <p class="text-2xl font-bold text-slate-800" id="stat-lowstock">0</p>
-            <p class="text-sm text-slate-500">Stock bajo</p>
+            <p class="text-2xl font-bold text-slate-800 dark:text-white" id="stat-lowstock">0</p>
+            <p class="text-sm text-slate-500 dark:text-gray-400">Stock bajo</p>
           </div>
-          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-lg hover:border-violet-100 animate-stagger animate-stagger-4">
+          <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-gray-200 hover:shadow-lg hover:border-emerald-100 animate-stagger animate-stagger-4">
             <div class="flex items-center justify-between mb-3">
-              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-50 to-violet-100 flex items-center justify-center">
-                <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
               </div>
             </div>
-            <p class="text-2xl font-bold text-slate-800" id="stat-value">$0</p>
-            <p class="text-sm text-slate-500">Valor inventario</p>
+            <p class="text-2xl font-bold text-slate-800 dark:text-white" id="stat-value">$0</p>
+            <p class="text-sm text-slate-500 dark:text-gray-400">Valor inventario</p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h3 class="text-base font-semibold text-slate-800 mb-4">Salidas por Producto</h3>
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <h3 class="text-base font-semibold text-slate-800 dark:text-white mb-4">Salidas por Producto</h3>
             <div class="relative h-64">
               <canvas id="categoryChart"></canvas>
             </div>
           </div>
-          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h3 class="text-base font-semibold text-slate-800 mb-4">Productos con Stock Bajo</h3>
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <h3 class="text-base font-semibold text-slate-800 dark:text-white mb-4">Productos con Stock Bajo</h3>
             <div id="lowStockList" class="space-y-3 overflow-y-auto max-h-64">
               <p class="text-sm text-slate-400 text-center py-8">Cargando...</p>
             </div>
           </div>
         </div>
 
-        <div id="topDishesSection" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-8 hidden">
-          <h3 class="text-base font-semibold text-slate-800 mb-4">Platos más vendidos</h3>
+        <div id="topDishesSection" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 mb-8 hidden">
+          <h3 class="text-base font-semibold text-slate-800 dark:text-white mb-4">Platos más vendidos</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
-              <thead class="bg-slate-100">
+              <thead class="bg-slate-50">
                 <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider border-b border-slate-100">
                   <th class="pb-2">Plato</th>
                   <th class="pb-2 text-center">Vendidos</th>
@@ -368,15 +368,15 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 class="text-base font-semibold text-slate-800">Últimos Movimientos</h3>
-            <a href="#movimientos" class="text-sm text-brand-600 hover:text-brand-800 font-medium">Ver todos</a>
+            <h3 class="text-base font-semibold text-slate-800 dark:text-white">Últimos Movimientos</h3>
+            <a href="#movimientos" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium">Ver todos</a>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full table-desktop">
-              <thead class="bg-slate-100">
-                <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-100">
+              <thead class="bg-slate-50">
+                <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50">
                   <th class="px-6 py-3">Fecha</th>
                   <th class="px-6 py-3">Producto</th>
                   <th class="px-6 py-3">Tipo</th>
