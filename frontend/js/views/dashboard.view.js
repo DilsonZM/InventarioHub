@@ -38,6 +38,8 @@ function initDashboard() {
     applyQuickPeriod(ids, loader);
   }
 
+  initVentasGroupButtons();
+
   // Cargar opciones de productos
   populateProductFilter('#filterProductDash').then(updateClearBtn.bind(null, ids));
   updateClearBtn(ids);
@@ -70,10 +72,10 @@ async function loadDashboard() {
     console.log('[Dashboard] Movimientos recibidos:', (movsRes && movsRes.data) ? movsRes.data.length : 0);
 
     var stats = statsRes.data;
-    $('#stat-products').textContent = stats.totalProducts;
-    $('#stat-revenue').textContent = formatCurrency(stats.periodRevenue || 0);
-    $('#stat-lowstock').textContent = stats.lowStockCount;
-    $('#stat-value').textContent = formatCurrency(stats.inventoryValue);
+    animateKPI('#stat-products', stats.totalProducts);
+    animateKPI('#stat-revenue', stats.periodRevenue || 0, true);
+    animateKPI('#stat-lowstock', stats.lowStockCount);
+    animateKPI('#stat-value', stats.inventoryValue, true);
     var revLabel = $('#stat-revenue-label');
     if (revLabel && stats.periodLabel) {
       revLabel.textContent = 'Salidas ' + stats.periodLabel.toLowerCase();
@@ -172,6 +174,7 @@ async function loadDashboard() {
     console.log('[Dashboard] Renderizando grafico de salidas...');
     renderCategoryChart(movsRes.data || [], productsRes.data);
     loadTopDishes();
+    loadVentasMargen('dia');
     console.log('[Dashboard] Dashboard cargado correctamente');
   } catch (err) {
     console.error('[Dashboard] Error al cargar dashboard:', err);
@@ -217,6 +220,172 @@ async function populateProductFilter(selectId) {
   } catch (e) {}
 }
 
+
+
+async function loadVentasMargen(groupBy) {
+  try {
+    var from = $('#filterDateFromDash').value;
+    var to = $('#filterDateToDash').value;
+    var cocina = $('#filterCocinaDash').value;
+    var params = { groupBy: groupBy || 'dia' };
+    if (from) params.from = from;
+    if (to) params.to = to;
+    if (cocina) params.cocina = cocina;
+
+    var res = await API.ventasPeriodo(params);
+    if (res.success && res.data) {
+      renderVentasMargenChart(res.data);
+    }
+  } catch (e) {
+    console.error('[Dashboard] Error ventas margen:', e);
+  }
+}
+
+function renderVentasMargenChart(data) {
+  var canvas = document.getElementById('ventasMargenChart');
+  if (!canvas) return;
+
+  window.destroyChart('ventasMargen');
+
+  if (!data || data.length === 0) return;
+
+  var labels = data.map(function (d) { return d.label; });
+  var ventasData = data.map(function (d) { return d.total_ventas; });
+  var costosData = data.map(function (d) { return d.total_costo; });
+
+  if (typeof Chart === 'undefined') return;
+
+  var ctx = canvas.getContext('2d');
+
+  var instance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Ventas',
+          data: ventasData,
+          backgroundColor: '#E8572A',
+          borderRadius: 5,
+          borderSkipped: false,
+          barPercentage: 0.7,
+          categoryPercentage: 0.75,
+        },
+        {
+          label: 'Costos',
+          data: costosData,
+          backgroundColor: '#2d2d2d',
+          borderRadius: 5,
+          borderSkipped: false,
+          barPercentage: 0.7,
+          categoryPercentage: 0.75,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: {
+          position: 'top',
+          align: 'end',
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'rectRounded',
+            boxWidth: 10,
+            boxHeight: 10,
+            color: '#64748b',
+            font: { size: 11 }
+          }
+        },
+        tooltip: {
+          backgroundColor: '#1c1b19',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          callbacks: {
+            label: function (ctx) {
+              var v = ctx.raw;
+              var label = ctx.dataset.label;
+              return ' ' + label + ': ' + new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+            },
+            footer: function (tooltipItems) {
+              var idx = tooltipItems[0].dataIndex;
+              var d = data[idx];
+              if (d && d.margen_pct !== undefined) {
+                return 'Margen: ' + d.margen_pct.toFixed(1) + '%';
+              }
+              return '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: '#797876', font: { size: 10 } }
+        },
+        y: {
+          grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+          border: { display: false },
+          ticks: {
+            color: '#797876',
+            font: { size: 10 },
+            callback: function (v) { return v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v; }
+          }
+        }
+      }
+    }
+  });
+
+  window.setChart('ventasMargen', instance);
+}
+
+function animateKPI(kpiId, targetValue, isCurrency) {
+  var el = $(kpiId);
+  if (!el) return;
+  var start = 0;
+  var end = parseInt(targetValue) || 0;
+  if (isCurrency) end = parseFloat(targetValue) || 0;
+  var duration = 800;
+  var startTime = null;
+
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    var progress = Math.min((timestamp - startTime) / duration, 1);
+    var eased = 1 - Math.pow(1 - progress, 3);
+    var current = start + (end - start) * eased;
+
+    if (isCurrency) {
+      el.textContent = formatCurrency(current);
+    } else {
+      el.textContent = Math.round(current);
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+function initVentasGroupButtons() {
+  var btns = document.querySelectorAll('.ventas-group-btn');
+  btns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btns.forEach(function (b) {
+        b.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+        b.classList.add('bg-slate-100', 'text-slate-600');
+      });
+      this.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+      this.classList.remove('bg-slate-100', 'text-slate-600');
+      loadVentasMargen(this.dataset.group);
+    });
+  });
+}
 
 
 // Compatibilidad con codigo heredado (window.*)

@@ -150,6 +150,10 @@ const API = (() => {
       var qs = new URLSearchParams(params).toString();
       return request('/stats' + (qs ? '?' + qs : ''));
     },
+    ventasPeriodo: (params = {}) => {
+      var qs = new URLSearchParams(params).toString();
+      return request('/stats/ventas-periodo' + (qs ? '?' + qs : ''));
+    },
 
     compras: {
       list: (params = {}) => {

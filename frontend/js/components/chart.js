@@ -84,4 +84,7 @@ export function renderCategoryChart(movimientos, products) {
 // Alias para compatibilidad con el codigo heredado
 if (typeof window !== 'undefined') {
   window.renderCategoryChart = renderCategoryChart;
+  window.destroyChart = destroyChart;
+  window.getChart = function (id) { return charts.get(id); };
+  window.setChart = function (id, instance) { charts.set(id, instance); };
 }

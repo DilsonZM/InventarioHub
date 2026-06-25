@@ -172,6 +172,84 @@ app.get('/api/stats/dishes', authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/api/stats/ventas-periodo', authMiddleware, async (req, res) => {
+  try {
+    const { from, to, groupBy, cocina } = req.query;
+    var grp = (groupBy || 'dia').toLowerCase();
+
+    var fromUTC = null, toUTC = null;
+    if (from) fromUTC = new Date(from + 'T00:00:00-05:00').toISOString();
+    if (to)   toUTC   = new Date(to   + 'T23:59:59-05:00').toISOString();
+
+    // Obtener ventas del periodo con sus detalles
+    let query = supabase
+      .from('ventas')
+      .select('id, creado_en, subtotal, venta_detalles(producto_id, cantidad)')
+      .eq('estado', 'completada')
+      .order('creado_en', { ascending: true });
+
+    query = applyBogotaDateFilter(query, 'creado_en', from, to);
+    if (cocina) query = query.eq('metodo_pago', cocina);
+
+    var { data: ventas, error } = await query;
+    if (error) throw error;
+
+    // Obtener todos los productos para sus costos (cache simple)
+    var { data: productos } = await supabase.from('productos').select('id, precio_compra');
+    var costMap = {};
+    if (productos) productos.forEach(function (p) { costMap[p.id] = parseFloat(p.precio_compra) || 0; });
+
+    // Agrupar por periodo
+    var grupos = {};
+    var fmt = grp === 'mes' ? 'yyyy-MM' : grp === 'semana' ? null : 'yyyy-MM-dd';
+
+    (ventas || []).forEach(function (v) {
+      var d = new Date(v.creado_en);
+      var key;
+      if (grp === 'mes') {
+        key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      } else if (grp === 'semana') {
+        var jan1 = new Date(d.getFullYear(), 0, 1);
+        var weekNum = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+        key = d.getFullYear() + '-W' + String(weekNum).padStart(2, '0');
+      } else {
+        key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      }
+
+      if (!grupos[key]) grupos[key] = { periodo: key, total_ventas: 0, total_costo: 0 };
+
+      var subtotal = parseFloat(v.subtotal) || 0;
+      grupos[key].total_ventas += subtotal;
+
+      (v.venta_detalles || []).forEach(function (vd) {
+        grupos[key].total_costo += (parseFloat(vd.cantidad) || 0) * (costMap[vd.producto_id] || 0);
+      });
+    });
+
+    // Convertir a array ordenado
+    var result = Object.values(grupos).sort(function (a, b) { return a.periodo.localeCompare(b.periodo); });
+
+    // Formatear etiquetas legibles
+    var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    result.forEach(function (r) {
+      r.margen_pct = r.total_ventas > 0 ? ((r.total_ventas - r.total_costo) / r.total_ventas * 100) : 0;
+      var parts = r.periodo.split('-');
+      if (grp === 'mes') {
+        r.label = meses[parseInt(parts[1]) - 1] + ' ' + parts[0];
+      } else if (grp === 'semana') {
+        r.label = 'Sem ' + parts[1].replace('W','');
+      } else {
+        r.label = parts[2] + ' ' + meses[parseInt(parts[1]) - 1];
+      }
+    });
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('Ventas periodo error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'InventarioHub API running', timestamp: new Date().toISOString() });
 });
