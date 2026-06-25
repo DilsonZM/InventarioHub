@@ -178,15 +178,11 @@
     }
     .pos-card:active { transform: scale(0.98); }
 
+    /* Light mode: sin contorno verde al seleccionar; solo un fondo
+       verde muy tenue + check badge discreto. El dark mode mantiene
+       el contorno verde porque las cards son oscuras. */
     .pos-card--selected {
-      border-color: #0d6b4e !important;
-      background: linear-gradient(135deg, rgba(13, 107, 78, 0.05) 0%, rgba(13, 107, 78, 0.10) 100%) !important;
-      box-shadow: 0 0 0 2px #0d6b4e, 0 8px 20px -8px rgba(13, 107, 78, 0.35) !important;
-    }
-    [data-theme="dark"] .pos-card--selected {
-      border-color: #3dad85 !important;
-      background: linear-gradient(135deg, rgba(61, 173, 133, 0.10) 0%, rgba(61, 173, 133, 0.18) 100%) !important;
-      box-shadow: 0 0 0 2px #3dad85, 0 8px 20px -8px rgba(61, 173, 133, 0.45) !important;
+      background: linear-gradient(135deg, rgba(13, 107, 78, 0.04) 0%, rgba(13, 107, 78, 0.08) 100%) !important;
     }
     .pos-card--selected::after {
       content: '';
@@ -200,6 +196,14 @@
       box-shadow: 0 2px 6px rgba(13, 107, 78, 0.45);
       animation: posCardCheckPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
+    /* Dark mode: contorno verde + texto claro + check brand */
+    [data-theme="dark"] .pos-card--selected {
+      border-color: #3dad85 !important;
+      background: linear-gradient(135deg, rgba(61, 173, 133, 0.10) 0%, rgba(61, 173, 133, 0.18) 100%) !important;
+      box-shadow: 0 0 0 2px #3dad85, 0 8px 20px -8px rgba(61, 173, 133, 0.45) !important;
+    }
+    [data-theme="dark"] .pos-card--selected .pos-card-name { color: #f1f5f9 !important; }
+    [data-theme="dark"] .pos-card--selected .pos-card-price { color: #3dad85 !important; }
     [data-theme="dark"] .pos-card--selected::after {
       background: #3dad85 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23073626' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center/14px no-repeat;
     }
@@ -211,7 +215,9 @@
     }
 
     /* Ghost card that flies from the clicked pos-card to the
-       mobile FAB / desktop order panel. Added/removed by JS. */
+       mobile FAB / desktop order panel. Added/removed by JS.
+       Es el UNICO movimiento visible al hacer click: la card
+       no se hunde ni el destino pulsa. */
     .pos-fly-ghost {
       position: fixed;
       z-index: 60;
@@ -224,25 +230,47 @@
       align-items: center;
       justify-content: center;
       box-shadow: 0 10px 30px -5px rgba(13, 107, 78, 0.55);
-      animation: posFlyToOrder 0.55s cubic-bezier(0.55, 0.05, 0.4, 1) forwards;
     }
     @keyframes posFlyToOrder {
-      0%   { transform: scale(1)    rotate(0deg);  opacity: 1; }
-      60%  { transform: scale(0.6)  rotate(-8deg); opacity: 0.95; }
-      100% { transform: scale(0.18) rotate(-20deg); opacity: 0; }
+      0%   { opacity: 1; }
+      100% { opacity: 0; }
     }
-
-    /* Tiny pulse on the destination (FAB or order badge) */
-    @keyframes posDestinationPulse {
-      0%   { transform: scale(1); }
-      40%  { transform: scale(1.15); }
-      100% { transform: scale(1); }
-    }
-    .pos-destination-pulse { animation: posDestinationPulse 0.45s ease-out; }
 
     @media (prefers-reduced-motion: reduce) {
-      .pos-fly-ghost, .pos-destination-pulse,
+      .pos-fly-ghost,
       .pos-card--selected::after { animation: none !important; }
+    }
+
+    /* POS category pills: color de fondo y texto definidos por CSS
+       para que la transicion sea suave al togglear .pos-pill--active.
+       En dark mode, fondo slate-800 y texto slate-400. */
+    .pos-pill {
+      background-color: #f1f5f9;
+      color: #475569;
+      transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease-out;
+    }
+    .pos-pill:hover {
+      background-color: #e2e8f0;
+      color: #1e293b;
+      transform: translateY(-1px);
+    }
+    .pos-pill--active {
+      background-color: #0d6b4e !important;
+      color: #fff !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+    }
+    [data-theme="dark"] .pos-pill {
+      background-color: #1e293b !important;
+      color: #94a3b8 !important;
+    }
+    [data-theme="dark"] .pos-pill:hover {
+      background-color: #334155 !important;
+      color: #cbd5e1 !important;
+    }
+    [data-theme="dark"] .pos-pill--active {
+      background-color: #1a8a66 !important;
+      color: #fff !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30), 0 0 0 1px rgba(61, 173, 133, 0.25) !important;
     }
 
     /* ============================================

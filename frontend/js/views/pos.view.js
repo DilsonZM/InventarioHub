@@ -12,9 +12,35 @@ import { on } from '../core/events.js';
 // Las delegaciones de clicks del POS (posRegisterBtn, posClearBtn)
 // se registran via core/events.js al cargar este modulo.
 
+// Persistencia del pedido en localStorage.
+// El pedido sobrevive a navegaciones entre modulos y a recargas
+// de pagina. Se limpia al registrar el pedido o al hacer "Limpiar".
+var POS_ORDER_KEY = 'posCurrentOrder';
+
+function persistPOSOrder() {
+  try {
+    if (state.posItems && state.posItems.length > 0) {
+      localStorage.setItem(POS_ORDER_KEY, JSON.stringify(state.posItems));
+    } else {
+      localStorage.removeItem(POS_ORDER_KEY);
+    }
+  } catch (e) { /* localStorage no disponible */ }
+}
+
+function restorePOSOrder() {
+  try {
+    var raw = localStorage.getItem(POS_ORDER_KEY);
+    if (!raw) return [];
+    var parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) { return []; }
+}
+
 async function loadPOS() {
   console.log('[POS] Cargando vista POS...');
-  state.posItems = [];
+  // Restaurar pedido persistido (si existe). Asi el pedido
+  // sobrevive a navegaciones entre modulos y a recargas.
+  state.posItems = restorePOSOrder();
   state.posMesaId = null;
 
   var allProducts = [];
@@ -45,6 +71,18 @@ async function loadPOS() {
   renderPOSCategories(allDishes, allProducts);
   renderPOSOrder();
   renderPOSMesas(mesas);
+
+  // Re-marcar como seleccionadas las cards que ya estan en el pedido
+  // (para que el check verde reaparezca al volver al POS).
+  if (state.posItems.length > 0) {
+    var keys = state.posItems.map(function (i) { return i.id + ':' + i.type; });
+    var cards = document.querySelectorAll('.pos-card');
+    cards.forEach(function (card) {
+      var key = card.dataset.posId + ':' + card.dataset.posSource;
+      if (keys.indexOf(key) !== -1) card.classList.add('pos-card--selected');
+    });
+  }
+
   console.log('[POS] Vista POS renderizada');
 }
 
@@ -82,20 +120,13 @@ function renderPOSCategories(dishes, products) {
 
   renderPOSGrid(allItems);
 
-  // Pill click handlers
+  // Pill click handlers — solo toggleo de clase; el color/animacion
+  // los maneja CSS (ver .pos-pill y .pos-pill--active en main.css).
   var pills = $$('.pos-pill');
   pills.forEach(function (pill) {
     pill.addEventListener('click', function () {
-      pills.forEach(function (p) {
-        p.classList.remove('pos-pill--active');
-        p.style.background = '';
-        p.style.color = '';
-        p.style.boxShadow = '';
-      });
+      pills.forEach(function (p) { p.classList.remove('pos-pill--active'); });
       this.classList.add('pos-pill--active');
-      this.style.background = '#0d6b4e';
-      this.style.color = '#fff';
-      this.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
       var filter = this.dataset.filter;
       applyPOSFilter(filter);
     });
@@ -125,9 +156,9 @@ function renderPOSGrid(items) {
       + ' ondblclick="window.addPOSItem(\'' + item.id + '\', \'' + item.source + '\')">'
       + '<div class="aspect-video bg-slate-100 flex items-center justify-center text-4xl">' + (item.icon || '📦') + '</div>'
       + '<div class="p-3">'
-      + '<p class="text-sm font-bold text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
+      + '<p class="pos-card-name text-sm font-bold text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
       + desc
-      + '<p class="text-md font-bold text-brand-600 mt-2">' + Utils.formatCurrency(item.price) + '</p>'
+      + '<p class="pos-card-price text-md font-bold text-brand-600 mt-2">' + Utils.formatCurrency(item.price) + '</p>'
       + '</div>'
       + '</div>';
   });
@@ -203,6 +234,9 @@ function renderPOSOrder() {
   container.innerHTML = html;
   $('#posTotal').textContent = Utils.formatCurrency(total);
   if (btn) { btn.disabled = false; if (btnText) btnText.textContent = 'Registrar Pedido'; }
+
+  // Persistir el pedido actual para que sobreviva a navegaciones.
+  persistPOSOrder();
 }
 
 function renderPOSMesas(mesas) {
@@ -290,6 +324,8 @@ async function submitPOSOrder() {
     if (res.success) {
       showToast('Pedido registrado correctamente');
       state.posItems = [];
+      // Limpiar pedido persistido al registrar con exito.
+      try { localStorage.removeItem(POS_ORDER_KEY); } catch (e) { /* noop */ }
       state._lastTicketSale = res.data;
       renderPOSOrder();
       renderTicketFromData(res.data, false);
@@ -350,25 +386,31 @@ window.addPOSItem = function (id, type) {
     });
   }
 
+  // Marcar la card correspondiente como seleccionada (check verde)
+  // para que el usuario tenga feedback visual de que se agrego.
+  var key = id + ':' + type;
+  var cards = document.querySelectorAll('.pos-card');
+  cards.forEach(function (card) {
+    if ((card.dataset.posId + ':' + card.dataset.posSource) === key) {
+      card.classList.add('pos-card--selected');
+    }
+  });
+
   renderPOSOrder();
 }
 
 // addPOSItemAnimated: igual que addPOSItem pero dispara la animacion
 // "fly to order" desde la card clickeada hasta el panel de pedido
-// (desktop) o el FAB del carrito (mobile). Tambien marca la card
-// como seleccionada con un check verde hasta que el item se quite.
+// (desktop) o el FAB del carrito (mobile). El unico movimiento visible
+// es el ghost volando: ni la card se hunde ni el destino pulsa.
 window.addPOSItemAnimated = function (cardEl, id, type) {
   if (!cardEl) { window.addPOSItem(id, type); return; }
 
-  // 1) Marcar como seleccionada (badge check verde)
-  cardEl.classList.add('pos-card--selected');
-
-  // 2) Crear el ghost que vuela hacia el destino
+  // 1) Crear el ghost que vuela desde la card hasta el destino.
   try {
     var rect = cardEl.getBoundingClientRect();
     var ghost = document.createElement('div');
     ghost.className = 'pos-fly-ghost';
-    var label = cardEl.dataset.posName || '';
     var icon = cardEl.dataset.posIcon || '🛒';
     ghost.innerHTML = '<span style="font-size:18px;line-height:1;">' + icon + '</span>';
     ghost.style.left = rect.left + 'px';
@@ -377,32 +419,20 @@ window.addPOSItemAnimated = function (cardEl, id, type) {
     ghost.style.height = rect.height + 'px';
     document.body.appendChild(ghost);
 
-    // Animar via keyframes CSS: el destino depende del viewport
     var isMobile = window.innerWidth < 1024;
     var dest = isMobile ? document.getElementById('posMobileFab') : document.getElementById('posOrderPanel');
     if (dest) {
       var dRect = dest.getBoundingClientRect();
-      // Forzar end-state via CSS variables / inline transform al final
       var dx = (dRect.left + dRect.width / 2) - (rect.left + rect.width / 2);
       var dy = (dRect.top + dRect.height / 2) - (rect.top + rect.height / 2);
-      ghost.style.setProperty('--fly-dx', dx + 'px');
-      ghost.style.setProperty('--fly-dy', dy + 'px');
-      // Reescribir animation para incluir translate final
-      ghost.style.animation = 'none';
-      // Forzar reflow
+      // Forzar reflow antes de aplicar la animacion
       void ghost.offsetWidth;
       ghost.style.animation = 'posFlyToOrder 0.55s cubic-bezier(0.55, 0.05, 0.4, 1) forwards';
-      // Aplicar transform final al keyframe final via clase
-      setTimeout(function () {
+      // Aplicar el transform final en el siguiente frame
+      requestAnimationFrame(function () {
         ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.18) rotate(-20deg)';
         ghost.style.opacity = '0';
-      }, 0);
-
-      // Pulse en el destino
-      dest.classList.remove('pos-destination-pulse');
-      void dest.offsetWidth;
-      dest.classList.add('pos-destination-pulse');
-      setTimeout(function () { dest.classList.remove('pos-destination-pulse'); }, 500);
+      });
     }
 
     // Limpiar el ghost despues de la animacion
@@ -411,12 +441,25 @@ window.addPOSItemAnimated = function (cardEl, id, type) {
     }, 600);
   } catch (e) { /* noop */ }
 
-  // 3) Agregar al pedido
+  // 2) Agregar al pedido (esto SI actualiza el panel/FAB, pero
+  //    sin animacion extra: solo aparece el item con la
+  //    transicion existente de la lista).
   window.addPOSItem(id, type);
 };
 
 window.removePOSItem = function (idx) {
+  var item = state.posItems[idx];
   state.posItems.splice(idx, 1);
+  // Quitar el check verde de la card correspondiente (si existe)
+  if (item) {
+    var key = item.id + ':' + (item.type === 'dish' ? 'dish' : 'product');
+    var cards = document.querySelectorAll('.pos-card');
+    cards.forEach(function (card) {
+      if ((card.dataset.posId + ':' + card.dataset.posSource) === key) {
+        card.classList.remove('pos-card--selected');
+      }
+    });
+  }
   renderPOSOrder();
 }
 
@@ -426,6 +469,14 @@ window.updatePOSQty = function (idx, delta) {
   item.qty += delta;
   if (item.qty <= 0) {
     state.posItems.splice(idx, 1);
+    // Quitar el check verde de la card correspondiente
+    var key = item.id + ':' + (item.type === 'dish' ? 'dish' : 'product');
+    var cards = document.querySelectorAll('.pos-card');
+    cards.forEach(function (card) {
+      if ((card.dataset.posId + ':' + card.dataset.posSource) === key) {
+        card.classList.remove('pos-card--selected');
+      }
+    });
   }
   renderPOSOrder();
 }
