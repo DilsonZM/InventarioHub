@@ -13,6 +13,9 @@ const Toast = Swal.mixin({
   showConfirmButton: false,
   timer: 3000,
   timerProgressBar: true,
+  showClass: { popup: 'toast-show' },
+  hideClass: { popup: 'toast-hide' },
+  customClass: { popup: 'toast-animated' },
   didOpen: (toast) => {
     toast.addEventListener('mouseenter', Swal.stopTimer);
     toast.addEventListener('mouseleave', Swal.resumeTimer);

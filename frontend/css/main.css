@@ -971,3 +971,23 @@
     [data-theme="dark"] .cal-day.in-range { background: #073626; color: #6cc2a1; }
     [data-theme="dark"] .calendar-preset { background: #334155; color: #cbd5e1; }
     [data-theme="dark"] .calendar-preset:hover { background: #475569; }
+
+/* Toast animations (SweetAlert2) */
+@keyframes toastSlideInLeft {
+  from { transform: translateX(-120%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes toastSlideOutRight {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+.swal2-popup.toast-animated {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12) !important;
+}
+.swal2-popup.toast-show {
+  animation: toastSlideInLeft 0.35s cubic-bezier(0.21, 1.02, 0.58, 1) forwards;
+}
+.swal2-popup.toast-hide {
+  animation: toastSlideOutRight 0.25s ease-in forwards;
+}
