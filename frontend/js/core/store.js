@@ -24,6 +24,7 @@ export const store = {
     saleType: 'productos',
     saleDirty: false,
     compraDirty: false,
+    productDirty: false,
     posMesaId: null
   },
 

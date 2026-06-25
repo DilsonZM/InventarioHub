@@ -43,7 +43,8 @@ export function showError(id, msg) {
 export function closeModalWithGuard(modalId) {
   var dirty = (modalId === 'saleModal' && store.state.saleDirty)
             || (modalId === 'compraModal' && store.state.compraDirty)
-            || (modalId === 'dishModal' && store.state.dishDirty);
+            || (modalId === 'dishModal' && store.state.dishDirty)
+            || (modalId === 'productModal' && store.state.productDirty);
   if (dirty) {
     var modal = document.getElementById('confirmDiscardModal');
     if (modal) {
@@ -57,7 +58,48 @@ export function closeModalWithGuard(modalId) {
 
 export function markSaleDirty() { store.state.saleDirty = true; }
 export function markCompraDirty() { store.state.compraDirty = true; }
-export function clearDirty() { store.state.saleDirty = false; store.state.compraDirty = false; }
+export function clearDirty() { store.state.saleDirty = false; store.state.compraDirty = false; store.state.productDirty = false; }
+
+// Inicializar comportamiento global de modales: Escape key y boton de descarte.
+export function initModalKeyboard() {
+  // Escape key: cerrar el modal activo con guardia
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    // Buscar que modal esta visible (tiene z-50 y no tiene hidden)
+    var modals = document.querySelectorAll('.fixed.inset-0.z-50, .fixed.inset-0.z-\\[55\\]');
+    for (var i = 0; i < modals.length; i++) {
+      var m = modals[i];
+      if (m.classList.contains('hidden')) continue;
+      if (m.id === 'confirmDiscardModal' || m.id === 'confirmActionModal') continue;
+      if (m.id === 'saleModal') { closeModalWithGuard('saleModal'); break; }
+      if (m.id === 'compraModal') { closeModalWithGuard('compraModal'); break; }
+      if (m.id === 'dishModal') { closeModalWithGuard('dishModal'); break; }
+      if (m.id === 'productModal') { closeModalWithGuard('productModal'); break; }
+      // Para otros modales, cerrar directamente
+      m.classList.add('hidden');
+      break;
+    }
+  });
+
+  // Boton OK del modal de descarte (confirmDiscardOk)
+  var discardOk = document.getElementById('confirmDiscardOk');
+  if (discardOk) {
+    discardOk.addEventListener('click', function () {
+      var pending = store.state._pendingCloseModal;
+      var modal = document.getElementById('confirmDiscardModal');
+      if (modal) modal.classList.add('hidden');
+      if (pending) {
+        // Resetear dirty flag segun el modal
+        if (pending === 'saleModal') store.state.saleDirty = false;
+        else if (pending === 'compraModal') store.state.compraDirty = false;
+        else if (pending === 'dishModal') store.state.dishDirty = false;
+        else if (pending === 'productModal') store.state.productDirty = false;
+        closeModal(pending);
+        store.state._pendingCloseModal = null;
+      }
+    });
+  }
+}
 
 // showConfirm(opts, onConfirm): muestra el confirmActionModal con
 // titulo, mensaje, textos de botones y variante (color pastel) y
@@ -156,7 +198,14 @@ export function initModalDelegation() {
     var el = target.closest('[data-close-modal]');
     if (el) {
       var modalEl = findModalContainer(el);
-      if (modalEl) modalEl.classList.add('hidden');
+      if (modalEl) {
+        var id = modalEl.id;
+        if (id === 'productModal' || id === 'saleModal' || id === 'compraModal' || id === 'dishModal') {
+          closeModalWithGuard(id);
+        } else {
+          modalEl.classList.add('hidden');
+        }
+      }
       return;
     }
     var confirmCancel = target.closest('[data-confirm-cancel]');
@@ -207,4 +256,5 @@ if (typeof window !== 'undefined') {
   window.showConfirm = showConfirm;
   window.markSaleDirty = markSaleDirty;
   window.markCompraDirty = markCompraDirty;
+  window.initModalKeyboard = initModalKeyboard;
 }

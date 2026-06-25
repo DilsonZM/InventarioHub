@@ -7,7 +7,7 @@
 import { store } from './core/store.js';
 import { registerSW } from './core/pwa.js';
 import { initEvents } from './core/events.js';
-import { initModalDelegation } from './components/modal.js';
+import { initModalDelegation, initModalKeyboard } from './components/modal.js';
 import { showToast } from './components/toast.js';
 import { initSidebar, initSidebarGroups } from './shell/sidebar.js';
 import { initUser, initLogout, buildVisitorUser } from './shell/user.js';
@@ -66,6 +66,7 @@ async function bootstrap() {
 
   initEvents();
   initModalDelegation();
+  initModalKeyboard();
 
   initUser();
   initSidebar();

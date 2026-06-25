@@ -11,7 +11,7 @@ import { store } from '../core/store.js';
 async function initInventory() {
   try {
     var catRes = await API.products.categories();
-    state.categories = catRes.data;
+    store.state.categories = catRes.data || [];
     populateCategoryFilters();
   } catch (e) {}
 
@@ -21,9 +21,27 @@ async function initInventory() {
   $('#filterCategory').addEventListener('change', function () { loadProducts(); });
   $('#addProductBtn').addEventListener('click', function () { openProductModal(); });
 
+  // Dirty tracking para el modal de producto
+  var form = document.getElementById('productForm');
+  if (form) {
+    form.addEventListener('input', function () { store.state.productDirty = true; });
+    form.addEventListener('change', function () { store.state.productDirty = true; });
+  }
+
   if (state.user && state.user.role !== 'admin') {
     $('#addProductBtn').classList.add('hidden');
   }
+}
+
+function populateCategoryFilters() {
+  var cats = store.state.categories || [];
+  var opts = cats.map(function (c) { return '<option value="' + c.nombre + '">' + c.nombre + '</option>'; }).join('');
+
+  var filterCat = $('#filterCategory');
+  if (filterCat) filterCat.innerHTML = '<option value="">Todas las categorías</option>' + opts;
+
+  var modalCat = $('#productCategory');
+  if (modalCat) modalCat.innerHTML = '<option value="">Seleccionar</option>' + opts;
 }
 
 async function loadProducts() {
@@ -81,7 +99,7 @@ function renderProductsTable() {
       + '</td>'
       + '<td class="px-6 py-4 text-sm font-mono text-slate-600">' + escapeHtml(p.sku) + '</td>'
       + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700">' + escapeHtml(p.category) + '</span></td>'
-      + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + formatCurrency(p.price) + '</td>'
+      + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + formatCurrency(p.cost) + '</td>'
       + '<td class="px-6 py-4 text-center"><span class="' + stockBadge + '">' + p.stock + '</span></td>'
       + '<td class="px-6 py-4 text-center text-sm text-slate-500">' + p.minStock + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-600"><span class="inline-flex px-2 py-0.5 rounded-md text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200">' + escapeHtml(p.unidad || 'unidad') + '</span></td>'
@@ -118,7 +136,7 @@ function renderProductsTable() {
       + '</div>'
       + '<div class="flex items-center gap-2 flex-wrap">'
       + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-700">' + escapeHtml(p.category) + '</span>'
-      + '<span class="text-sm font-semibold text-slate-800">' + formatCurrency(p.price) + '</span>'
+      + '<span class="text-sm font-semibold text-slate-800">' + formatCurrency(p.cost) + '</span>'
       + '</div>'
       + '<div class="text-xs text-slate-500">Stock min.: ' + p.minStock + ' ' + escapeHtml(p.unidad || 'unidad') + '</div>'
       + (isAdmin ? '<div class="flex gap-2 pt-2 border-t border-slate-100">'
@@ -137,6 +155,7 @@ function openProductModal(product) {
   $('#productId').value = '';
   $('#productModalTitle').textContent = product ? 'Editar Producto' : 'Nuevo Producto';
   $('#productFormError').classList.add('hidden');
+  store.state.productDirty = false;
   updateUnidadesByCategory();
 
   if (product) {
@@ -144,7 +163,6 @@ function openProductModal(product) {
     $('#productName').value = product.name;
     $('#productSku').value = product.sku;
     $('#productCategory').value = product.category;
-    $('#productPrice').value = product.price;
     $('#productCost').value = product.cost;
     $('#productStock').value = product.stock;
     $('#productMinStock').value = product.minStock;
@@ -242,7 +260,6 @@ async function saveProduct(e) {
     name: $('#productName').value,
     sku: $('#productSku').value,
     category: $('#productCategory').value,
-    price: parseFloat($('#productPrice').value) || 0,
     cost: parseFloat($('#productCost').value) || 0,
     stock: parseFloat($('#productStock').value) || 0,
     minStock: parseFloat($('#productMinStock').value) || 0,
