@@ -250,8 +250,8 @@ function renderVentasMargenChart(data) {
   if (!data || data.length === 0) return;
 
   var labels = data.map(function (d) { return d.label; });
-  var ventasData = data.map(function (d) { return d.total_ventas; });
   var costosData = data.map(function (d) { return d.total_costo; });
+  var gananciasData = data.map(function (d) { return d.total_ventas - d.total_costo; });
 
   if (typeof Chart === 'undefined') return;
 
@@ -263,19 +263,19 @@ function renderVentasMargenChart(data) {
       labels: labels,
       datasets: [
         {
-          label: 'Ventas',
-          data: ventasData,
-          backgroundColor: '#E8572A',
-          borderRadius: 5,
+          label: 'Costos',
+          data: costosData,
+          backgroundColor: '#3a3a3a',
+          borderRadius: 0,
           borderSkipped: false,
           barPercentage: 0.7,
           categoryPercentage: 0.75,
         },
         {
-          label: 'Costos',
-          data: costosData,
-          backgroundColor: '#2d2d2d',
-          borderRadius: 5,
+          label: 'Ganancia',
+          data: gananciasData,
+          backgroundColor: '#E8572A',
+          borderRadius: { topLeft: 5, topRight: 5, bottomLeft: 0, bottomRight: 0 },
           borderSkipped: false,
           barPercentage: 0.7,
           categoryPercentage: 0.75,
@@ -296,7 +296,7 @@ function renderVentasMargenChart(data) {
             boxWidth: 10,
             boxHeight: 10,
             color: '#64748b',
-            font: { size: 11 }
+            font: { size: 10 }
           }
         },
         tooltip: {
@@ -323,16 +323,18 @@ function renderVentasMargenChart(data) {
       },
       scales: {
         x: {
+          stacked: true,
           grid: { display: false },
           border: { display: false },
-          ticks: { color: '#797876', font: { size: 10 } }
+          ticks: { color: '#797876', font: { size: 9 } }
         },
         y: {
+          stacked: true,
           grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
           border: { display: false },
           ticks: {
             color: '#797876',
-            font: { size: 10 },
+            font: { size: 9 },
             callback: function (v) { return v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v; }
           }
         }
@@ -373,17 +375,19 @@ function animateKPI(kpiId, targetValue, isCurrency) {
 }
 
 function initVentasGroupButtons() {
-  var btns = document.querySelectorAll('.ventas-group-btn');
-  btns.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      btns.forEach(function (b) {
-        b.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
-        b.classList.add('bg-slate-100', 'text-slate-600');
-      });
-      this.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
-      this.classList.remove('bg-slate-100', 'text-slate-600');
-      loadVentasMargen(this.dataset.group);
+  var container = document.getElementById('ventasGroupBtns');
+  if (!container) return;
+  container.addEventListener('click', function (e) {
+    var btn = e.target.closest('.ventas-group-btn');
+    if (!btn) return;
+    var btns = container.querySelectorAll('.ventas-group-btn');
+    btns.forEach(function (b) {
+      b.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+      b.classList.add('bg-slate-100', 'text-slate-600');
     });
+    btn.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+    btn.classList.remove('bg-slate-100', 'text-slate-600');
+    loadVentasMargen(btn.dataset.group);
   });
 }
 

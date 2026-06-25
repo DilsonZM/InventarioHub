@@ -336,21 +336,6 @@
           </div>
         </div>
 
-        <!-- Ventas y Margen de Ganancia (grafica de barras) -->
-        <div id="ventasMargenSection" class="mb-6 bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-base font-semibold text-slate-800">Ventas y Margen de Ganancia</h2>
-            <div class="flex gap-1.5" id="ventasGroupBtns">
-              <button data-group="dia" class="ventas-group-btn px-3 py-1 rounded-full text-xs font-semibold bg-brand-600 text-white shadow-sm">Por Día</button>
-              <button data-group="semana" class="ventas-group-btn px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Por Semana</button>
-              <button data-group="mes" class="ventas-group-btn px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Por Mes</button>
-            </div>
-          </div>
-          <div style="position: relative; height: 280px;">
-            <canvas id="ventasMargenChart"></canvas>
-          </div>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <h3 class="text-base font-semibold text-slate-800 mb-4">Salidas por Producto</h3>
@@ -358,10 +343,27 @@
               <canvas id="categoryChart"></canvas>
             </div>
           </div>
-          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h3 class="text-base font-semibold text-slate-800 mb-4">Productos con Stock Bajo</h3>
-            <div id="lowStockList" class="space-y-3 overflow-y-auto max-h-64">
-              <p class="text-sm text-slate-400 text-center py-8">Cargando...</p>
+          <div class="flex flex-col gap-6">
+            <!-- Ventas y Margen de Ganancia (grafica de barras) -->
+            <div id="ventasMargenSection" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-semibold text-slate-800">Ventas y Margen</h3>
+                <div class="flex gap-1" id="ventasGroupBtns">
+                  <button data-group="dia" class="ventas-group-btn px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white shadow-sm">Por Día</button>
+                  <button data-group="semana" class="ventas-group-btn px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Por Semana</button>
+                  <button data-group="mes" class="ventas-group-btn px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Por Mes</button>
+                </div>
+              </div>
+              <div style="position: relative; height: 200px;">
+                <canvas id="ventasMargenChart"></canvas>
+              </div>
+            </div>
+            <!-- Productos con Stock Bajo -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+              <h3 class="text-base font-semibold text-slate-800 mb-3">Productos con Stock Bajo</h3>
+              <div id="lowStockList" class="space-y-1 overflow-y-auto max-h-52">
+                <p class="text-sm text-slate-400 text-center py-8">Cargando...</p>
+              </div>
             </div>
           </div>
         </div>
