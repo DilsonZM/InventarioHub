@@ -92,26 +92,22 @@ async function loadDashboard() {
         var pct = Math.min((p.stock / p.minStock) * 100, 100);
         var isCritical = p.stock === 0 || pct < 50;
         var badgeLabel = isCritical ? 'Stock Critico' : 'Stock Bajo';
-        return '<div class="flex items-center gap-3 bg-transparent rounded-xl p-4 mb-3">'
-          // Punto de alerta rojo pastel pulsante al lado del nombre
-          + '<div class="flex-1 min-w-0">'
-          + '<div class="flex items-center gap-2">'
+        return '<div class="flex items-center gap-2 bg-transparent rounded-lg py-2">'
+          // Punto rojo pulsante
           + '<span class="w-2 h-2 rounded-full bg-red-400 animate-pulse shrink-0"></span>'
-          + '<p class="text-gray-900 dark:text-white font-semibold truncate">' + escapeHtml(p.name) + '</p>'
+          // Info principal: nombre + SKU
+          + '<div class="flex-1 min-w-0">'
+          + '<p class="text-gray-900 dark:text-white text-sm font-semibold truncate">' + escapeHtml(p.name) + '</p>'
+          + '<p class="text-gray-500 text-[10px] font-mono">' + escapeHtml(p.sku) + '</p>'
           + '</div>'
-          + '<p class="text-gray-500 text-xs font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
-          // Barra de progreso rojo pastel
-          + '<div class="w-full h-1.5 bg-gray-200 rounded-full mt-2 overflow-hidden">'
+          // Barra fina inline
+          + '<div class="w-12 h-1 bg-gray-200 rounded-full overflow-hidden shrink-0">'
           + '<div class="h-full bg-red-400 rounded-full transition-all" style="width:' + pct + '%"></div>'
           + '</div>'
-          + '</div>'
-          + '<div class="text-right shrink-0 flex flex-col items-end gap-1.5">'
-          + '<p class="text-red-500 font-bold">' + p.stock + '/' + p.minStock + '</p>'
-          // Badge "Stock Critico" en tono rojo pastel sin contorno
-          + '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600">'
-          + badgeLabel
-          + '</span>'
-          + '</div>'
+          // Cantidad
+          + '<span class="text-red-500 text-xs font-bold shrink-0 w-12 text-right">' + p.stock + '/' + p.minStock + '</span>'
+          // Badge
+          + '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-red-100 text-red-600 shrink-0">' + badgeLabel + '</span>'
           + '</div>';
       }).join('');
     }
