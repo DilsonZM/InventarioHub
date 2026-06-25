@@ -14,6 +14,35 @@ function destroyChart(id) {
   charts.delete(id);
 }
 
+function renderHtmlLegend(chart) {
+  var container = document.getElementById('donut-legend');
+  if (!container) return;
+  var items = chart.legend.legendItems || [];
+  container.innerHTML = '';
+  container.style.display = 'grid';
+  container.style.gridTemplateColumns = 'repeat(3, 1fr)';
+  container.style.gap = '4px 12px';
+  container.style.padding = '4px 0 0 0';
+
+  items.forEach(function (item) {
+    var div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:6px;overflow:hidden;cursor:pointer;';
+    div.innerHTML = '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:' + item.fillStyle + ';"></span>'
+      + '<span style="font-size:11px;color:#797876;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + item.text + '</span>';
+    div.onclick = function () {
+      var meta = chart.getDatasetMeta(0);
+      meta.data[item.index].hidden = !meta.data[item.index].hidden;
+      chart.update();
+    };
+    container.appendChild(div);
+  });
+}
+
+var htmlLegendPlugin = {
+  id: 'htmlLegend',
+  afterUpdate: function (chart) { renderHtmlLegend(chart); }
+};
+
 export function renderCategoryChart(movimientos, products) {
   var canvas = document.getElementById('categoryChart');
   if (!canvas) return;
@@ -74,11 +103,15 @@ export function renderCategoryChart(movimientos, products) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
+        legend: { display: false }
       }
-    }
+    },
+    plugins: [htmlLegendPlugin]
   });
   charts.set('categoryChart', instance);
+
+  // Renderizar leyenda HTML
+  renderHtmlLegend(instance);
 }
 
 // Alias para compatibilidad con el codigo heredado

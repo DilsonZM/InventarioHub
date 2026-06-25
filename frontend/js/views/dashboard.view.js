@@ -94,16 +94,16 @@ async function loadDashboard() {
         var pct = Math.min((p.stock / p.minStock) * 100, 100);
         var isCritical = p.stock === 0 || pct < 50;
         var badgeLabel = isCritical ? 'Stock Critico' : 'Stock Bajo';
-        return '<div class="flex items-center gap-2 bg-transparent rounded-lg py-1.5">'
+        return '<div class="flex items-center gap-2 bg-transparent rounded-lg py-1.5 w-full">'
           // Punto rojo pulsante
           + '<span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse shrink-0"></span>'
-          // Info principal: nombre + SKU (ancho fijo para alinear barras)
-          + '<div class="w-44 shrink-0 min-w-0">'
+          // Info principal: nombre + SKU
+          + '<div class="w-36 shrink-0 min-w-0">'
           + '<p class="text-gray-900 dark:text-white text-sm font-semibold truncate">' + escapeHtml(p.name) + '</p>'
           + '<p class="text-gray-500 text-[10px] font-mono truncate">' + escapeHtml(p.sku) + '</p>'
           + '</div>'
-          // Barra fina inline, mas larga (w-16), arrancan todas al mismo sitio
-          + '<div class="w-16 h-1 bg-gray-200 rounded-full overflow-hidden shrink-0">'
+          // Barra que se estira al ancho disponible
+          + '<div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden min-w-0">'
           + '<div class="h-full bg-red-400 rounded-full transition-all" style="width:' + pct + '%"></div>'
           + '</div>'
           // Cantidad
