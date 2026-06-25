@@ -59,6 +59,82 @@ export function markSaleDirty() { store.state.saleDirty = true; }
 export function markCompraDirty() { store.state.compraDirty = true; }
 export function clearDirty() { store.state.saleDirty = false; store.state.compraDirty = false; }
 
+// showConfirm(opts, onConfirm): muestra el confirmActionModal con
+// titulo, mensaje, textos de botones y variante (color pastel) y
+// resuelve onConfirm cuando el usuario acepta. Cancelar / overlay
+// no hacen nada.
+//
+// opts = {
+//   title:        string  (default: '¿Confirmar?')
+//   message:      string  (default: '¿Estás seguro?')
+//   confirmText:  string  (default: 'Confirmar')
+//   cancelText:   string  (default: 'Cancelar')
+//   variant:      'danger' | 'warning' | 'info' (default: 'danger')
+//   icon:         string HTML para icono custom (sobreescribe variant)
+// }
+export function showConfirm(opts, onConfirm) {
+  var modal = document.getElementById('confirmActionModal');
+  if (!modal) return;
+
+  var titleEl = modal.querySelector('#confirmActionTitle');
+  var msgEl = modal.querySelector('#confirmActionMessage');
+  var okBtn = modal.querySelector('#confirmActionOk');
+  var cancelBtn = modal.querySelector('[data-confirm-action-cancel]:not(.overlay)');
+  // El primer [data-confirm-action-cancel] es el overlay; el segundo es el boton
+  var allCancels = modal.querySelectorAll('[data-confirm-action-cancel]');
+  var cancelBtnEl = allCancels.length > 1 ? allCancels[allCancels.length - 1] : null;
+  var iconWrap = modal.querySelector('#confirmActionIcon');
+
+  if (titleEl) titleEl.textContent = opts.title || '¿Confirmar?';
+  if (msgEl) msgEl.textContent = opts.message || '¿Estás seguro?';
+  if (okBtn) okBtn.textContent = opts.confirmText || 'Confirmar';
+  if (cancelBtnEl) cancelBtnEl.textContent = opts.cancelText || 'Cancelar';
+
+  // Variante de color (pastel): danger = rose, warning = amber, info = sky
+  var variant = opts.variant || 'danger';
+  var palette = {
+    danger:  { bg: 'bg-rose-100',  fg: 'text-rose-600',  btn: 'bg-rose-600 hover:bg-rose-700' },
+    warning: { bg: 'bg-amber-100', fg: 'text-amber-600', btn: 'bg-amber-600 hover:bg-amber-700' },
+    info:    { bg: 'bg-sky-100',   fg: 'text-sky-600',   btn: 'bg-sky-600 hover:bg-sky-700' }
+  };
+  var p = palette[variant] || palette.danger;
+
+  if (iconWrap) {
+    // Quitar todas las clases de color previas
+    iconWrap.className = 'w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center ' + p.bg;
+    if (opts.icon) {
+      iconWrap.innerHTML = opts.icon;
+      // aplicar color al SVG interno
+      var svg = iconWrap.querySelector('svg');
+      if (svg) svg.className = 'w-6 h-6 ' + p.fg;
+    } else {
+      // Icono por defecto segun variante
+      var defaultIcon = variant === 'warning'
+        ? '<svg class="w-6 h-6 ' + p.fg + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
+        : '<svg class="w-6 h-6 ' + p.fg + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>';
+      iconWrap.innerHTML = defaultIcon;
+    }
+  }
+
+  if (okBtn) {
+    // Quitar clases de color previas del boton
+    okBtn.className = 'flex-1 px-4 py-2.5 text-white font-semibold rounded-xl shadow-sm text-sm touch-target transition-colors ' + p.btn;
+  }
+
+  // Abrir el modal (reusa openModal para asegurar que el overlay se muestre)
+  openModal('confirmActionModal');
+
+  // Handler del OK: clonar el boton para limpiar listeners anteriores
+  if (okBtn) {
+    var newOk = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    newOk.addEventListener('click', function () {
+      closeModal('confirmActionModal');
+      if (typeof onConfirm === 'function') onConfirm();
+    });
+  }
+}
+
 // Delegacion global de clicks para data-close-modal, data-confirm-cancel,
 // data-confirm-action-cancel, data-close-preview, data-close-ticket,
 // data-close-calendar, data-apply-filters-overlay.
@@ -128,6 +204,7 @@ if (typeof window !== 'undefined') {
   window.closeModal = closeModal;
   window.showError = showError;
   window.closeModalWithGuard = closeModalWithGuard;
+  window.showConfirm = showConfirm;
   window.markSaleDirty = markSaleDirty;
   window.markCompraDirty = markCompraDirty;
 }

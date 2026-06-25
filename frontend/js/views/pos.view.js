@@ -229,7 +229,14 @@ function renderPOSOrder() {
       + '<span class="w-7 text-center text-sm font-semibold">' + item.qty + '</span>'
       + '<button class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm" onclick="window.updatePOSQty(' + idx + ', 1)">+</button>'
       + '</div>'
-      + '<button class="p-1 text-slate-300 hover:text-red-500" onclick="window.removePOSItem(' + idx + ')">×</button>'
+      + '<button class="pos-remove-item-btn p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" onclick="window.removePOSItem(' + idx + ')" title="Quitar del pedido" aria-label="Quitar del pedido">'
+      + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+      + '<polyline points="3 6 5 6 21 6"></polyline>'
+      + '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>'
+      + '<path d="M10 11v6M14 11v6"></path>'
+      + '<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>'
+      + '</svg>'
+      + '</button>'
       + '</div>';
   });
 
@@ -501,6 +508,19 @@ window.removePOSItem = function (idx) {
   }
   renderPOSOrder();
 }
+
+// clearPOSOrder: vacia el pedido por completo. Usado por el handler
+// de "Limpiar pedido" despues de la confirmacion del usuario.
+window.clearPOSOrder = function () {
+  state.posItems = [];
+  // Quitar TODAS las cards seleccionadas (porque el pedido se vacio)
+  var sel = document.querySelectorAll('.pos-card--selected');
+  sel.forEach(function (el) { el.classList.remove('pos-card--selected'); });
+  // Limpiar persistencia
+  try { localStorage.removeItem('posCurrentOrder'); } catch (e) { /* noop */ }
+  renderPOSOrder();
+  if (typeof showToast === 'function') showToast('Pedido limpiado');
+};
 
 window.updatePOSQty = function (idx, delta) {
   var item = state.posItems[idx];
@@ -903,8 +923,26 @@ on('#posRegisterBtn', function (e, target) {
 });
 
 on('#posClearBtn', function () {
-  state.posItems = [];
-  renderPOSOrder();
+  if (state.posItems.length === 0) return;
+  // Preguntar antes de borrar para que un click accidental
+  // no descarte el pedido. Usamos showConfirm con la variante
+  // 'warning' (pastel ambar) y textos amigables.
+  var count = state.posItems.reduce(function (sum, i) { return sum + i.qty; }, 0);
+  var msg = count === 1
+    ? 'Tienes 1 producto en el pedido. ¿Quieres limpiarlo?'
+    : 'Tienes ' + count + ' productos en el pedido. ¿Quieres limpiarlos?';
+  if (typeof showConfirm === 'function') {
+    showConfirm({
+      title: '¿Limpiar pedido?',
+      message: msg,
+      confirmText: 'Sí, limpiar',
+      cancelText: 'Cancelar',
+      variant: 'warning'
+    }, function () { clearPOSOrder(); });
+  } else {
+    // Fallback: limpiar directamente si showConfirm no esta disponible
+    clearPOSOrder();
+  }
 });
 
 // Botones del modal de ticket (impresion hibrida)

@@ -389,6 +389,62 @@
       box-shadow: 0 0 0 3px rgba(61, 173, 133, 0.25);
     }
 
+    /* ============================================
+       Confirm modal (confirmActionModal) — auto-tematico
+       El modal usa clases Tailwind (bg-white, text-slate-*). En dark
+       mode las sobreescribimos a la paleta de surface.
+       ============================================ */
+    [data-theme="dark"] #confirmActionModal .bg-white {
+      background-color: var(--color-bg-surface) !important;
+    }
+    [data-theme="dark"] #confirmActionModal .text-slate-800 {
+      color: var(--color-text-primary) !important;
+    }
+    [data-theme="dark"] #confirmActionModal .text-slate-600 {
+      color: var(--color-text-secondary) !important;
+    }
+    [data-theme="dark"] #confirmActionModal .border-slate-200 {
+      border-color: var(--color-border-strong) !important;
+    }
+    [data-theme="dark"] #confirmActionModal button.border {
+      color: var(--color-text-secondary) !important;
+    }
+    [data-theme="dark"] #confirmActionModal button.border:hover {
+      background-color: var(--color-bg-hover) !important;
+    }
+    /* Iconos pastel del modal: mantenerlos suaves en dark mode */
+    [data-theme="dark"] #confirmActionModal #confirmActionIcon.bg-rose-100 {
+      background-color: rgba(244, 63, 94, 0.15) !important;
+    }
+    [data-theme="dark"] #confirmActionModal #confirmActionIcon.bg-amber-100 {
+      background-color: rgba(245, 158, 11, 0.18) !important;
+    }
+    [data-theme="dark"] #confirmActionModal #confirmActionIcon.bg-sky-100 {
+      background-color: rgba(56, 189, 248, 0.18) !important;
+    }
+
+    /* ============================================
+       POS — boton "Limpiar pedido" discreto
+       ============================================ */
+    .pos-clear-btn {
+      letter-spacing: 0.01em;
+    }
+    [data-theme="dark"] .pos-clear-btn {
+      color: #64748b !important;
+    }
+    [data-theme="dark"] .pos-clear-btn:hover {
+      color: #fb7185 !important; /* rose-400 pastel */
+    }
+
+    /* POS — boton papelera por item */
+    [data-theme="dark"] .pos-remove-item-btn {
+      color: #475569 !important;
+    }
+    [data-theme="dark"] .pos-remove-item-btn:hover {
+      color: #fb7185 !important;
+      background-color: rgba(244, 63, 94, 0.10) !important;
+    }
+
     /* Dark mode overrides for Tailwind utility classes */
     [data-theme="dark"] body {
       background-color: var(--color-bg-primary);
