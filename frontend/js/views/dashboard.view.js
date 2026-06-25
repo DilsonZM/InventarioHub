@@ -72,7 +72,7 @@ async function loadDashboard() {
     console.log('[Dashboard] Movimientos recibidos:', (movsRes && movsRes.data) ? movsRes.data.length : 0);
 
     var stats = statsRes.data;
-    animateKPI('#stat-products', stats.totalProducts);
+    animateKPI('#stat-products', stats.platosDisponibles || 0);
     animateKPI('#stat-revenue', stats.periodRevenue || 0, true);
     animateKPI('#stat-lowstock', stats.lowStockCount);
     animateKPI('#stat-value', stats.inventoryValue, true);

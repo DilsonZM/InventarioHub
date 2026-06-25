@@ -108,34 +108,28 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
       var { data: platos } = await supabase.from('platos').select('id').eq('activo', true);
       totalPlatos = platos ? platos.length : 0;
       if (platos && platos.length > 0) {
-        var stockMap = {};
-        if (stockData) stockData.forEach(function (p) { stockMap[p.stock_actual] = p; });
-        // Obtener todos los ingredientes con su stock
         var { data: ingredientes } = await supabase
           .from('plato_ingredientes')
           .select('plato_id, cantidad, unidad, productos(stock_actual, unidad_medida)')
           .in('plato_id', platos.map(function (p) { return p.id; }));
-        // Agrupar por plato
         var platoMap = {};
         (ingredientes || []).forEach(function (ing) {
           if (!platoMap[ing.plato_id]) platoMap[ing.plato_id] = [];
           platoMap[ing.plato_id].push(ing);
         });
-        // Verificar cada plato
-        platos.forEach(function (plato) {
+        (platos || []).forEach(function (plato) {
           var ings = platoMap[plato.id] || [];
-          if (ings.length === 0) return;
+          if (ings.length === 0) { platosDisponibles++; return; }
           var ok = ings.every(function (ing) {
             var prod = ing.productos;
             if (!prod) return false;
             var stock = parseFloat(prod.stock_actual) || 0;
             var needed = parseFloat(ing.cantidad) || 0;
-            // Convertir unidades si es necesario
-            if (ing.unidad && prod.unidad_medida && ing.unidad.toLowerCase() !== prod.unidad_medida.toLowerCase()) {
-              var toGrams = { g: 1, kg: 1000, lb: 453.592, onza: 28.3495 };
+            var from = (ing.unidad || '').toLowerCase();
+            var to = (prod.unidad_medida || '').toLowerCase();
+            if (from && to && from !== to) {
+              var toGrams = { g: 1, gr: 1, kg: 1000, lb: 453.592, onza: 28.3495 };
               var toML = { ml: 1, l: 1000, litro: 1000 };
-              var from = ing.unidad.toLowerCase();
-              var to = (prod.unidad_medida || '').toLowerCase();
               if (toGrams[from] && toGrams[to]) needed = (needed * toGrams[from]) / toGrams[to];
               else if (toML[from] && toML[to]) needed = (needed * toML[from]) / toML[to];
             }
