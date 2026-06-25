@@ -300,7 +300,7 @@ async function submitPOSOrder() {
 
   var btn = $('#posRegisterBtn');
   var btnText = $('#posRegisterText');
-  if (btn) { btn.disabled = true; if (btnText) btnText.textContent = 'Registrando...'; }
+  if (btn) { btn.disabled = true; if (btnText) btnText.textContent = 'Procesando...'; }
 
   var platos = [];
   var items = [];
@@ -328,36 +328,86 @@ async function submitPOSOrder() {
     items: items.length > 0 ? items : undefined
   };
 
+  // Loading overlay con animacion energetica.
+  // Muestra 3 pasos visuales para que el usuario vea que el sistema
+  // esta trabajando: procesando -> generando -> imprimiendo (opcional).
+  var step = 0;
+  var steps = ['Procesando pedido...', 'Generando ticket...', 'Enviando a cocina...'];
+  var showLoading = function () {
+    if (typeof Swal === 'undefined') return null;
+    return Swal.fire({
+      title: steps[step],
+      html: '<div class="pos-loading"><div class="pos-loading-ring"></div>'
+        + '<div class="pos-loading-dots"><span></span><span></span><span></span></div></div>',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      backdrop: 'rgba(15, 23, 42, 0.55)',
+      customClass: { popup: 'pos-loading-popup', title: 'pos-loading-title' },
+      didOpen: function () { Swal.showLoading(); }
+    });
+  };
+  var advance = function () {
+    step = Math.min(step + 1, steps.length - 1);
+    if (typeof Swal === 'undefined') return;
+    var titleEl = document.querySelector('.swal2-title');
+    if (titleEl) titleEl.textContent = steps[step];
+  };
+  var hideLoading = function () {
+    if (typeof Swal !== 'undefined' && Swal.isLoading && Swal.isLoading()) Swal.close();
+    else if (typeof Swal !== 'undefined') Swal.close();
+  };
+
+  showLoading();
+
   try {
+    // Paso 1: ya estamos en "Procesando pedido..." — el await del create
+    //         cubre la fase de validacion/registro en el backend.
     var res = await API.sales.create(payload);
+
     if (res.success) {
-      showToast('Pedido registrado correctamente');
+      // Paso 2: ticket generado
+      advance();
+
       state.posItems = [];
       // Limpiar pedido persistido al registrar con exito.
       try { localStorage.removeItem(POS_ORDER_KEY); } catch (e) { /* noop */ }
       state._lastTicketSale = res.data;
       renderPOSOrder();
       renderTicketFromData(res.data, false);
+
       // Configurar visibilidad de botones del modal segun printer_kind
       try {
         if (typeof configureTicketButtons === 'function') {
-          // Esperar a que el DOM se actualice
           setTimeout(configureTicketButtons, 50);
         }
       } catch (e) { /* noop */ }
-      // Si comanda_enabled esta activo, enviar comanda automaticamente a la termica
+
+      // Paso 3: comanda a cocina (si esta habilitada)
+      var sendsComanda = false;
       try {
         var cfg = await window.ServicesConfig.get();
         if (cfg && cfg.data && cfg.data.comandaEnabled) {
+          advance();
+          sendsComanda = true;
+          // No esperamos a la termica: fire-and-forget
           printThermalKitchen(res.data);
         }
       } catch (e) {
         console.warn('No se pudo verificar comanda_enabled:', e.message);
       }
+
+      // Cerrar loading y mostrar exito
+      setTimeout(function () {
+        hideLoading();
+        showToast('Pedido registrado correctamente', 'success');
+      }, sendsComanda ? 600 : 350);
     } else {
+      hideLoading();
       showToast(res.message || 'Error al registrar', 'error');
     }
   } catch (err) {
+    hideLoading();
     showToast(err.message || 'Error al registrar', 'error');
   }
 
