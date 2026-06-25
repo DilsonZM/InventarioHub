@@ -92,21 +92,21 @@ async function loadDashboard() {
         var pct = Math.min((p.stock / p.minStock) * 100, 100);
         var isCritical = p.stock === 0 || pct < 50;
         var badgeLabel = isCritical ? 'Stock Critico' : 'Stock Bajo';
-        return '<div class="flex items-center gap-3 p-3.5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-transparent">'
+        return '<div class="flex items-center gap-3 bg-white dark:bg-gray-800/40 rounded-xl p-4 mb-3 shadow-sm dark:shadow-none border border-gray-100 dark:border-transparent">'
           // Punto de alerta naranja pulsante al lado del nombre
           + '<div class="flex-1 min-w-0">'
           + '<div class="flex items-center gap-2">'
-          + '<span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>'
-          + '<p class="text-sm font-semibold text-gray-900 dark:text-white truncate">' + escapeHtml(p.name) + '</p>'
+          + '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>'
+          + '<p class="text-gray-800 dark:text-white font-semibold truncate">' + escapeHtml(p.name) + '</p>'
           + '</div>'
-          + '<p class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
+          + '<p class="text-gray-400 dark:text-gray-500 text-xs font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
           // Barra de progreso naranja coherente
           + '<div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-2 overflow-hidden">'
           + '<div class="h-full bg-amber-500 rounded-full transition-all" style="width:' + pct + '%"></div>'
           + '</div>'
           + '</div>'
           + '<div class="text-right shrink-0 flex flex-col items-end gap-1.5">'
-          + '<p class="text-sm font-bold text-amber-600">' + p.stock + '/' + p.minStock + '</p>'
+          + '<p class="text-amber-600 dark:text-amber-500 font-bold">' + p.stock + '/' + p.minStock + '</p>'
           // Badge "Stock Critico" en tono naranja
           + '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/30">'
           + badgeLabel
