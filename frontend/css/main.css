@@ -217,7 +217,9 @@
     /* Ghost card that flies from the clicked pos-card to the
        mobile FAB / desktop order panel. Added/removed by JS.
        Es el UNICO movimiento visible al hacer click: la card
-       no se hunde ni el destino pulsa. */
+       no se hunde ni el destino pulsa. La animacion la maneja
+       Web Animations API (element.animate) en pos.view.js, asi
+       que aqui solo definimos el estilo estatico del ghost. */
     .pos-fly-ghost {
       position: fixed;
       z-index: 60;
@@ -230,14 +232,10 @@
       align-items: center;
       justify-content: center;
       box-shadow: 0 10px 30px -5px rgba(13, 107, 78, 0.55);
-    }
-    @keyframes posFlyToOrder {
-      0%   { opacity: 1; }
-      100% { opacity: 0; }
+      will-change: transform, opacity;
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .pos-fly-ghost,
       .pos-card--selected::after { animation: none !important; }
     }
 

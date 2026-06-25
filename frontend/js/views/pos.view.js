@@ -210,6 +210,8 @@ function renderPOSOrder() {
     container.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">Toca un producto para agregarlo</p>';
     $('#posTotal').textContent = '$0';
     if (btn) { btn.disabled = true; if (btnText) btnText.textContent = 'Agrega productos'; }
+    // Limpiar pedido persistido: el array esta vacio.
+    try { localStorage.removeItem('posCurrentOrder'); } catch (e) { /* noop */ }
     return;
   }
 
@@ -403,47 +405,84 @@ window.addPOSItem = function (id, type) {
 // "fly to order" desde la card clickeada hasta el panel de pedido
 // (desktop) o el FAB del carrito (mobile). El unico movimiento visible
 // es el ghost volando: ni la card se hunde ni el destino pulsa.
+//
+// Implementacion: Web Animations API (element.animate). Esto evita
+// el problema de que un `transform` inline en el siguiente frame
+// anule la animacion CSS, y permite interpolar translate + scale +
+// rotate de forma suave desde la posicion de la card hasta el destino.
 window.addPOSItemAnimated = function (cardEl, id, type) {
   if (!cardEl) { window.addPOSItem(id, type); return; }
 
-  // 1) Crear el ghost que vuela desde la card hasta el destino.
+  // 1) Crear el ghost en la posicion exacta de la card.
   try {
     var rect = cardEl.getBoundingClientRect();
     var ghost = document.createElement('div');
     ghost.className = 'pos-fly-ghost';
     var icon = cardEl.dataset.posIcon || '🛒';
     ghost.innerHTML = '<span style="font-size:18px;line-height:1;">' + icon + '</span>';
+    // Posicionar el ghost exactamente encima de la card.
     ghost.style.left = rect.left + 'px';
     ghost.style.top = rect.top + 'px';
     ghost.style.width = rect.width + 'px';
     ghost.style.height = rect.height + 'px';
+    ghost.style.transform = 'translate(0, 0) scale(1) rotate(0deg)';
+    ghost.style.opacity = '1';
     document.body.appendChild(ghost);
 
+    // 2) Calcular destino (panel en desktop, FAB en mobile).
     var isMobile = window.innerWidth < 1024;
     var dest = isMobile ? document.getElementById('posMobileFab') : document.getElementById('posOrderPanel');
     if (dest) {
       var dRect = dest.getBoundingClientRect();
       var dx = (dRect.left + dRect.width / 2) - (rect.left + rect.width / 2);
       var dy = (dRect.top + dRect.height / 2) - (rect.top + rect.height / 2);
-      // Forzar reflow antes de aplicar la animacion
-      void ghost.offsetWidth;
-      ghost.style.animation = 'posFlyToOrder 0.55s cubic-bezier(0.55, 0.05, 0.4, 1) forwards';
-      // Aplicar el transform final en el siguiente frame
-      requestAnimationFrame(function () {
-        ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.18) rotate(-20deg)';
-        ghost.style.opacity = '0';
-      });
-    }
 
-    // Limpiar el ghost despues de la animacion
-    setTimeout(function () {
-      if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
-    }, 600);
+      // 3) Animar con Web Animations API: un solo keyframe que va
+      //    desde la posicion inicial (translate 0) hasta el destino.
+      if (ghost.animate) {
+        ghost.animate(
+          [
+            { transform: 'translate(0, 0) scale(1) rotate(0deg)',     opacity: 1,    offset: 0   },
+            { transform: 'translate(' + (dx * 0.6) + 'px, ' + (dy * 0.6) + 'px) scale(0.7) rotate(-6deg)', opacity: 0.95, offset: 0.5 },
+            { transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(0.2) rotate(-18deg)', opacity: 0,    offset: 1   }
+          ],
+          {
+            duration: 550,
+            easing: 'cubic-bezier(0.55, 0.05, 0.4, 1)',
+            fill: 'forwards'
+          }
+        ).onfinish = function () {
+          if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+        };
+      } else {
+        // Fallback para navegadores sin Web Animations API.
+        var start = null;
+        function step(ts) {
+          if (!start) start = ts;
+          var t = Math.min((ts - start) / 550, 1);
+          // ease-in-out cubic
+          var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          var x = dx * e;
+          var y = dy * e;
+          var s = 1 - 0.8 * e;
+          var r = -18 * e;
+          ghost.style.transform = 'translate(' + x + 'px, ' + y + 'px) scale(' + s + ') rotate(' + r + 'deg)';
+          ghost.style.opacity = String(1 - e);
+          if (t < 1) requestAnimationFrame(step);
+          else if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+        }
+        requestAnimationFrame(step);
+      }
+    } else {
+      // Sin destino visible: quitar el ghost a los 300ms.
+      setTimeout(function () {
+        if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      }, 300);
+    }
   } catch (e) { /* noop */ }
 
-  // 2) Agregar al pedido (esto SI actualiza el panel/FAB, pero
-  //    sin animacion extra: solo aparece el item con la
-  //    transicion existente de la lista).
+  // 4) Agregar al pedido (esto actualiza el panel/FAB sin animacion
+  //    extra: solo aparece el item con la transicion existente).
   window.addPOSItem(id, type);
 };
 
