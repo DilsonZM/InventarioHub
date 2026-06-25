@@ -34,7 +34,15 @@ export function showToast(message, type) {
     return;
   }
   var icon = ICON_MAP[(type || 'info').toLowerCase()] || 'info';
-  Toast.fire({ icon: icon, title: message });
+  var colors = toastTheme();
+  Toast.fire({ icon: icon, title: message, background: colors.background, color: colors.color });
+}
+
+function toastTheme() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return isDark
+    ? { background: '#1e293b', color: '#e2e8f0' }
+    : { background: '#ffffff', color: '#0f172a' };
 }
 
 if (typeof window !== 'undefined') {
