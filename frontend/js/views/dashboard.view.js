@@ -102,6 +102,25 @@ async function loadDashboard() {
       badgeRev.classList.add('hidden');
     }
 
+    // Card valor inventario: compara stock vs salidas del periodo
+    var subVal = document.getElementById('sublabel-value');
+    if (subVal && stats.periodRevenue > 0) {
+      subVal.classList.remove('hidden');
+      subVal.textContent = 'vs ' + formatCurrency(stats.periodRevenue) + ' en salidas';
+    }
+    var badgeVal = document.getElementById('badge-value');
+    if (badgeVal && stats.periodRevenue > 0) {
+      badgeVal.classList.remove('hidden');
+      var valPct = ((stats.inventoryValue - stats.periodRevenue) / stats.periodRevenue) * 100;
+      var valUp = valPct >= 0;
+      badgeVal.textContent = (valUp ? '↑ ' : '↓ ') + Math.abs(valPct).toFixed(1) + '%';
+      badgeVal.style.cssText = valUp
+        ? 'background:rgba(26,138,102,0.15);color:#1a8a66;'
+        : 'background:rgba(220,80,80,0.15);color:#dc5050;';
+    } else if (badgeVal) {
+      badgeVal.classList.add('hidden');
+    }
+
     console.log('[Dashboard] Stats actualizadas en UI');
 
     var lowStockProducts = productsRes.data.filter(function (p) { return p.stock <= p.minStock; }).sort(function (a, b) { return (a.stock / a.minStock) - (b.stock / b.minStock); });
