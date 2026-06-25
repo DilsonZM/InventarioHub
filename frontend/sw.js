@@ -49,7 +49,12 @@ self.addEventListener('fetch', function (e) {
           caches.open(CACHE_NAME).then(function (cache) { cache.put(e.request, clone); });
         }
         return res;
-      }).catch(function () { return caches.match(e.request); })
+      }).catch(function () {
+        return caches.match(e.request).then(function (cached) {
+          return cached || new Response(JSON.stringify({ success: false, message: 'Sin conexion' }),
+            { status: 503, headers: { 'Content-Type': 'application/json' } });
+        });
+      })
     );
     return;
   }
@@ -68,7 +73,7 @@ self.addEventListener('fetch', function (e) {
         return res;
       }).catch(function () {
         return caches.match(e.request).then(function (cached) {
-          return cached || (isNavigation ? caches.match('/index.html') : undefined);
+          return cached || (isNavigation ? caches.match('/index.html') : new Response('', { status: 503 }));
         });
       })
     );
@@ -87,6 +92,7 @@ self.addEventListener('fetch', function (e) {
         return res;
       }).catch(function () {
         if (isNavigation) return caches.match('/index.html');
+        return new Response('', { status: 503 });
       });
     })
   );
