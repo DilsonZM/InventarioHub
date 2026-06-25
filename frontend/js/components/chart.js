@@ -17,23 +17,35 @@ function destroyChart(id) {
 function renderHtmlLegend(chart) {
   var container = document.getElementById('donut-legend');
   if (!container) return;
-  var items = chart.legend.legendItems || [];
   container.innerHTML = '';
   container.style.display = 'grid';
   container.style.gridTemplateColumns = 'repeat(3, 1fr)';
   container.style.gap = '4px 12px';
   container.style.padding = '4px 0 0 0';
 
+  var items = chart.options.plugins.legend.labels.generateLabels(chart);
+
   items.forEach(function (item) {
+    var hidden = !chart.getDataVisibility(item.index);
+
     var div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;gap:6px;overflow:hidden;cursor:pointer;';
-    div.innerHTML = '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:' + item.fillStyle + ';"></span>'
-      + '<span style="font-size:11px;color:#797876;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + item.text + '</span>';
-    div.onclick = function () {
-      var meta = chart.getDatasetMeta(0);
-      meta.data[item.index].hidden = !meta.data[item.index].hidden;
+    div.style.cssText = 'display:flex;align-items:center;gap:6px;overflow:hidden;cursor:pointer;'
+      + 'opacity:' + (hidden ? '0.35' : '1') + ';transition:opacity 0.2s ease;';
+
+    div.innerHTML = '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;'
+      + 'background:' + (hidden ? '#555' : item.fillStyle) + ';'
+      + 'transition:background 0.2s ease;"></span>'
+      + '<span style="font-size:11px;'
+      + 'color:' + (hidden ? '#555' : '#797876') + ';'
+      + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
+      + 'text-decoration:' + (hidden ? 'line-through' : 'none') + ';'
+      + 'transition:color 0.2s ease;">' + item.text + '</span>';
+
+    div.addEventListener('click', function () {
+      chart.toggleDataVisibility(item.index);
       chart.update();
-    };
+    });
+
     container.appendChild(div);
   });
 }
