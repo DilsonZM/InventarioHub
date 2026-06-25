@@ -92,14 +92,14 @@ async function loadDashboard() {
         var pct = Math.min((p.stock / p.minStock) * 100, 100);
         var isCritical = p.stock === 0 || pct < 50;
         var badgeLabel = isCritical ? 'Stock Critico' : 'Stock Bajo';
-        return '<div class="flex items-center gap-3 bg-white dark:bg-gray-800/40 rounded-xl p-4 mb-3 shadow-sm border border-gray-200 dark:border-transparent">'
+        return '<div class="flex items-center gap-3 bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 shadow-sm mb-3">'
           // Punto de alerta verde pulsante al lado del nombre
           + '<div class="flex-1 min-w-0">'
           + '<div class="flex items-center gap-2">'
           + '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>'
-          + '<p class="text-gray-800 dark:text-white font-semibold truncate">' + escapeHtml(p.name) + '</p>'
+          + '<p class="text-gray-900 dark:text-white font-bold truncate">' + escapeHtml(p.name) + '</p>'
           + '</div>'
-          + '<p class="text-gray-400 dark:text-gray-500 text-xs font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
+          + '<p class="text-gray-500 dark:text-gray-400 text-xs font-mono mt-0.5">' + escapeHtml(p.sku) + '</p>'
           // Barra de progreso verde
           + '<div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-2 overflow-hidden">'
           + '<div class="h-full bg-emerald-600 rounded-full transition-all" style="width:' + pct + '%"></div>'
@@ -108,7 +108,7 @@ async function loadDashboard() {
           + '<div class="text-right shrink-0 flex flex-col items-end gap-1.5">'
           + '<p class="text-emerald-700 dark:text-emerald-400 font-bold">' + p.stock + '/' + p.minStock + '</p>'
           // Badge "Stock Critico" estilo 'Completed' de la referencia
-          + '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">'
+          + '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">'
           + badgeLabel
           + '</span>'
           + '</div>'
