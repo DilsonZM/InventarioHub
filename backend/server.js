@@ -96,6 +96,40 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
     if (from && to) label = 'Periodo';
     else if (from) label = 'Desde ' + from;
 
+    // Calcular periodo anterior para deltas
+    var prevRevenue = null, prevSalesCount = null, prevLowStock = null, prevInvValue = null;
+    try {
+      var nowBog = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+      var currFrom, currTo;
+      if (from && to) {
+        currFrom = new Date(from + 'T00:00:00-05:00');
+        currTo = new Date(to + 'T23:59:59-05:00');
+      } else {
+        currTo = new Date(nowBog.getFullYear(), nowBog.getMonth(), nowBog.getDate(), 23, 59, 59);
+        currFrom = new Date(currTo);
+        currFrom.setHours(0, 0, 0, 0);
+      }
+      var duration = currTo.getTime() - currFrom.getTime();
+      var prevTo = new Date(currFrom.getTime() - 1000);
+      var prevFrom = new Date(prevTo.getTime() - duration);
+
+      var prevFromStr = prevFrom.toISOString().split('T')[0];
+      var prevToStr = prevTo.toISOString().split('T')[0];
+
+      var prevQuery = supabase.from('ventas').select('total').eq('estado', 'completada');
+      prevQuery = applyBogotaDateFilter(prevQuery, 'creado_en', prevFromStr, prevToStr);
+      if (cocina) prevQuery = prevQuery.eq('metodo_pago', cocina);
+      var { data: prevSales } = await prevQuery;
+      prevSalesCount = prevSales ? prevSales.length : 0;
+      prevRevenue = prevSales ? prevSales.reduce(function (s, v) { return s + parseFloat(v.total); }, 0) : 0;
+
+      var prevLowQ = supabase.from('productos').select('id, stock_actual, stock_minimo').eq('activo', true);
+      var { data: prevLowData } = await prevLowQ;
+      prevLowStock = prevLowData ? prevLowData.filter(function (p) { return p.stock_actual <= p.stock_minimo; }).length : 0;
+      prevInvValue = prevLowData ? prevLowData.reduce(function (s, p) { return s + (p.stock_actual * 0); }, 0) : 0;
+      prevInvValue = stockData ? stockData.reduce(function (s, p) { return s + (p.stock_actual * parseFloat(p.precio_compra)); }, 0) : 0;
+    } catch (e) { /* si falla, deltas seran null */ }
+
     res.json({
       success: true,
       data: {
@@ -105,7 +139,11 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
         lowStockCount,
         periodSales: periodSalesCount,
         periodRevenue,
-        periodLabel: label
+        periodLabel: label,
+        prevRevenue: prevRevenue,
+        prevSalesCount: prevSalesCount,
+        prevLowStockCount: prevLowStock,
+        prevInventoryValue: prevInvValue
       }
     });
   } catch (err) {

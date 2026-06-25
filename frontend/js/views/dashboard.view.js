@@ -81,6 +81,12 @@ async function loadDashboard() {
       revLabel.textContent = 'Salidas ' + stats.periodLabel.toLowerCase();
     }
 
+    // Deltas y sublabels
+    renderKpiDelta('badge-products', 'sublabel-products', stats.totalProducts, stats.prevSalesCount, false, ' productos');
+    renderKpiDelta('badge-revenue', 'sublabel-revenue', stats.periodRevenue || 0, stats.prevRevenue, true, '');
+    renderKpiDelta('badge-lowstock', 'sublabel-lowstock', stats.lowStockCount, stats.prevLowStockCount, false, ' productos');
+    renderKpiDelta('badge-value', 'sublabel-value', stats.inventoryValue, stats.prevInventoryValue, true, '');
+
     console.log('[Dashboard] Stats actualizadas en UI');
 
     var lowStockProducts = productsRes.data.filter(function (p) { return p.stock <= p.minStock; }).sort(function (a, b) { return (a.stock / a.minStock) - (b.stock / b.minStock); });
@@ -343,6 +349,32 @@ function renderVentasMargenChart(data) {
   });
 
   window.setChart('ventasMargen', instance);
+}
+
+function renderKpiDelta(badgeId, subId, current, previous, isCurrency, suffix) {
+  var badge = document.getElementById(badgeId);
+  var sublabel = document.getElementById(subId);
+  if (!badge || !sublabel) return;
+
+  if (previous === null || previous === undefined || previous === 0) {
+    badge.classList.add('hidden');
+    sublabel.classList.add('hidden');
+    return;
+  }
+
+  var delta = ((current - previous) / previous) * 100;
+  var isUp = delta >= 0;
+  var arrow = isUp ? '↑' : '↓';
+
+  badge.classList.remove('hidden');
+  badge.textContent = arrow + ' ' + Math.abs(delta).toFixed(1) + '%';
+  badge.style.cssText = isUp
+    ? 'background:rgba(26,138,102,0.15);color:#1a8a66;'
+    : 'background:rgba(220,80,80,0.15);color:#dc5050;';
+
+  sublabel.classList.remove('hidden');
+  var prevStr = isCurrency ? formatCurrency(previous) : previous;
+  sublabel.textContent = 'vs ' + prevStr + suffix;
 }
 
 function animateKPI(kpiId, targetValue, isCurrency) {
