@@ -85,9 +85,7 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
       .select('total')
       .eq('estado', 'completada');
     ventasQuery = applyBogotaDateFilter(ventasQuery, 'creado_en', from, to);
-    if (cocina) {
-      ventasQuery = ventasQuery.eq('metodo_pago', cocina);
-    }
+    if (cocina) ventasQuery = ventasQuery.eq('metodo_pago', cocina);
     const { data: periodSales } = await ventasQuery;
     const periodSalesCount = periodSales ? periodSales.length : 0;
     const periodRevenue = periodSales ? periodSales.reduce((sum, s) => sum + parseFloat(s.total), 0) : 0;
@@ -96,39 +94,57 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
     if (from && to) label = 'Periodo';
     else if (from) label = 'Desde ' + from;
 
-    // Total de entradas (compras) en el mismo periodo
     var totalEntradas = 0;
     try {
       var entradasQuery = supabase.from('compras').select('valor_total');
       entradasQuery = applyBogotaDateFilter(entradasQuery, 'fecha_compra', from, to);
       var { data: entradasData } = await entradasQuery;
       totalEntradas = entradasData ? entradasData.reduce(function (s, c) { return s + parseFloat(c.valor_total); }, 0) : 0;
-    } catch (e) { /* si falla, sera 0 */ }
+    } catch (e) {}
 
-    // Periodo anterior para deltas de las otras cards
-    var prevRevenue = null, prevSalesCount = null;
+    // Platos disponibles: los que pueden prepararse con el stock actual
+    var platosDisponibles = 0, totalPlatos = 0;
     try {
-      var nowBog = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-      var currFrom, currTo;
-      if (from && to) {
-        currFrom = new Date(from + 'T00:00:00-05:00');
-        currTo = new Date(to + 'T23:59:59-05:00');
-      } else {
-        currTo = new Date(nowBog.getFullYear(), nowBog.getMonth(), nowBog.getDate(), 23, 59, 59);
-        currFrom = new Date(currTo); currFrom.setHours(0, 0, 0, 0);
+      var { data: platos } = await supabase.from('platos').select('id').eq('activo', true);
+      totalPlatos = platos ? platos.length : 0;
+      if (platos && platos.length > 0) {
+        var stockMap = {};
+        if (stockData) stockData.forEach(function (p) { stockMap[p.stock_actual] = p; });
+        // Obtener todos los ingredientes con su stock
+        var { data: ingredientes } = await supabase
+          .from('plato_ingredientes')
+          .select('plato_id, cantidad, unidad, productos(stock_actual, unidad_medida)')
+          .in('plato_id', platos.map(function (p) { return p.id; }));
+        // Agrupar por plato
+        var platoMap = {};
+        (ingredientes || []).forEach(function (ing) {
+          if (!platoMap[ing.plato_id]) platoMap[ing.plato_id] = [];
+          platoMap[ing.plato_id].push(ing);
+        });
+        // Verificar cada plato
+        platos.forEach(function (plato) {
+          var ings = platoMap[plato.id] || [];
+          if (ings.length === 0) return;
+          var ok = ings.every(function (ing) {
+            var prod = ing.productos;
+            if (!prod) return false;
+            var stock = parseFloat(prod.stock_actual) || 0;
+            var needed = parseFloat(ing.cantidad) || 0;
+            // Convertir unidades si es necesario
+            if (ing.unidad && prod.unidad_medida && ing.unidad.toLowerCase() !== prod.unidad_medida.toLowerCase()) {
+              var toGrams = { g: 1, kg: 1000, lb: 453.592, onza: 28.3495 };
+              var toML = { ml: 1, l: 1000, litro: 1000 };
+              var from = ing.unidad.toLowerCase();
+              var to = (prod.unidad_medida || '').toLowerCase();
+              if (toGrams[from] && toGrams[to]) needed = (needed * toGrams[from]) / toGrams[to];
+              else if (toML[from] && toML[to]) needed = (needed * toML[from]) / toML[to];
+            }
+            return stock >= needed;
+          });
+          if (ok) platosDisponibles++;
+        });
       }
-      var duration = currTo.getTime() - currFrom.getTime();
-      var prevTo = new Date(currFrom.getTime() - 1000);
-      var prevFrom = new Date(prevTo.getTime() - duration);
-      var prevFromStr = prevFrom.toISOString().split('T')[0];
-      var prevToStr = prevTo.toISOString().split('T')[0];
-      var pQuery = supabase.from('ventas').select('total').eq('estado', 'completada');
-      pQuery = applyBogotaDateFilter(pQuery, 'creado_en', prevFromStr, prevToStr);
-      if (cocina) pQuery = pQuery.eq('metodo_pago', cocina);
-      var { data: pSales } = await pQuery;
-      prevSalesCount = pSales ? pSales.length : 0;
-      prevRevenue = pSales ? pSales.reduce(function (s, v) { return s + parseFloat(v.total); }, 0) : 0;
-    } catch (e) { /* si falla, null */ }
+    } catch (e) { console.error('Platos disponibles error:', e); }
 
     res.json({
       success: true,
@@ -141,8 +157,8 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
         periodRevenue,
         periodLabel: label,
         totalEntradas: totalEntradas,
-        prevRevenue: prevRevenue,
-        prevSalesCount: prevSalesCount
+        platosDisponibles: platosDisponibles,
+        totalPlatos: totalPlatos
       }
     });
   } catch (err) {

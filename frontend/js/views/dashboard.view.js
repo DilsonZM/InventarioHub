@@ -81,7 +81,22 @@ async function loadDashboard() {
       revLabel.textContent = 'Salidas ' + stats.periodLabel.toLowerCase();
     }
 
-    // Card revenue: compara salidas vs entradas del mismo periodo
+    // Card 1 — Platos disponibles
+    var badgeProd = document.getElementById('badge-products');
+    var subProd = document.getElementById('sublabel-products');
+    if (badgeProd && stats.totalPlatos > 0) {
+      var pctDisp = ((stats.platosDisponibles || 0) / stats.totalPlatos) * 100;
+      badgeProd.classList.remove('hidden');
+      badgeProd.textContent = pctDisp.toFixed(0) + '% del menú';
+      badgeProd.style.cssText = 'background:rgba(26,138,102,0.15);color:#1a8a66;';
+    }
+    if (subProd) {
+      subProd.classList.remove('hidden');
+      subProd.textContent = 'de ' + (stats.totalPlatos || 0) + ' en el menú';
+    }
+
+    // Card 2 — Salidas periodo: badge = entradas/salidas %
+    var badgeRev = document.getElementById('badge-revenue');
     var subRev = document.getElementById('sublabel-revenue');
     if (subRev) {
       subRev.classList.remove('hidden');
@@ -89,37 +104,52 @@ async function loadDashboard() {
         ? 'vs ' + formatCurrency(stats.totalEntradas) + ' en entradas'
         : 'Sin entradas en este periodo';
     }
-    var badgeRev = document.getElementById('badge-revenue');
-    if (badgeRev && stats.totalEntradas > 0) {
+    if (badgeRev && stats.periodRevenue > 0 && stats.totalEntradas > 0) {
       badgeRev.classList.remove('hidden');
-      var pct = ((stats.periodRevenue - stats.totalEntradas) / stats.totalEntradas) * 100;
-      var isUp = pct >= 0;
-      badgeRev.textContent = (isUp ? '↑ ' : '↓ ') + Math.abs(pct).toFixed(1) + '%';
-      badgeRev.style.cssText = isUp
-        ? 'background:rgba(220,100,60,0.15);color:#e07050;'
-        : 'background:rgba(26,138,102,0.15);color:#1a8a66;';
-    } else if (badgeRev) {
-      badgeRev.classList.add('hidden');
+      var pctCob = (stats.totalEntradas / stats.periodRevenue) * 100;
+      badgeRev.textContent = (pctCob >= 100 ? '↑ ' : '↓ ') + pctCob.toFixed(0) + '% cubierto';
+      badgeRev.style.cssText = pctCob >= 80
+        ? 'background:rgba(26,138,102,0.15);color:#1a8a66;'
+        : pctCob >= 50
+          ? 'background:rgba(187,101,59,0.15);color:#bb653b;'
+          : 'background:rgba(220,80,80,0.15);color:#dc5050;';
+    } else if (badgeRev) { badgeRev.classList.add('hidden'); }
+
+    // Card 3 — Stock bajo: badge = bajos/total %
+    var badgeLow = document.getElementById('badge-lowstock');
+    var subLow = document.getElementById('sublabel-lowstock');
+    if (badgeLow && stats.totalProducts > 0) {
+      badgeLow.classList.remove('hidden');
+      var pctLow = ((stats.lowStockCount || 0) / stats.totalProducts) * 100;
+      badgeLow.textContent = '↓ ' + pctLow.toFixed(1) + '% del inventario';
+      badgeLow.style.cssText = pctLow <= 5
+        ? 'background:rgba(26,138,102,0.15);color:#1a8a66;'
+        : pctLow <= 15
+          ? 'background:rgba(187,101,59,0.15);color:#bb653b;'
+          : 'background:rgba(220,80,80,0.15);color:#dc5050;';
+    }
+    if (subLow) {
+      subLow.classList.remove('hidden');
+      subLow.textContent = 'de ' + (stats.totalProducts || 0) + ' productos';
     }
 
-    // Card valor inventario: compara stock vs salidas del periodo
+    // Card 4 — Valor inventario: badge = salidas/inventario %
+    var badgeVal = document.getElementById('badge-value');
     var subVal = document.getElementById('sublabel-value');
     if (subVal && stats.periodRevenue > 0) {
       subVal.classList.remove('hidden');
       subVal.textContent = 'vs ' + formatCurrency(stats.periodRevenue) + ' en salidas';
     }
-    var badgeVal = document.getElementById('badge-value');
-    if (badgeVal && stats.periodRevenue > 0) {
+    if (badgeVal && stats.inventoryValue > 0 && stats.periodRevenue > 0) {
       badgeVal.classList.remove('hidden');
-      var valPct = ((stats.inventoryValue - stats.periodRevenue) / stats.periodRevenue) * 100;
-      var valUp = valPct >= 0;
-      badgeVal.textContent = (valUp ? '↑ ' : '↓ ') + Math.abs(valPct).toFixed(1) + '%';
-      badgeVal.style.cssText = valUp
+      var pctInv = (stats.periodRevenue / stats.inventoryValue) * 100;
+      badgeVal.textContent = pctInv.toFixed(0) + '% del inventario';
+      badgeVal.style.cssText = pctInv <= 30
         ? 'background:rgba(26,138,102,0.15);color:#1a8a66;'
-        : 'background:rgba(220,80,80,0.15);color:#dc5050;';
-    } else if (badgeVal) {
-      badgeVal.classList.add('hidden');
-    }
+        : pctInv <= 60
+          ? 'background:rgba(187,101,59,0.15);color:#bb653b;'
+          : 'background:rgba(220,80,80,0.15);color:#dc5050;';
+    } else if (badgeVal) { badgeVal.classList.add('hidden'); }
 
     console.log('[Dashboard] Stats actualizadas en UI');
 
