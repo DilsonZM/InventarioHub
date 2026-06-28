@@ -237,9 +237,7 @@ export function initModalDelegation() {
     }
     var applyOverlay = target.closest('[data-apply-filters-overlay]');
     if (applyOverlay) {
-      var btn = document.getElementById('mobileFiltersApply');
-      var view = btn ? btn.getAttribute('data-view') : 'sales';
-      if (typeof window.applyMobileFilters === 'function') window.applyMobileFilters(view);
+      if (typeof window.closeMobileFiltersDrawer === 'function') window.closeMobileFiltersDrawer();
       return;
     }
   });
