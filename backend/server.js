@@ -306,10 +306,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: 'Error interno del servidor' });
 });
 
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
-  app.listen(PORT, () => {
-    console.log('InventarioHub API corriendo en http://localhost:' + PORT);
-  });
-}
+app.listen(PORT, () => {
+  console.log('InventarioHub API corriendo en http://localhost:' + PORT);
+});
