@@ -9,17 +9,17 @@ import { $ } from '../core/dom.js';
 // que el backend espera en perfil.usuario.permisos). NO se importa
 // desde core/permissions.js porque ahi esta en snake_case.
 export const PERM_LABELS = {
-  puedeCrearProductos: 'Crear productos',
+  puedeCrearProductos: 'Crear productos (inventario)',
   puedeEditarProductos: 'Editar productos',
   puedeEliminarProductos: 'Eliminar productos',
-  puedeCrearSalidas: 'Crear salidas',
-  puedeEditarSalidas: 'Editar salidas',
-  puedeEliminarSalidas: 'Eliminar salidas',
-  puedeCrearEntradas: 'Crear entradas',
-  puedeEditarEntradas: 'Editar entradas',
-  puedeEliminarEntradas: 'Eliminar entradas',
+  puedeCrearSalidas: 'Usar punto de venta (POS)',
+  puedeEditarSalidas: 'Editar pedidos',
+  puedeEliminarSalidas: 'Eliminar pedidos',
+  puedeCrearEntradas: 'Registrar compras',
+  puedeEditarEntradas: 'Editar compras',
+  puedeEliminarEntradas: 'Eliminar compras',
   puedeGestionarUsuarios: 'Gestionar usuarios',
-  puedeVerInventario: 'Ver inventario',
+  puedeVerInventario: 'Ver inventario y platos',
   puedeVerMovimientos: 'Ver movimientos',
   puedeVerDashboard: 'Ver dashboard'
 };

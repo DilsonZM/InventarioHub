@@ -18,14 +18,14 @@ export const PERM_LABELS = {
   puede_crear_productos: 'Crear productos',
   puede_editar_productos: 'Editar productos',
   puede_eliminar_productos: 'Eliminar productos',
-  puede_crear_salidas: 'Crear ventas',
-  puede_editar_salidas: 'Editar ventas',
-  puede_eliminar_salidas: 'Eliminar ventas',
-  puede_crear_entradas: 'Crear entradas (compras)',
-  puede_editar_entradas: 'Editar entradas',
-  puede_eliminar_entradas: 'Eliminar entradas',
+  puede_crear_salidas: 'Usar punto de venta (POS)',
+  puede_editar_salidas: 'Editar pedidos',
+  puede_eliminar_salidas: 'Eliminar pedidos',
+  puede_crear_entradas: 'Registrar compras',
+  puede_editar_entradas: 'Editar compras',
+  puede_eliminar_entradas: 'Eliminar compras',
   puede_gestionar_usuarios: 'Gestionar usuarios',
-  puede_ver_inventario: 'Ver inventario',
+  puede_ver_inventario: 'Ver inventario y platos',
   puede_ver_movimientos: 'Ver movimientos',
   puede_ver_dashboard: 'Ver dashboard'
 };
@@ -63,13 +63,13 @@ export function applyPermissionsToUI() {
   var navItems = {
     dashboard: 'puedeVerDashboard',
     inventory: 'puedeVerInventario',
-    sales: 'puedeVerMovimientos',
-    entradas: 'puedeVerMovimientos',
+    sales: 'puedeVerInventario',
+    entradas: 'puedeVerInventario',
     movimientos: 'puedeVerMovimientos',
     users: 'puedeGestionarUsuarios',
     config: 'puedeGestionarUsuarios',
     dishes: 'puedeVerInventario',
-    pos: 'puedeVerMovimientos'
+    pos: 'puedeCrearSalidas'
   };
   Object.keys(navItems).forEach(function (view) {
     var link = document.querySelector('a[data-nav="' + view + '"]');
