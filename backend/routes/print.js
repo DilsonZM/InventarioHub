@@ -61,8 +61,12 @@ function buildTicketCommands(sale, kind) {
   // 2. Encabezado centrado
   pushBytes('\x1B\x61\x01'); // align center
   if (kind === 'kitchen') {
-    push('COMANDA\n');
-    push((sale.paymentMethod || 'cocina') + '\n');
+    push('COMANDA COCINA\n');
+    var destino = sale.paymentMethod || 'cocina';
+    if (destino === 'domicilio') destino = 'DOMICILIO';
+    else if (destino === 'recogido') destino = 'PARA RECOGER';
+    else if (destino === 'cocina') destino = 'EN MESA';
+    push(destino + '\n');
   } else {
     push('CORNER HOUSE\n');
     push('Sabores que unen\n');
