@@ -187,12 +187,9 @@ export function initModalDelegation() {
     if (!target || !target.closest) return;
 
     // Helper: dado un elemento clickeado, encuentra el contenedor del modal
-    // (el div.fixed.inset-0 mas cercano) sin importar el z-index.
+    // (el div.fixed.inset-0 mas cercano CON id) — salta overlays internos sin id.
     function findModalContainer(el) {
-      // Caso 1: el click fue en un overlay interno que tiene data-close-*
-      // -> subir al contenedor padre
-      var container = el.closest('.fixed.inset-0');
-      return container;
+      return el.closest('.fixed.inset-0[id]') || el.closest('.fixed.inset-0');
     }
 
     var el = target.closest('[data-close-modal]');
