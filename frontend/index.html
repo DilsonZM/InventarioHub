@@ -504,7 +504,7 @@
               </div>
             </div>
             <div class="flex gap-2">
-              <button id="clearFiltersBtn" class="hidden lg:inline-flex px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Limpiar</button>
+               <button id="clearFiltersBtn" class="clear-filters-btn hidden lg:inline-flex touch-target">Limpiar</button>
             </div>
           </div>
           <!-- Mobile: boton Nueva + filtros + chips -->
@@ -634,7 +634,7 @@
               </div>
             </div>
             <div class="flex gap-2">
-              <button id="clearFiltersBtnEntradas" data-view="entradas" class="hidden lg:inline-flex px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Limpiar</button>
+               <button id="clearFiltersBtnEntradas" data-view="entradas" class="clear-filters-btn hidden lg:inline-flex touch-target">Limpiar</button>
               <button id="newCompraBtn" data-requires-permission="puedeCrearEntradas" class="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-xl shadow-sm touch-target">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Nueva Entrada
@@ -721,7 +721,7 @@
               </div>
             </div>
             <div>
-              <button id="clearFiltersBtnMov" data-view="movimientos" class="hidden lg:inline-flex px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Limpiar</button>
+               <button id="clearFiltersBtnMov" data-view="movimientos" class="clear-filters-btn hidden lg:inline-flex touch-target">Limpiar</button>
             </div>
           </div>
           <div class="lg:hidden flex items-center justify-end gap-2 mt-3">
@@ -1113,6 +1113,11 @@
         <option value="">Todos los tipos</option>
         <option value="plato">Platos</option>
         <option value="bebida">Bebidas</option>
+      </select>
+      <select id="filterDishStatus" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all touch-target">
+        <option value="">Todos los estados</option>
+        <option value="con_stock">Con stock</option>
+        <option value="sin_stock">Sin stock</option>
       </select>
     </div>
 

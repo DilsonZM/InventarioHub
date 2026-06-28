@@ -26,6 +26,9 @@ function initDishes() {
   var typeFilter = $('#filterDishType');
   if (typeFilter) typeFilter.addEventListener('change', loadDishes);
 
+  var statusFilter = $('#filterDishStatus');
+  if (statusFilter) statusFilter.addEventListener('change', loadDishes);
+
   var toggleBtn = $('#toggleArchivedBtn');
   if (toggleBtn) {
     toggleBtn.addEventListener('click', function () {
@@ -48,6 +51,7 @@ async function loadDishes() {
   try {
     var search = ($('#searchDishes') ? $('#searchDishes').value : '').trim();
     var tipo = $('#filterDishType') ? $('#filterDishType').value : '';
+    var statusFilter = $('#filterDishStatus') ? $('#filterDishStatus').value : '';
     var params = {};
     if (tipo) params.tipo = tipo;
 
@@ -57,6 +61,12 @@ async function loadDishes() {
     if (search) {
       var s = search.toLowerCase();
       dishes = dishes.filter(function (d) { return d.nombre.toLowerCase().includes(s); });
+    }
+
+    if (statusFilter === 'con_stock') {
+      dishes = dishes.filter(function (d) { return d.disponible; });
+    } else if (statusFilter === 'sin_stock') {
+      dishes = dishes.filter(function (d) { return !d.disponible; });
     }
 
     state.dishes = dishes;
