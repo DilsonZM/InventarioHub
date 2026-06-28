@@ -99,9 +99,17 @@ async function loadPOS() {
         });
         state._editingSale = sale;
         if (sale.mesaId) {
-          var sel = $('#posMesa');
-          if (sel) sel.value = sale.mesaId;
+          var mSel = $('#posMesa');
+          if (mSel) mSel.value = sale.mesaId;
           state.posMode = 'mesa';
+        } else if (sale.paymentMethod === 'domicilio') {
+          var mSel2 = $('#posMesa');
+          if (mSel2) mSel2.value = '__domicilio__';
+          state.posMode = 'domicilio';
+        } else if (sale.paymentMethod === 'recogido') {
+          var mSel3 = $('#posMesa');
+          if (mSel3) mSel3.value = '__recogido__';
+          state.posMode = 'recogido';
         }
         // Actualizar boton
         var btn = $('#posRegisterBtn');
@@ -297,45 +305,44 @@ function renderPOSOrder() {
 function renderPOSMesas(mesas) {
   var sel = $('#posMesa');
   if (!sel) return;
-  sel.innerHTML = '<option value="">Sin mesa</option>'
+  sel.innerHTML = ''
     + mesas.map(function (m) {
-      return '<option value="' + m.id + '">' + escapeHtml(m.nombre) + '</option>';
-    }).join('');
+      return '<option value="' + m.id + '" data-tipo="mesa">' + escapeHtml(m.nombre) + '</option>';
+    }).join('')
+    + '<option disabled>──────────</option>'
+    + '<option value="__domicilio__" data-tipo="domicilio">🛵 Domicilio</option>'
+    + '<option value="__recogido__" data-tipo="recogido">🏠 Para recoger</option>';
 }
 
 function initPOSMode() {
-  var btns = $$('.pos-mode-btn');
-  var mesaGroup = $('#posMesaGroup');
-  var active = state.posMode || 'mesa';
-  state.posMode = active;
-
-  btns.forEach(function (btn) {
-    var mode = btn.dataset.posMode;
-    if (mode === active) {
-      btn.classList.add('bg-brand-600', 'text-white');
-      btn.classList.remove('bg-white', 'text-slate-500', 'border', 'border-slate-200');
-    } else {
-      btn.classList.remove('bg-brand-600', 'text-white');
-      btn.classList.add('bg-white', 'text-slate-500', 'border', 'border-slate-200');
-    }
-  });
-
-  if (mesaGroup) {
-    mesaGroup.style.display = active === 'mesa' ? '' : 'none';
+  var sel = $('#posMesa');
+  if (sel) {
+    sel.addEventListener('change', function () {
+      var opt = sel.options[sel.selectedIndex];
+      var tipo = opt ? opt.getAttribute('data-tipo') || 'mesa' : 'mesa';
+      state.posMode = tipo;
+      updatePOSModeBadge();
+    });
   }
+  state.posMode = state.posMode || 'mesa';
+  updatePOSModeBadge();
 }
 
 function setPOSMode(mode) {
   state.posMode = mode;
-  initPOSMode();
-  // Actualizar badge en resumen
+  var sel = $('#posMesa');
+  if (sel) {
+    if (mode === 'domicilio') sel.value = '__domicilio__';
+    else if (mode === 'recogido') sel.value = '__recogido__';
+    else sel.value = '';
+  }
   updatePOSModeBadge();
 }
 
 function updatePOSModeBadge() {
   var el = $('#posModeBadge');
   if (!el) return;
-  var labels = { mesa: 'Mesa', domicilio: 'Domicilio', recogido: 'Para recoger' };
+  var labels = { mesa: 'Mesa', domicilio: '🛵 Domicilio', recogido: '🏠 Recoger' };
   el.textContent = labels[state.posMode || 'mesa'] || 'Mesa';
 }
 
@@ -381,11 +388,14 @@ async function submitPOSOrder() {
   if (state.posItems.length === 0) return;
 
   var editingSale = state._editingSale;
-  var mode = state.posMode || 'mesa';
-  var mesaId = $('#posMesa').value || null;
+  var sel = $('#posMesa');
+  var selectedOpt = sel ? sel.options[sel.selectedIndex] : null;
+  var mode = selectedOpt ? (selectedOpt.getAttribute('data-tipo') || 'mesa') : 'mesa';
+  var mesaId = null;
+  if (mode === 'mesa' && sel) mesaId = sel.value;
 
   if (mode === 'mesa' && !mesaId) {
-    showToast('Selecciona una mesa o cambia a Domicilio/Recoger', 'warning');
+    showToast('Selecciona una mesa o elige Domicilio / Recoger', 'warning');
     return;
   }
 
