@@ -25,6 +25,23 @@ function initDishes() {
 
   var typeFilter = $('#filterDishType');
   if (typeFilter) typeFilter.addEventListener('change', loadDishes);
+
+  var toggleBtn = $('#toggleArchivedBtn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', function () {
+      var content = $('#dishesArchivedContent');
+      var chevron = $('#archivedChevron');
+      if (!content) return;
+      var isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+      if (isOpen) {
+        content.style.maxHeight = '0';
+        if (chevron) chevron.style.transform = '';
+      } else {
+        content.style.maxHeight = content.scrollHeight + 'px';
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+      }
+    });
+  }
 }
 
 async function loadDishes() {
