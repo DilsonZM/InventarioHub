@@ -20,6 +20,7 @@ async function initInventory() {
 
   $('#searchProducts').addEventListener('input', debounce(function () { loadProducts(); }, 300));
   $('#filterCategory').addEventListener('change', function () { loadProducts(); });
+  $('#filterStatus').addEventListener('change', function () { loadProducts(); });
   $('#addProductBtn').addEventListener('click', function () { openProductModal(); });
 
   // Dirty tracking para el modal de producto
@@ -51,13 +52,24 @@ function populateCategoryFilters() {
 async function loadProducts() {
   var search = $('#searchProducts').value.trim();
   var category = $('#filterCategory').value;
+  var statusFilter = $('#filterStatus').value;
   var params = {};
   if (search) params.search = search;
   if (category) params.category = category;
 
   try {
     var res = await API.products.list(params);
-    state.products = res.data;
+    var data = res.data;
+    // Filtrado por estado (cliente)
+    if (statusFilter) {
+      data = data.filter(function (p) {
+        if (statusFilter === 'agotado') return p.stock <= 0;
+        if (statusFilter === 'stock_bajo') return p.stock > 0 && p.stock <= p.minStock;
+        if (statusFilter === 'disponible') return p.stock > p.minStock;
+        return true;
+      });
+    }
+    state.products = data;
     renderProductsTable();
   } catch (err) {
     showToast('Error al cargar productos', 'error');
@@ -69,7 +81,7 @@ function renderProductsTable() {
   var cards = $('#productsCards');
 
   if (state.products.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron productos</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center"><p class="text-slate-400 text-sm">No se encontraron productos</p></td></tr>';
     cards.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">No se encontraron productos</p>';
     return;
   }
