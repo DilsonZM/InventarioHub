@@ -15,6 +15,18 @@ async function initSales() {
   var newOrderBtnMobile = $('#newOrderBtnMobile');
   if (newOrderBtnMobile) newOrderBtnMobile.addEventListener('click', function () { location.hash = '#pos'; });
   initFilters('sales');
+
+  // Cargar mesas en el filtro
+  try {
+    var mesas = await API.mesas.list();
+    var sel = $('#filterMesa');
+    if (sel && mesas.data) {
+      sel.innerHTML = '<option value="">Todas</option>'
+        + mesas.data.filter(function (m) { return m.activa; }).map(function (m) {
+          return '<option value="' + m.id + '">' + escapeHtml(m.nombre) + '</option>';
+        }).join('');
+    }
+  } catch (e) { /* noop */ }
   var saleForm = $('#saleForm');
   if (saleForm) {
     saleForm.addEventListener('input', markSaleDirty);
@@ -85,11 +97,11 @@ async function loadSales() {
   var params = {};
   var from = $('#filterDateFrom').value;
   var to = $('#filterDateTo').value;
-  var search = ($('#filterProductSearch').value || '').trim();
+  var mesa = $('#filterMesa').value;
 
   if (from) params.from = from;
   if (to) params.to = to;
-  if (search) params.search = search;
+  if (mesa) params.mesa = mesa;
 
   try {
     var res = await API.sales.list(params);

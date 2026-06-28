@@ -65,8 +65,9 @@ export function updateFilterChips(ids) {
   }
   if ($(ids.product) && $(ids.product).value) {
     var pEl = $(ids.product);
-    var pText = pEl.options && pEl.options[pEl.selectedIndex] ? pEl.options[pEl.selectedIndex].textContent : '';
-    chips.push({ label: 'Producto: ' + pText, clear: function () { $(ids.product).value = ''; } });
+    var pLabel = ids.view === 'sales' ? 'Mesa' : 'Producto';
+    var pText = pEl.options && pEl.options[pEl.selectedIndex] ? pEl.options[pEl.selectedIndex].textContent : pEl.value;
+    chips.push({ label: pLabel + ': ' + pText, clear: function () { pEl.value = ''; } });
   }
   if (ids.extra && $(ids.extra) && $(ids.extra).value) {
     var exEl = $(ids.extra);
@@ -153,7 +154,7 @@ export function initFilters(view) {
     dateFrom: '#filterDateFrom' + prefix,
     dateTo: '#filterDateTo' + prefix,
     period: '#filterQuickPeriod' + prefix,
-    product: '#filterProductSearch' + prefix,
+    product: view === 'sales' ? '#filterMesa' : ('#filterProductSearch' + prefix),
     clear: '#clearFiltersBtn' + prefix,
     extra: view === 'movimientos' ? '#filterTipoMov' : null
   };
@@ -162,11 +163,13 @@ export function initFilters(view) {
   if ($(ids.dateFrom)) $(ids.dateFrom).addEventListener('change', function () { $(ids.period).value = ''; updateClearBtn(ids); if (loader) loader(); });
   if ($(ids.dateTo)) $(ids.dateTo).addEventListener('change', function () { $(ids.period).value = ''; updateClearBtn(ids); if (loader) loader(); });
   if ($(ids.period)) $(ids.period).addEventListener('change', function () { applyQuickPeriod(ids, loader); });
-  if (ids.extra && $(ids.extra)) {
-    $(ids.extra).addEventListener('change', function () { updateClearBtn(ids); if (loader) loader(); });
-  }
   if ($(ids.product) && $(ids.product).tagName === 'INPUT') {
     $(ids.product).addEventListener('input', debounce(function () { updateClearBtn(ids); if (loader) loader(); }, 350));
+  } else if ($(ids.product) && $(ids.product).tagName === 'SELECT') {
+    $(ids.product).addEventListener('change', function () { updateClearBtn(ids); if (loader) loader(); });
+  }
+  if (ids.extra && $(ids.extra)) {
+    $(ids.extra).addEventListener('change', function () { updateClearBtn(ids); if (loader) loader(); });
   }
   if ($(ids.clear)) $(ids.clear).addEventListener('click', function () { clearFilters(ids, loader); });
 
@@ -198,7 +201,7 @@ export function openMobileFiltersModal(view) {
     '#filterDateFrom' + prefix,
     '#filterDateTo' + prefix,
     '#filterQuickPeriod' + prefix,
-    '#filterProductSearch' + prefix
+    view === 'sales' ? '#filterMesa' : ('#filterProductSearch' + prefix)
   ];
   if (view === 'movimientos') sourceSelectors.push('#filterTipoMov');
 
@@ -235,7 +238,7 @@ export function applyMobileFilters(view) {
     '#filterDateFrom' + prefix,
     '#filterDateTo' + prefix,
     '#filterQuickPeriod' + prefix,
-    '#filterProductSearch' + prefix
+    view === 'sales' ? '#filterMesa' : ('#filterProductSearch' + prefix)
   ];
   if (view === 'movimientos') sourceSelectors.push('#filterTipoMov');
 
