@@ -1,6 +1,6 @@
 import { $, escapeHtml } from '../core/dom.js';
 import { updateClearBtn, initFilters, applyMobileFilters } from '../components/filters.js';
-import { openModal, closeModal, showError, markSaleDirty } from '../components/modal.js';
+import { openModal, closeModal, showError, markSaleDirty, closeModalWithGuard, showConfirm } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency, formatDate } from '../utils.js';
 import { store } from '../core/store.js';
@@ -624,19 +624,26 @@ window.viewSale = async function (id) {
   }
 };
 
-window.deleteSale = async function (id) {
+window.deleteSale = function (id) {
   if (!can('puedeEliminarSalidas')) {
-    showToast('No tienes permiso para eliminar salidas', 'error');
+    showToast('Sin permiso', 'error');
     return;
   }
-  if (!confirm('¿Eliminar esta salida? El stock se devolvera al inventario.')) return;
-  try {
-    await API.sales.delete(id);
-    showToast('Salida eliminada y stock devuelto', 'success');
-    loadSales();
-  } catch (err) {
-    showToast('Error: ' + (err.message || ''), 'error');
-  }
+  showConfirm({
+    title: '¿Eliminar pedido?',
+    message: 'El stock se devolverá al inventario. Esta acción no se puede deshacer.',
+    confirmText: 'Eliminar',
+    variant: 'danger',
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+  }, async function () {
+    try {
+      await API.sales.delete(id);
+      showToast('Pedido eliminado y stock devuelto', 'success');
+      loadSales();
+    } catch (err) {
+      showToast('Error: ' + (err.message || ''), 'error');
+    }
+  });
 };
 
 window.editSale = function (id) {

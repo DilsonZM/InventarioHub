@@ -76,10 +76,9 @@ async function loadPOS() {
   state._posMesas = mesas;
 
   renderPOSCategories(allDishes, allProducts);
-  renderPOSOrder();
   renderPOSMesas(mesas);
 
-  // Si venimos a editar un pedido, cargarlo
+  // Si venimos a editar un pedido, cargarlo ANTES de renderizar la orden
   if (editingId) {
     state._editingSale = null;
     try {
@@ -93,9 +92,10 @@ async function loadPOS() {
             return { id: dish.id, type: 'dish', name: dish.nombre || it.productName, price: dish.precio_venta || it.unitPrice, qty: it.quantity, platoId: dish.id };
           }
           if (it.productId && base) {
-            return { id: base.id, type: 'producto', name: base.name || it.productName, qty: it.quantity, unidad: base.unidad || 'unidad' };
+            return { id: base.id, type: 'product', name: base.name || it.productName, qty: it.quantity, unidad: base.unidad || 'unidad' };
           }
-          return { id: it.productId || it.platoId || it.id, type: it.platoId ? 'dish' : 'producto', name: it.productName, qty: it.quantity, price: it.unitPrice, platoId: it.platoId };
+          // Fallback: producto o plato que ya no existe activo
+          return { id: it.productId || it.platoId || it.id, type: it.platoId ? 'dish' : 'product', name: it.productName, qty: it.quantity, price: it.unitPrice, platoId: it.platoId };
         });
         state._editingSale = sale;
         if (sale.mesaId) {
@@ -112,6 +112,8 @@ async function loadPOS() {
     } catch (e) { console.error('[POS] Error loading sale for edit:', e); }
     state.editingPOSOrderId = null;
   }
+
+  renderPOSOrder();
 
   // Configurar modo (mesa/domicilio/recoger)
   initPOSMode();
@@ -308,12 +310,13 @@ function initPOSMode() {
   state.posMode = active;
 
   btns.forEach(function (btn) {
-    btn.classList.remove('bg-brand-600', 'text-white', 'bg-slate-200', 'text-slate-600');
     var mode = btn.dataset.posMode;
     if (mode === active) {
       btn.classList.add('bg-brand-600', 'text-white');
+      btn.classList.remove('bg-white', 'text-slate-500', 'border', 'border-slate-200');
     } else {
-      btn.classList.add('bg-slate-200', 'text-slate-600');
+      btn.classList.remove('bg-brand-600', 'text-white');
+      btn.classList.add('bg-white', 'text-slate-500', 'border', 'border-slate-200');
     }
   });
 
