@@ -137,8 +137,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       allowOutsideClick: false,
       allowEscapeKey: false,
       showConfirmButton: false,
-      backdrop: 'rgba(15, 23, 42, 0.55)',
-      customClass: { popup: 'pos-loading-popup', title: 'pos-loading-title' },
+      backdrop: 'rgba(0,0,0,0.55)',
+      customClass: { popup: 'pos-loading-popup', title: 'pos-loading-title', container: 'swal2-backdrop-show' },
       didOpen: function () {
         function next() {
           s++;

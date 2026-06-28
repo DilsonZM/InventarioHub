@@ -509,6 +509,12 @@
       background: #3dad85;
     }
 
+    /* SweetAlert2 backdrop con blur para loading de auth */
+    .swal2-backdrop-show {
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
     /* Dark mode overrides for Tailwind utility classes */
     [data-theme="dark"] body {
       background-color: var(--color-bg-primary);

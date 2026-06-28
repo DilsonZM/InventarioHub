@@ -69,7 +69,7 @@ export function showAuthLoading(steps, callback) {
     allowOutsideClick: false,
     allowEscapeKey: false,
     showConfirmButton: false,
-    backdrop: 'rgba(15, 23, 42, 0.55)',
+    backdrop: 'rgba(0,0,0,0.55)',
     customClass: { popup: 'pos-loading-popup', title: 'pos-loading-title' },
     didOpen: function () {
       function next() {
