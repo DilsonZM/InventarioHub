@@ -157,10 +157,10 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', requirePermission('puede_crear_productos'), async (req, res) => {
   try {
-    const { name, sku, category, price, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
+    const { name, sku, category, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
 
-    if (!name || !sku || !category || price === undefined || cost === undefined || stock === undefined) {
-      return res.status(400).json({ success: false, message: 'Campos requeridos: name, sku, category, price, cost, stock' });
+    if (!name || !sku || !category || cost === undefined || stock === undefined) {
+      return res.status(400).json({ success: false, message: 'Campos requeridos: name, sku, category, cost, stock' });
     }
 
     const { data: cat } = await supabase.from('categorias').select('id').eq('nombre', category).single();
@@ -180,7 +180,7 @@ router.post('/', requirePermission('puede_crear_productos'), async (req, res) =>
         sku,
         codigo_barras: codigo_barras || null,
         categoria_id: cat.id,
-        precio_venta: price,
+        precio_venta: 0,
         precio_compra: cost,
         stock_actual: stock,
         stock_minimo: minStock || 0,
@@ -217,7 +217,7 @@ router.post('/', requirePermission('puede_crear_productos'), async (req, res) =>
 
 router.put('/:id', requirePermission('puede_editar_productos'), async (req, res) => {
   try {
-    const { name, sku, category, price, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
+    const { name, sku, category, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
 
     const { data: existing } = await supabase.from('productos').select('id, sku').eq('id', req.params.id).single();
     if (!existing) {
@@ -242,7 +242,6 @@ router.put('/:id', requirePermission('puede_editar_productos'), async (req, res)
     if (sku !== undefined) updateData.sku = sku;
     if (codigo_barras !== undefined) updateData.codigo_barras = codigo_barras;
     if (categoryId !== undefined) updateData.categoria_id = categoryId;
-    if (price !== undefined) updateData.precio_venta = price;
     if (cost !== undefined) updateData.precio_compra = cost;
     if (stock !== undefined) updateData.stock_actual = stock;
     if (minStock !== undefined) updateData.stock_minimo = minStock;

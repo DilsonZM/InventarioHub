@@ -4,6 +4,7 @@ import { openModal, closeModal, showError } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils.js';
 import { store } from '../core/store.js';
+import { UNIDADES_POR_CATEGORIA, UNIDAD_LABELS } from '../services/units.js';
 
 // inventory.view.js
 // Vista extraida de app.js en el Sub-paso 3.4 (views).
