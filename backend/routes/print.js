@@ -79,7 +79,8 @@ function buildTicketCommands(sale, kind) {
   const fecha = sale.createdAt ? new Date(sale.createdAt) : new Date();
   const fechaStr = fecha.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
   push('Fecha: ' + fechaStr + '\n');
-  if (sale.mesa_nombre) push('Mesa: ' + sale.mesa_nombre + '\n');
+  var mesaLabel = sale.mesaNombre || sale.mesa_nombre || '';
+  if (mesaLabel) push('Mesa: ' + mesaLabel + '\n');
   if (kind !== 'kitchen') {
     push('Cliente: ' + (sale.cliente_nombre || 'Consumidor final') + '\n');
     if (sale.usuario_nombre) push('Cajero: ' + sale.usuario_nombre + '\n');

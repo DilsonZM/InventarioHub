@@ -66,6 +66,7 @@ router.get('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), a
     const { data, error } = await supabase
       .from('perfiles')
       .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+      .eq('activo', true)
       .order('creado_en', { ascending: true });
     if (error) throw error;
     res.json({ success: true, data: (data || []).map(userPublic) });
@@ -98,6 +99,15 @@ router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), 
       .single();
     if (existing) {
       return res.status(400).json({ success: false, message: 'El nombre de usuario ya existe' });
+    }
+
+    // Limite maximo 5 usuarios activos
+    const { count } = await supabase
+      .from('perfiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('activo', true);
+    if ((count || 0) >= 5) {
+      return res.status(400).json({ success: false, message: 'Limite maximo de 5 usuarios alcanzado. Desactiva uno para crear otro.' });
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
