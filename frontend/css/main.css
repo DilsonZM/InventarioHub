@@ -894,6 +894,130 @@
     [data-theme="dark"] .sale-type-btn.text-slate-600 { color: #94a3b8 !important; }
     [data-theme="dark"] .sale-type-btn.active-tab { color: var(--color-text-primary) !important; }
 
+    /* ============================================
+       Premium KPI cards — glow + hover micro-interactions
+       ============================================ */
+    .premium-kpi {
+      position: relative;
+      border-radius: 1.25rem !important;
+      padding: 1.25rem 1.25rem 1rem 1.25rem !important;
+      overflow: hidden;
+      border: none !important;
+      background: #fff !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03) !important;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease !important;
+    }
+    .premium-kpi:hover {
+      transform: translateY(-3px) scale(1.02);
+    }
+    .premium-kpi-glow {
+      position: absolute;
+      inset: -2px;
+      border-radius: 1.35rem;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .premium-kpi:hover .premium-kpi-glow {
+      opacity: 1;
+    }
+    .premium-kpi-amber .premium-kpi-glow {
+      box-shadow: 0 0 30px 4px rgba(245, 158, 11, 0.25), 0 0 60px 2px rgba(245, 158, 11, 0.08);
+    }
+    .premium-kpi-orange .premium-kpi-glow {
+      box-shadow: 0 0 30px 4px rgba(249, 115, 22, 0.25), 0 0 60px 2px rgba(249, 115, 22, 0.08);
+    }
+    .premium-kpi-green .premium-kpi-glow {
+      box-shadow: 0 0 30px 4px rgba(16, 185, 129, 0.25), 0 0 60px 2px rgba(16, 185, 129, 0.08);
+    }
+    .premium-kpi-slate .premium-kpi-glow {
+      box-shadow: 0 0 30px 4px rgba(148, 163, 184, 0.25), 0 0 60px 2px rgba(148, 163, 184, 0.08);
+    }
+    .premium-kpi:hover {
+      box-shadow: 0 12px 28px -8px rgba(0,0,0,0.12), 0 4px 12px -4px rgba(0,0,0,0.06) !important;
+    }
+
+    /* Dark mode: KPI cards with dark surface */
+    [data-theme="dark"] .premium-kpi {
+      background: linear-gradient(135deg, #1e293b 0%, #1a2332 100%) !important;
+    }
+    [data-theme="dark"] .premium-kpi-amber .premium-kpi-glow {
+      box-shadow: 0 0 40px 6px rgba(251, 191, 36, 0.18), 0 0 70px 3px rgba(251, 191, 36, 0.05);
+    }
+    [data-theme="dark"] .premium-kpi-orange .premium-kpi-glow {
+      box-shadow: 0 0 40px 6px rgba(251, 146, 60, 0.18), 0 0 70px 3px rgba(251, 146, 60, 0.05);
+    }
+    [data-theme="dark"] .premium-kpi-green .premium-kpi-glow {
+      box-shadow: 0 0 40px 6px rgba(52, 211, 153, 0.18), 0 0 70px 3px rgba(52, 211, 153, 0.05);
+    }
+    [data-theme="dark"] .premium-kpi-slate .premium-kpi-glow {
+      box-shadow: 0 0 40px 6px rgba(203, 213, 225, 0.12), 0 0 70px 3px rgba(203, 213, 225, 0.04);
+    }
+    [data-theme="dark"] .premium-kpi:hover {
+      box-shadow: 0 16px 36px -10px rgba(0,0,0,0.3), 0 6px 16px -6px rgba(0,0,0,0.2) !important;
+    }
+
+    /* ============================================
+       Premium action buttons — circular, dark bg, hover glow
+       ============================================ */
+    .pedido-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #94a3b8;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      border: none;
+      outline: none;
+    }
+    .pedido-action-btn:hover {
+      transform: scale(1.18);
+    }
+    .pedido-action-btn:active {
+      transform: scale(0.92);
+    }
+    /* View (eye) — green */
+    .pedido-action-btn.action-view:hover {
+      background: #10b981;
+      color: #fff;
+      box-shadow: 0 0 16px 3px rgba(16, 185, 129, 0.4);
+    }
+    /* Print — brand */
+    .pedido-action-btn.action-print:hover {
+      background: #1a8a66;
+      color: #fff;
+      box-shadow: 0 0 16px 3px rgba(26, 138, 102, 0.4);
+    }
+    /* Edit — amber */
+    .pedido-action-btn.action-edit:hover {
+      background: #f59e0b;
+      color: #fff;
+      box-shadow: 0 0 16px 3px rgba(245, 158, 11, 0.4);
+    }
+    /* Delete — red */
+    .pedido-action-btn.action-delete:hover {
+      background: #ef4444;
+      color: #fff;
+      box-shadow: 0 0 16px 3px rgba(239, 68, 68, 0.4);
+    }
+    /* Advance state — current color */
+    .pedido-action-btn.action-advance:hover {
+      background: #6366f1;
+      color: #fff;
+      box-shadow: 0 0 16px 3px rgba(99, 102, 241, 0.4);
+    }
+
+    /* Dark mode: pedido action buttons start with darker bg */
+    [data-theme="dark"] .pedido-action-btn {
+      background: #334155;
+      color: #64748b;
+    }
+
     @media print {
       @page { size: 80mm auto; margin: 0; }
 

@@ -525,41 +525,57 @@
         </div>
 
         <div id="salesSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="sales-kpi-card bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <!-- Pendientes — ámbar -->
+          <div class="sales-kpi-card premium-kpi premium-kpi-amber">
+            <div class="premium-kpi-glow"></div>
+            <div class="relative z-10">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/10 flex items-center justify-center ring-1 ring-amber-400/30">
+                  <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/></svg>
+                </div>
+                <span class="text-xs font-bold text-amber-600/80 uppercase tracking-widest">Pendientes</span>
               </div>
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pendientes</span>
+              <p class="text-3xl font-bold text-amber-600 tracking-tight" id="summaryPendientes">0</p>
             </div>
-            <p class="text-2xl font-bold text-amber-600" id="summaryPendientes">0</p>
           </div>
-          <div class="sales-kpi-card bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
+          <!-- Preparando — naranja/rojo -->
+          <div class="sales-kpi-card premium-kpi premium-kpi-orange">
+            <div class="premium-kpi-glow"></div>
+            <div class="relative z-10">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400/20 to-red-400/10 flex items-center justify-center ring-1 ring-orange-400/30">
+                  <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 3.104A9.978 9.978 0 0012 2.75c.78 0 1.54.118 2.25.338M8.25 21h7.5a3 3 0 003-2.979V19.5a7.5 7.5 0 00-13.5 0v-1.479A3 3 0 008.25 21z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8.25v4.5m2.25 2.25c-1.26.84-2.613 1.29-4.5 1.35a1.5 1.5 0 01-1.5-1.5V8.25a1.5 1.5 0 011.5-1.5h4.5a1.5 1.5 0 011.5 1.5v5.4c0 .828-.672 1.5-1.5 1.5h-.75"/></svg>
+                </div>
+                <span class="text-xs font-bold text-orange-600/80 uppercase tracking-widest">Preparando</span>
               </div>
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Preparando</span>
+              <p class="text-3xl font-bold text-orange-600 tracking-tight" id="summaryPreparando">0</p>
             </div>
-            <p class="text-2xl font-bold text-orange-600" id="summaryPreparando">0</p>
           </div>
-          <div class="sales-kpi-card bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <!-- Listos — verde -->
+          <div class="sales-kpi-card premium-kpi premium-kpi-green">
+            <div class="premium-kpi-glow"></div>
+            <div class="relative z-10">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400/20 to-green-500/10 flex items-center justify-center ring-1 ring-emerald-400/30">
+                  <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <span class="text-xs font-bold text-emerald-600/80 uppercase tracking-widest">Listos</span>
               </div>
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Listos</span>
+              <p class="text-3xl font-bold text-emerald-600 tracking-tight" id="summaryListos">0</p>
             </div>
-            <p class="text-2xl font-bold text-green-600" id="summaryListos">0</p>
           </div>
-          <div class="sales-kpi-card bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <!-- Entregados — gris/plata -->
+          <div class="sales-kpi-card premium-kpi premium-kpi-slate">
+            <div class="premium-kpi-glow"></div>
+            <div class="relative z-10">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-300/20 to-slate-400/10 flex items-center justify-center ring-1 ring-slate-400/30">
+                  <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                </div>
+                <span class="text-xs font-bold text-slate-400/80 uppercase tracking-widest">Entregados</span>
               </div>
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Entregados</span>
+              <p class="text-3xl font-bold text-slate-400 tracking-tight" id="summaryEntregados">0</p>
             </div>
-            <p class="text-2xl font-bold text-slate-600" id="summaryEntregados">0</p>
           </div>
         </div>
 
