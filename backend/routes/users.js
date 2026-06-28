@@ -142,7 +142,26 @@ router.put('/:id', authMiddleware, requirePermission('puede_gestionar_usuarios')
       updateData.password_hash = await bcrypt.hash(password, SALT_ROUNDS);
     }
     if (permisos) {
-      Object.assign(updateData, permisos);
+      // Convertir camelCase → snake_case (frontend envia camelCase, DB usa snake_case)
+      var PERM_MAP = {
+        puedeCrearProductos: 'puede_crear_productos',
+        puedeEditarProductos: 'puede_editar_productos',
+        puedeEliminarProductos: 'puede_eliminar_productos',
+        puedeCrearSalidas: 'puede_crear_salidas',
+        puedeEditarSalidas: 'puede_editar_salidas',
+        puedeEliminarSalidas: 'puede_eliminar_salidas',
+        puedeCrearEntradas: 'puede_crear_entradas',
+        puedeEditarEntradas: 'puede_editar_entradas',
+        puedeEliminarEntradas: 'puede_eliminar_entradas',
+        puedeGestionarUsuarios: 'puede_gestionar_usuarios',
+        puedeVerInventario: 'puede_ver_inventario',
+        puedeVerMovimientos: 'puede_ver_movimientos',
+        puedeVerDashboard: 'puede_ver_dashboard'
+      };
+      Object.keys(permisos).forEach(function (k) {
+        var col = PERM_MAP[k] || k;
+        updateData[col] = !!permisos[k];
+      });
     }
 
     const { data, error } = await supabase

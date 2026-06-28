@@ -1,5 +1,5 @@
 import { $, escapeHtml } from '../core/dom.js';
-import { openModal, closeModal, showError } from '../components/modal.js';
+import { openModal, closeModal, showError, showConfirm } from '../components/modal.js';
 import { applyPermissionsToUI } from '../core/permissions.js';
 import { showToast } from '../components/toast.js';
 import { PERM_LABELS, buildPermsObj, plantillaPorRolFrontend, renderPermsGrid, setPermsChecked, readPermsChecked, initPermsGridHandlers } from '../components/permissions-grid.js';
@@ -232,39 +232,58 @@ window.editUser = async function (id) {
   }
 }
 
-window.deleteUser = async function (id, username) {
-  if (!confirm('¿Desactivar al usuario "' + username + '"?')) return;
-  try {
-    await API.users.delete(id);
-    showToast('Usuario desactivado', 'success');
-    loadUsers();
-  } catch (err) {
-    showToast('Error: ' + err.message, 'error');
-  }
+window.deleteUser = function (id, username) {
+  showConfirm({
+    title: '¿Desactivar usuario?',
+    message: '"' + username + '" sera desactivado. No podra iniciar sesion hasta que lo reactives.',
+    confirmText: 'Desactivar',
+    variant: 'danger',
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+  }, async function () {
+    try {
+      await API.users.delete(id);
+      showToast('Usuario desactivado', 'success');
+      loadUsers();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  });
 }
 
-window.approveUser = async function (id, username) {
-  // Si el admin quiere cambiar el rol antes de aprobar, abrir el modal de edicion
-  if (!confirm('¿Aprobar al usuario "' + username + '"? Luego podras editar sus permisos desde el boton lapiz.')) return;
-  try {
-    await API.users.approve(id, { role: 'vendedor' });
-    showToast('Usuario aprobado. Edita sus permisos si necesitas.', 'success');
-    loadUsers();
-  } catch (err) {
-    showToast('Error: ' + err.message, 'error');
-  }
+window.approveUser = function (id, username) {
+  showConfirm({
+    title: '¿Aprobar usuario?',
+    message: '"' + username + '" podra iniciar sesion como vendedor. Podes editar sus permisos luego desde el lapiz.',
+    confirmText: 'Aprobar',
+    variant: 'info',
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+  }, async function () {
+    try {
+      await API.users.approve(id, { role: 'vendedor' });
+      showToast('Usuario aprobado', 'success');
+      loadUsers();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  });
 }
 
-window.rejectUser = async function (id, username) {
-  var motivo = prompt('Motivo del rechazo (opcional):', '');
-  if (motivo === null) return;
-  try {
-    await API.users.reject(id, { motivo: motivo || 'Sin motivo especificado' });
-    showToast('Usuario rechazado', 'success');
-    loadUsers();
-  } catch (err) {
-    showToast('Error: ' + err.message, 'error');
-  }
+window.rejectUser = function (id, username) {
+  showConfirm({
+    title: '¿Rechazar usuario?',
+    message: '"' + username + '" no podra iniciar sesion. Podes dejar un motivo opcional.',
+    confirmText: 'Rechazar',
+    variant: 'warning',
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+  }, async function () {
+    try {
+      await API.users.reject(id, { motivo: 'Rechazado por administrador' });
+      showToast('Usuario rechazado', 'success');
+      loadUsers();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  });
 }
 
 
