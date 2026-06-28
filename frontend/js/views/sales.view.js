@@ -599,7 +599,14 @@ window.viewSale = async function (id) {
     var dateEl = $('#detailSaleDate');
     if (dateEl) dateEl.textContent = formatDate(sale.createdAt);
     var pmEl = $('#detailSalePayment');
-    if (pmEl) pmEl.textContent = sale.paymentMethod;
+    if (pmEl) {
+      var label = sale.paymentMethod;
+      if (label === 'domicilio') label = '🛵 Domicilio';
+      else if (label === 'recogido') label = '🏠 Recoger';
+      else if (sale.mesaNombre) label = sale.mesaNombre;
+      else label = sale.paymentMethod || '—';
+      pmEl.textContent = label;
+    }
     var totalEl = $('#detailSaleTotal');
     if (totalEl) totalEl.textContent = formatCurrency(total);
 
