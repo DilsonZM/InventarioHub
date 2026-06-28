@@ -381,10 +381,15 @@ function renderDishRow(d, isActive) {
   var actions;
   if (isActive) {
     actions = '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Editar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>'
-      + '<button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Archivar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>';
+      + '<button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Archivar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>'
+      + '<button onclick="window.deleteDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Eliminar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>';
   } else {
     actions = '<button onclick="window.reactivateDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="px-2.5 py-1 text-xs font-medium text-brand-600 bg-brand-100 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Reactivar">Reactivar</button>';
   }
+
+  var stockBadge = d.disponible
+    ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Con stock</span>'
+    : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Sin stock</span>';
 
   return '<tr class="hover:bg-slate-50 transition-colors">'
     + '<td class="px-6 py-3"><span class="text-sm font-semibold text-slate-800">' + escapeHtml(d.nombre) + '</span>' + ingsHtml + '</td>'
@@ -392,12 +397,18 @@ function renderDishRow(d, isActive) {
     + '<td class="px-6 py-3 text-center"><span class="text-sm text-slate-600">' + (d.num_ingredientes || 0) + '</span></td>'
     + '<td class="px-6 py-3 text-right"><span class="text-sm font-semibold text-slate-800">' + Utils.formatCurrency(d.precio_venta) + '</span></td>'
     + '<td class="px-6 py-3 text-right"><span class="text-sm ' + ((d.costo || 0) > 0 ? 'text-slate-600' : 'text-slate-400') + '">' + ((d.costo || 0) > 0 ? Utils.formatCurrency(d.costo) : '—') + '</span></td>'
-    + '<td class="px-6 py-3 text-center">' + (isActive ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800">Activo</span>' : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Archivado</span>') + '</td>'
+    + '<td class="px-6 py-3 text-center">' + (isActive ? stockBadge : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Archivado</span>') + '</td>'
     + '<td class="px-6 py-3 text-right"><div class="flex items-center justify-end gap-1">' + actions + '</div></td>'
     + '</tr>';
 }
 
 function renderDishCard(d, isActive) {
+  var stockBadge = d.disponible
+    ? '<span class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">Con stock</span>'
+    : '<span class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800">Sin stock</span>';
+
+  if (!isActive) stockBadge = '<span class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">Archivado</span>';
+
   return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3' + (isActive ? '' : ' opacity-75') + '">'
     + '<div class="flex items-start justify-between gap-2">'
     + '<div class="min-w-0 flex-1">'
@@ -405,11 +416,11 @@ function renderDishCard(d, isActive) {
     + (d.ingredientes && d.ingredientes.length > 0 ? '<div class="text-[11px] text-slate-400 mt-0.5 space-y-0.5">' + d.ingredientes.map(function(ing) { return '<div>· ' + escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad + (ing.costo > 0 ? ' — ' + Utils.formatCurrency(ing.costo) : '') + '</div>'; }).join('') + '</div>' : '')
     + '<p class="text-xs text-slate-500 mt-0.5">' + (d.tipo === 'bebida' ? 'Bebida' : 'Plato') + ' · Venta: ' + Utils.formatCurrency(d.precio_venta) + ((d.costo || 0) > 0 ? ' · Costo: ' + Utils.formatCurrency(d.costo) : '') + '</p>'
     + '</div>'
-    + '<span class="shrink-0 text-xs px-2 py-0.5 rounded-full ' + (isActive ? 'text-brand-800 bg-brand-100' : 'text-red-800 bg-red-100') + '">' + (isActive ? 'Activo' : 'Archivado') + '</span>'
+    + stockBadge
     + '</div>'
     + '<div class="flex items-center justify-end gap-1">'
     + (isActive
-      ? '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-brand-600 hover:bg-brand-100 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>'
+      ? '<button onclick="window.editDish(\'' + d.id + '\')" class="p-1.5 text-brand-600 hover:bg-brand-100 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="window.archiveDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button><button onclick="window.deleteDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors touch-target"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>'
       : '<button onclick="window.reactivateDish(\'' + d.id + '\', \'' + escapeHtml(d.nombre) + '\')" class="px-3 py-1.5 text-xs font-semibold text-brand-600 bg-brand-100 hover:bg-brand-100 rounded-lg transition-colors touch-target">Reactivar</button>')
     + '</div>'
     + '</div>';
@@ -424,19 +435,19 @@ window.editDish = async function (dishId) {
 
 window.archiveDish = function (dishId, dishName) {
   if (!window.can('puedeEditarProductos')) { showToast('Sin permiso', 'error'); return; }
-  window.confirmAction(
-    '¿Archivar plato?',
-    '"' + dishName + '" dejará de estar disponible para ventas. Podés reactivarlo cuando quieras.',
-    '<svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>',
-    'Archivar',
-    async function () {
-      try {
-        var res = await API.dishes.update(dishId, { activo: false });
-        if (res.success) { showToast('Plato archivado', 'success'); loadDishes(); }
-        else showToast(res.message || 'Error al archivar', 'error');
-      } catch (err) { showToast('Error de conexion', 'error'); }
-    }
-  );
+  showConfirm({
+    title: '¿Archivar plato?',
+    message: '"' + dishName + '" dejará de estar disponible para ventas. Podés reactivarlo cuando quieras.',
+    confirmText: 'Archivar',
+    variant: 'warning',
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>'
+  }, async function () {
+    try {
+      var res = await API.dishes.update(dishId, { activo: false });
+      if (res.success) { showToast('Plato archivado', 'success'); loadDishes(); }
+      else showToast(res.message || 'Error al archivar', 'error');
+    } catch (err) { showToast('Error de conexion', 'error'); }
+  });
 }
 
 window.reactivateDish = async function (dishId, dishName) {
@@ -448,19 +459,27 @@ window.reactivateDish = async function (dishId, dishName) {
   } catch (err) { showToast('Error de conexion', 'error'); }
 }
 
-window.deleteDish = async function (dishId, dishName) {
-  if (!confirm('¿Desactivar "' + dishName + '"? Dejará de estar disponible.')) return;
-  try {
-    var res = await API.dishes.delete(dishId);
-    if (res.success) {
-      showToast('Plato desactivado', 'success');
-      loadDishes();
-    } else {
-      showToast(res.message || 'Error al desactivar', 'error');
+window.deleteDish = function (dishId, dishName) {
+  if (!window.can('puedeEliminarProductos')) { showToast('Sin permiso', 'error'); return; }
+  showConfirm({
+    title: '¿Eliminar plato?',
+    message: '"' + dishName + '" será desactivado. Dejará de estar disponible en el punto de venta.',
+    confirmText: 'Eliminar',
+    variant: 'danger',
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+  }, async function () {
+    try {
+      var res = await API.dishes.delete(dishId);
+      if (res.success) {
+        showToast('Plato eliminado', 'success');
+        loadDishes();
+      } else {
+        showToast(res.message || 'Error al eliminar', 'error');
+      }
+    } catch (err) {
+      showToast('Error de conexion', 'error');
     }
-  } catch (err) {
-    showToast('Error de conexion', 'error');
-  }
+  });
 }
 
 
