@@ -87,7 +87,7 @@ async function loadUsers() {
       var pendiente = u.estadoAprobacion === 'pendiente';
       var rechazado = u.estadoAprobacion === 'rechazado';
       var inactivo = u.activo === false;
-      var rowClass = pendiente ? ' bg-amber-100/30' : (inactivo ? ' bg-slate-100/50 opacity-60' : '');
+      var rowClass = pendiente ? ' bg-amber-100/30' : (inactivo ? ' opacity-50' : '');
       var actionsHtml = '';
       if (pendiente) {
         actionsHtml = '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-brand-600 bg-brand-100 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Aprobar">'
@@ -95,7 +95,7 @@ async function loadUsers() {
           + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-red-600 bg-red-100 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Rechazar">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
       } else if (inactivo) {
-        actionsHtml = '<button onclick="window.reactivateUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-green-600 bg-green-100 hover:bg-green-100 rounded-lg transition-colors touch-target" title="Reactivar">'
+        actionsHtml = '<button onclick="window.reactivateUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-all touch-target" title="Reactivar">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>';
       } else {
         actionsHtml = '<button onclick="window.editUser(\'' + u.id + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Editar">'
@@ -108,7 +108,7 @@ async function loadUsers() {
         + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(u.nombreCompleto || '-') + '</td>'
         + '<td class="px-6 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-100 text-violet-800' : 'bg-brand-100 text-brand-800') + '">' + u.role + '</span></td>'
         + '<td class="px-6 py-3 text-center"><span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">' + activeCount + '/13</span></td>'
-        + '<td class="px-6 py-3">' + (inactivo ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Archivado</span>' : estadoBadge(u.estadoAprobacion)) + '</td>'
+        + '<td class="px-6 py-3">' + (inactivo ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-slate-400 border border-slate-200">Archivado</span>' : estadoBadge(u.estadoAprobacion)) + '</td>'
         + '<td class="px-6 py-3 text-right"><div class="flex items-center justify-end gap-1">' + actionsHtml + '</div></td>'
         + '</tr>';
     }).join('');
@@ -126,7 +126,8 @@ async function loadUsers() {
           + '</div>';
       } else if (inactivo) {
         actionsHtml = '<div class="flex gap-1 pt-2 border-t border-slate-100">'
-          + '<button onclick="window.reactivateUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-green-600 bg-green-100 rounded-lg text-sm font-medium touch-target">Reactivar</button>'
+          + '<button onclick="window.reactivateUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-lg text-sm font-medium transition-all touch-target flex items-center justify-center gap-1.5">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Reactivar</button>'
           + '</div>';
       } else {
         actionsHtml = '<div class="flex gap-1 pt-2 border-t border-slate-100">'
@@ -134,8 +135,8 @@ async function loadUsers() {
           + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-amber-600 bg-amber-100 rounded-lg text-sm font-medium touch-target">Desactivar</button>'
           + '</div>';
       }
-      var estadoLabel = inactivo ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Archivado</span>' : estadoBadge(u.estadoAprobacion);
-      return '<div class="bg-white border ' + (pendiente ? 'border-amber-300' : (inactivo ? 'border-slate-300 opacity-60' : 'border-slate-200')) + ' rounded-xl p-4 space-y-2">'
+      var estadoLabel = inactivo ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-slate-400 border border-slate-200">Archivado</span>' : estadoBadge(u.estadoAprobacion);
+      return '<div class="bg-white border ' + (pendiente ? 'border-amber-300' : (inactivo ? 'border-slate-200 opacity-50' : 'border-slate-200')) + ' rounded-xl p-4 space-y-2">'
         + '<div class="flex items-start justify-between"><div><p class="text-sm font-semibold text-slate-800">' + escapeHtml(u.username) + '</p><p class="text-xs text-slate-500">' + escapeHtml(u.email || '') + '</p></div>'
         + '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-100 text-violet-800' : 'bg-brand-100 text-brand-800') + '">' + u.role + '</span></div>'
         + '<p class="text-xs text-slate-500">' + escapeHtml(u.nombreCompleto || '-') + '</p>'
