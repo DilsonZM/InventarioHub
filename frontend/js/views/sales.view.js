@@ -639,46 +639,13 @@ window.deleteSale = async function (id) {
   }
 };
 
-window.editSale = async function (id) {
+window.editSale = function (id) {
   if (!can('puedeEditarSalidas')) {
-    showToast('No tienes permiso para editar salidas', 'error');
+    showToast('Sin permiso', 'error');
     return;
   }
-  try {
-    var res = await API.sales.get(id);
-    var sale = res.data;
-    state.editingSaleId = id;
-    state.saleDishItems = [];
-    state.saleItems = [];
-    sale.items.forEach(function (it) {
-      if (it.esPlato) {
-        state.saleDishItems.push({
-          plato_id: it.platoId,
-          nombre: it.productName,
-          cantidad: it.quantity,
-          precioUnitario: it.unitPrice
-        });
-      } else if (it.productId) {
-        state.saleItems.push({
-          productId: it.productId,
-          productName: it.productName,
-          cantidadPresentacion: it.cantidadPresentacion || it.quantity,
-          cantidadBase: it.quantity,
-          unidadBase: 'unidad',
-          unidadPresentacion: it.unidadPresentacion || null,
-          unidadPresentacionLabel: it.unidadPresentacion || null,
-          factorConversion: it.factorConversion || 1
-        });
-      }
-    });
-    var pmEl = $('#salePaymentMethod');
-    if (pmEl) pmEl.value = sale.paymentMethod || '';
-    var titleEl = document.querySelector('#saleModal h3');
-    if (titleEl) titleEl.textContent = 'Editar Pedido #' + sale.id.slice(-6);
-    openSaleModal();
-  } catch (err) {
-    showToast('Error al cargar salida: ' + err.message, 'error');
-  }
+  store.set({ editingPOSOrderId: id });
+  location.hash = '#pos';
 };
 
 window.advanceOrderState = async function (id) {

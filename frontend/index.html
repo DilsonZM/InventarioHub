@@ -572,7 +572,7 @@
                   <th class="px-6 py-3">Mesa</th>
                   <th class="px-6 py-3">Productos</th>
                   <th class="px-6 py-3 text-right">Total</th>
-                  <th class="px-6 py-3">Estado</th>
+                  <th class="px-6 py-3 text-center">Estado</th>
                   <th class="px-6 py-3">Fecha</th>
                   <th class="px-6 py-3 text-right">Acciones</th>
                 </tr>
@@ -1277,12 +1277,19 @@
       </div>
       <!-- Columna Derecha: Pedido (oculta en mobile, visible en desktop) -->
       <div id="posOrderPanel" class="pos-order-panel hidden lg:flex w-full lg:w-96 flex-shrink-0 flex-col bg-white overflow-hidden">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0 gap-2">
           <h3 class="text-base font-bold text-slate-800">Pedido</h3>
+          <div class="flex items-center gap-1.5 bg-slate-100 rounded-lg p-0.5">
+            <button type="button" class="pos-mode-btn px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors" data-pos-mode="mesa" onclick="window.setPOSMode('mesa')">Mesa</button>
+            <button type="button" class="pos-mode-btn px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors" data-pos-mode="domicilio" onclick="window.setPOSMode('domicilio')">Domicilio</button>
+            <button type="button" class="pos-mode-btn px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors" data-pos-mode="recogido" onclick="window.setPOSMode('recogido')">Recoger</button>
+          </div>
+          <div id="posMesaGroup" class="flex items-center gap-1">
+            <select id="posMesa" class="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+              <option value="">Sin mesa</option>
+            </select>
+          </div>
           <button class="lg:hidden p-1.5 text-slate-400 hover:text-slate-600 rounded-lg" onclick="window.closePOSOrder()">✕</button>
-          <select id="posMesa" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
-            <option value="">Sin mesa</option>
-          </select>
         </div>
         <div id="posOrderItems" class="flex-1 overflow-y-auto px-4 py-3 space-y-2">
           <p class="text-sm text-slate-400 text-center py-8">Toca un producto para agregarlo</p>

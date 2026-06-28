@@ -19,6 +19,7 @@ export const store = {
     user: null,
     editingSaleId: null,
     editingCompraId: null,
+    editingPOSOrderId: null,
     modoPublico: false,
     activeFilters: [],
     saleType: 'productos',

@@ -38,10 +38,17 @@ function restorePOSOrder() {
 
 async function loadPOS() {
   console.log('[POS] Cargando vista POS...');
-  // Restaurar pedido persistido (si existe). Asi el pedido
-  // sobrevive a navegaciones entre modulos y a recargas.
-  state.posItems = restorePOSOrder();
-  state.posMesaId = null;
+  // Restaurar pedido persistido (si existe). Pero si venimos a editar
+  // un pedido existente, no queremos restaurar el localStorage.
+  var editingId = state.editingPOSOrderId;
+  if (editingId) {
+    state.posItems = [];
+    state.posMesaId = null;
+    try { localStorage.removeItem(POS_ORDER_KEY); } catch (e) {}
+  } else {
+    state.posItems = restorePOSOrder();
+    state.posMesaId = null;
+  }
 
   var allProducts = [];
   var allDishes = [];
@@ -71,6 +78,43 @@ async function loadPOS() {
   renderPOSCategories(allDishes, allProducts);
   renderPOSOrder();
   renderPOSMesas(mesas);
+
+  // Si venimos a editar un pedido, cargarlo
+  if (editingId) {
+    state._editingSale = null;
+    try {
+      var saleRes = await API.sales.get(editingId);
+      var sale = saleRes.data;
+      if (sale) {
+        state.posItems = (sale.items || []).map(function (it) {
+          var base = allProducts.find(function (p) { return p.id === (it.productId); });
+          var dish = allDishes.find(function (d) { return d.id === (it.platoId); });
+          if (it.platoId && dish) {
+            return { id: dish.id, type: 'dish', name: dish.nombre || it.productName, price: dish.precio_venta || it.unitPrice, qty: it.quantity, platoId: dish.id };
+          }
+          if (it.productId && base) {
+            return { id: base.id, type: 'producto', name: base.name || it.productName, qty: it.quantity, unidad: base.unidad || 'unidad' };
+          }
+          return { id: it.productId || it.platoId || it.id, type: it.platoId ? 'dish' : 'producto', name: it.productName, qty: it.quantity, price: it.unitPrice, platoId: it.platoId };
+        });
+        state._editingSale = sale;
+        if (sale.mesaId) {
+          var sel = $('#posMesa');
+          if (sel) sel.value = sale.mesaId;
+          state.posMode = 'mesa';
+        }
+        // Actualizar boton
+        var btn = $('#posRegisterBtn');
+        var btnText = $('#posRegisterText');
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = 'Actualizar Pedido';
+      }
+    } catch (e) { console.error('[POS] Error loading sale for edit:', e); }
+    state.editingPOSOrderId = null;
+  }
+
+  // Configurar modo (mesa/domicilio/recoger)
+  initPOSMode();
 
   // Re-marcar como seleccionadas las cards que ya estan en el pedido
   // (para que el check verde reaparezca al volver al POS).
@@ -257,6 +301,41 @@ function renderPOSMesas(mesas) {
     }).join('');
 }
 
+function initPOSMode() {
+  var btns = $$('.pos-mode-btn');
+  var mesaGroup = $('#posMesaGroup');
+  var active = state.posMode || 'mesa';
+  state.posMode = active;
+
+  btns.forEach(function (btn) {
+    btn.classList.remove('bg-brand-600', 'text-white', 'bg-slate-200', 'text-slate-600');
+    var mode = btn.dataset.posMode;
+    if (mode === active) {
+      btn.classList.add('bg-brand-600', 'text-white');
+    } else {
+      btn.classList.add('bg-slate-200', 'text-slate-600');
+    }
+  });
+
+  if (mesaGroup) {
+    mesaGroup.style.display = active === 'mesa' ? '' : 'none';
+  }
+}
+
+function setPOSMode(mode) {
+  state.posMode = mode;
+  initPOSMode();
+  // Actualizar badge en resumen
+  updatePOSModeBadge();
+}
+
+function updatePOSModeBadge() {
+  var el = $('#posModeBadge');
+  if (!el) return;
+  var labels = { mesa: 'Mesa', domicilio: 'Domicilio', recogido: 'Para recoger' };
+  el.textContent = labels[state.posMode || 'mesa'] || 'Mesa';
+}
+
 function applyPOSFilter(filter) {
   state._posFilter = filter;
   refreshPOSVisibility();
@@ -298,6 +377,15 @@ function posSearchHandler() {
 async function submitPOSOrder() {
   if (state.posItems.length === 0) return;
 
+  var editingSale = state._editingSale;
+  var mode = state.posMode || 'mesa';
+  var mesaId = $('#posMesa').value || null;
+
+  if (mode === 'mesa' && !mesaId) {
+    showToast('Selecciona una mesa o cambia a Domicilio/Recoger', 'warning');
+    return;
+  }
+
   var btn = $('#posRegisterBtn');
   var btnText = $('#posRegisterText');
   if (btn) { btn.disabled = true; if (btnText) btnText.textContent = 'Procesando...'; }
@@ -322,8 +410,8 @@ async function submitPOSOrder() {
 
   var mesaId = $('#posMesa').value || null;
   var payload = {
-    paymentMethod: 'cocina',
-    mesa_id: mesaId,
+    paymentMethod: mode === 'mesa' ? 'cocina' : mode,
+    mesa_id: mode === 'mesa' ? mesaId : null,
     platos: platos.length > 0 ? platos : undefined,
     items: items.length > 0 ? items : undefined
   };
@@ -361,13 +449,19 @@ async function submitPOSOrder() {
   try {
     // Paso 1: ya estamos en "Procesando pedido..." — el await del create
     //         cubre la fase de validacion/registro en el backend.
-    var res = await API.sales.create(payload);
+    var res;
+    if (editingSale) {
+      res = await API.sales.update(editingSale.id, payload);
+    } else {
+      res = await API.sales.create(payload);
+    }
 
     if (res.success) {
       // Paso 2: ticket generado
       advance();
 
       state.posItems = [];
+      state._editingSale = null;
       // Limpiar pedido persistido al registrar con exito.
       try { localStorage.removeItem(POS_ORDER_KEY); } catch (e) { /* noop */ }
       state._lastTicketSale = res.data;
@@ -398,7 +492,8 @@ async function submitPOSOrder() {
       // Cerrar loading y mostrar exito
       setTimeout(function () {
         hideLoading();
-        showToast('Pedido registrado correctamente', 'success');
+        showToast(editingSale ? 'Pedido actualizado' : 'Pedido registrado correctamente', 'success');
+        if (editingSale) { renderPOSCategories(state._posDishes, state._posProducts); }
       }, sendsComanda ? 600 : 350);
     } else {
       hideLoading();
@@ -409,7 +504,7 @@ async function submitPOSOrder() {
     showToast(err.message || 'Error al registrar', 'error');
   }
 
-  if (btn) { btn.disabled = false; if (btnText) btnText.textContent = 'Registrar Pedido'; }
+  if (btn) { btn.disabled = false; if (btnText) btnText.textContent = editingSale ? 'Actualizar Pedido' : 'Registrar Pedido'; }
 }
 
 
@@ -561,11 +656,17 @@ window.removePOSItem = function (idx) {
 // de "Limpiar pedido" despues de la confirmacion del usuario.
 window.clearPOSOrder = function () {
   state.posItems = [];
+  state._editingSale = null;
   // Quitar TODAS las cards seleccionadas (porque el pedido se vacio)
   var sel = document.querySelectorAll('.pos-card--selected');
   sel.forEach(function (el) { el.classList.remove('pos-card--selected'); });
   // Limpiar persistencia
   try { localStorage.removeItem('posCurrentOrder'); } catch (e) { /* noop */ }
+  // Resetear boton
+  var btn = $('#posRegisterBtn');
+  var btnText = $('#posRegisterText');
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Agrega productos';
   renderPOSOrder();
   if (typeof showToast === 'function') showToast('Pedido limpiado');
 };
@@ -1049,4 +1150,6 @@ if (typeof window !== "undefined") {
   if (typeof printThermal === "function") window.printThermal = printThermal;
   if (typeof printThermalKitchen === "function") window.printThermalKitchen = printThermalKitchen;
   if (typeof configureTicketButtons === "function") window.configureTicketButtons = configureTicketButtons;
+  if (typeof setPOSMode === "function") window.setPOSMode = setPOSMode;
+  if (typeof initPOSMode === "function") window.initPOSMode = initPOSMode;
 }
