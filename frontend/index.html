@@ -276,6 +276,18 @@
               </button>
             </div>
           </div>
+          <!-- Mobile: boton Filtros + chips -->
+          <div class="md:hidden flex items-center justify-end gap-2 mt-3" data-mobile-filters="dashboard">
+            <button data-open-filters="dashboard" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+              <span>Filtros</span>
+              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
+            </button>
+            <button id="clearFiltersBtnDashMobile" data-view="dashboard" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="active-filter-chips md:hidden mt-2 flex flex-wrap gap-1.5" data-chips="dashboard"></div>
         </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-lg hover:border-brand-100 animate-stagger animate-stagger-1">
@@ -495,6 +507,20 @@
                <button id="clearFiltersBtn" class="clear-filters-btn hidden lg:inline-flex touch-target">Limpiar</button>
             </div>
           </div>
+          <!-- Mobile: boton Nueva + filtros + chips -->
+          <div class="lg:hidden flex items-center justify-between gap-2 mt-3">
+            <div class="flex items-center gap-2">
+              <button data-open-filters="sales" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                <span>Filtros</span>
+                <span class="mobile-filters-count hidden px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
+              </button>
+              <button id="clearFiltersBtnMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="active-filter-chips lg:hidden mt-2 flex flex-wrap gap-1.5" data-chips="sales"></div>
         </div>
 
         <div id="salesSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -620,6 +646,16 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
               <span>Nueva Entrada</span>
             </button>
+            <div class="flex items-center gap-2">
+              <button data-open-filters="entradas" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                <span>Filtros</span>
+                <span class="mobile-filters-count hidden px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
+              </button>
+              <button id="clearFiltersBtnEntradasMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
           </div>
           <div class="active-filter-chips lg:hidden mt-2 flex flex-wrap gap-1.5" data-chips="entradas"></div>
         </div>
@@ -687,6 +723,16 @@
             <div>
                <button id="clearFiltersBtnMov" data-view="movimientos" class="clear-filters-btn hidden lg:inline-flex touch-target">Limpiar</button>
             </div>
+          </div>
+          <div class="lg:hidden flex items-center justify-end gap-2 mt-3">
+            <button data-open-filters="movimientos" class="mobile-filters-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium text-slate-600 transition-colors touch-target">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+              <span>Filtros</span>
+              <span class="mobile-filters-count hidden px-1.5 rounded-full bg-brand-500 text-white text-[10px] font-semibold leading-tight min-w-[16px] h-[16px] flex items-center justify-center"></span>
+            </button>
+            <button id="clearFiltersBtnMovMobile" class="clear-filters-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all touch-target" title="Limpiar">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
           </div>
           <div class="active-filter-chips lg:hidden mt-2 flex flex-wrap gap-1.5" data-chips="movimientos"></div>
         </div>
@@ -785,28 +831,24 @@
   </div>
 
   <!-- Modal: Filtros (mobile) -->
-  <div id="mobileFiltersModal" class="hidden fixed inset-0 z-50">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-apply-filters-overlay></div>
-    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl transform transition-transform duration-300 ease-out" id="mobileFiltersSheet">
-      <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-        <h3 class="text-sm font-semibold text-slate-800">Filtros</h3>
-        <button id="mobileFiltersClose" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors touch-target">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div id="mobileFiltersContent" class="px-5 py-3 space-y-3 max-h-[55dvh] overflow-y-auto"></div>
-      <div class="flex gap-2 px-5 py-3 border-t border-slate-100">
-        <button id="mobileFiltersClear" class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 font-medium rounded-xl text-sm hover:bg-slate-50 transition-colors touch-target">Limpiar</button>
-        <button id="mobileFiltersApply" class="flex-1 btn-primary px-4 py-2.5 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Aplicar</button>
+  <div id="mobileFiltersModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-[100dvh]">
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" data-apply-filters-overlay></div>
+      <div class="relative bg-white w-full sm:max-w-md rounded-t-2xl shadow-2xl z-10 animate-slide-up">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <h3 class="text-sm font-semibold text-slate-800">Filtros</h3>
+          <button data-close-modal class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors touch-target">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div id="mobileFiltersContent" class="px-5 py-3 space-y-3 max-h-[60dvh] overflow-y-auto"></div>
+        <div class="flex gap-2 px-5 py-3 border-t border-slate-100">
+          <button id="mobileFiltersClear" class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 font-medium rounded-xl text-sm hover:bg-slate-50 transition-colors touch-target">Limpiar</button>
+          <button id="mobileFiltersApply" class="flex-1 btn-primary px-4 py-2.5 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Aplicar</button>
+        </div>
       </div>
     </div>
   </div>
-
-  <!-- FAB: boton flotante de filtros (solo mobile) -->
-  <button id="filterFab" class="hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-slate-800 text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95" title="Filtros">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-    <span id="filterFabBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow">0</span>
-  </button>
 
   <div id="saleModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
     <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
