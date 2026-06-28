@@ -148,7 +148,7 @@ export function showConfirm(opts, onConfirm) {
       iconWrap.innerHTML = opts.icon;
       // aplicar color al SVG interno
       var svg = iconWrap.querySelector('svg');
-      if (svg) svg.className = 'w-6 h-6 ' + p.fg;
+      if (svg) svg.setAttribute('class', 'w-6 h-6 ' + p.fg);
     } else {
       // Icono por defecto segun variante
       var defaultIcon = variant === 'warning'
