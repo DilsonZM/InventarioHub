@@ -374,7 +374,6 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
       .update({
         metodo_pago: paymentMethod,
         mesa_id: mesa_id || null,
-        estado_cocina: 'pendiente',
         subtotal: subtotal,
         impuesto: impuesto,
         total: total
