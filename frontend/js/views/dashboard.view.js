@@ -452,11 +452,13 @@ function initVentasGroupButtons() {
     if (!btn) return;
     var btns = container.querySelectorAll('.ventas-group-btn');
     btns.forEach(function (b) {
-      b.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
-      b.classList.add('bg-slate-100', 'text-slate-600');
+      b.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+      b.classList.add('bg-transparent', 'text-slate-500');
+      b.classList.remove('hover:text-slate-700');
     });
-    btn.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
-    btn.classList.remove('bg-slate-100', 'text-slate-600');
+    btn.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+    btn.classList.remove('bg-transparent', 'text-slate-500');
+    btn.classList.add('hover:text-slate-700');
     loadVentasMargen(btn.dataset.group);
   });
 }
