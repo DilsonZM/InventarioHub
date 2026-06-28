@@ -72,7 +72,7 @@ function initUsers() {
 async function loadUsers() {
   if (!window.can('puedeGestionarUsuarios')) return;
   try {
-    var showAll = $('#showAllUsers') ? $('#showAllUsers').checked : false;
+    var showAll = $('#showAllUsers') ? $('#showAllUsers').checked : true;
     var params = showAll ? { todos: '1' } : {};
     var res = await API.users.list(params);
     var users = res.data || [];

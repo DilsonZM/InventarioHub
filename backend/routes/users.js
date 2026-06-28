@@ -99,20 +99,36 @@ router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), 
 
     const { data: existing } = await supabase
       .from('perfiles')
-      .select('id')
+      .select('id, activo')
       .eq('username', username)
       .single();
-    if (existing) {
-      return res.status(400).json({ success: false, message: 'El nombre de usuario ya existe' });
-    }
 
-    // Limite maximo 5 usuarios activos
-    const { count } = await supabase
-      .from('perfiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('activo', true);
-    if ((count || 0) >= 5) {
-      return res.status(400).json({ success: false, message: 'Limite maximo de 5 usuarios alcanzado. Desactiva uno para crear otro.' });
+    if (existing) {
+      if (existing.activo) {
+        return res.status(400).json({ success: false, message: 'El nombre de usuario ya existe y esta activo' });
+      }
+      // Usuario existe pero esta inactivo: reactivarlo en vez de crear uno nuevo
+      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      const basePerms = plantillaPorRol(userRole);
+      const finalPerms = permisos ? { ...basePerms, ...permisos } : basePerms;
+
+      const { data: reactivated, error: reactError } = await supabase
+        .from('perfiles')
+        .update({
+          password_hash: passwordHash,
+          role: userRole,
+          email: email || null,
+          nombre_completo: nombreCompleto || null,
+          activo: true,
+          estado_aprobacion: 'aprobado',
+          ...finalPerms
+        })
+        .eq('id', existing.id)
+        .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+        .single();
+
+      if (reactError) throw reactError;
+      return res.status(200).json({ success: true, data: userPublic(reactivated), message: 'Usuario reactivado (ya existia inactivo)' });
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
