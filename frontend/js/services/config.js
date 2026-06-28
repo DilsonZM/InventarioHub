@@ -43,8 +43,7 @@ export async function getConfig() {
         printerHost: res.data.printerHost || '127.0.0.1',
         printerPort: res.data.printerPort || 9100,
         printerEnabled: !!res.data.printerEnabled,
-        comandaEnabled: !!res.data.comandaEnabled,
-        printerKind: res.data.printerKind || 'browser',
+        printerKind: 'both',
         posRedirectAuto: res.data.posRedirectAuto !== false
       };
       setCachedConfig(cfg);
@@ -61,8 +60,7 @@ export async function getConfig() {
         printerHost: '127.0.0.1',
         printerPort: 9100,
         printerEnabled: false,
-        comandaEnabled: false,
-        printerKind: 'browser',
+        printerKind: 'both',
         posRedirectAuto: true
       }
     };
@@ -99,8 +97,7 @@ export async function getPrinterConfig() {
         host: res.data.printerHost || '127.0.0.1',
         port: res.data.printerPort || 9100,
         enabled: !!res.data.printerEnabled,
-        comandaEnabled: !!res.data.comandaEnabled,
-        kind: res.data.printerKind || 'browser'
+        kind: 'both'
       };
     }
   } catch (e) {
@@ -113,17 +110,16 @@ export async function getPrinterConfig() {
 function getPrinterConfigLocal() {
   try {
     var raw = localStorage.getItem(PRINTER_KEY);
-    if (!raw) return { host: '127.0.0.1', port: 9100, enabled: false, comandaEnabled: false, kind: 'browser' };
-    const obj = JSON.parse(raw);
-    return {
-      host: obj.host || '127.0.0.1',
-      port: obj.port || 9100,
-      enabled: !!obj.enabled,
-      comandaEnabled: !!obj.comandaEnabled,
-      kind: obj.kind || 'browser'
-    };
-  } catch (e) {
-    return { host: '127.0.0.1', port: 9100, enabled: false, comandaEnabled: false, kind: 'browser' };
+  if (!raw) return { host: '127.0.0.1', port: 9100, enabled: false, kind: 'both' };
+  const obj = JSON.parse(raw);
+  return {
+    host: obj.host || '127.0.0.1',
+    port: obj.port || 9100,
+    enabled: !!obj.enabled,
+    kind: 'both'
+  };
+} catch (e) {
+  return { host: '127.0.0.1', port: 9100, enabled: false, kind: 'both' };
   }
 }
 
@@ -137,8 +133,7 @@ export async function setPrinterConfig(cfg) {
       printerHost: cfg.host,
       printerPort: cfg.port,
       printerEnabled: !!cfg.enabled,
-      comandaEnabled: !!cfg.comandaEnabled,
-      printerKind: cfg.kind || 'browser'
+      printerKind: 'both'
     });
     if (res && res.success) return true;
     throw new Error(res.message || 'Error guardando config');
@@ -169,12 +164,6 @@ export function loadPrinterConfigUI() {
 
     const enabledEl = document.getElementById('printerEnabled');
     if (enabledEl) enabledEl.checked = !!d.printerEnabled;
-
-    const comandaEl = document.getElementById('comandaEnabled');
-    if (comandaEl) comandaEl.checked = !!d.comandaEnabled;
-
-    const kindEl = document.getElementById('printerKind');
-    if (kindEl) kindEl.value = d.printerKind || 'browser';
   });
 }
 
@@ -182,16 +171,12 @@ export function savePrinterConfigUI() {
   const hostEl = document.getElementById('printerHost');
   const portEl = document.getElementById('printerPort');
   const enabledEl = document.getElementById('printerEnabled');
-  const comandaEl = document.getElementById('comandaEnabled');
-  const kindEl = document.getElementById('printerKind');
 
   const host = (hostEl && hostEl.value || '').trim() || '127.0.0.1';
   const port = parseInt(portEl && portEl.value) || 9100;
   const enabled = !!(enabledEl && enabledEl.checked);
-  const comandaEnabled = !!(comandaEl && comandaEl.checked);
-  const kind = (kindEl && kindEl.value) || 'browser';
 
-  return setPrinterConfig({ host, port, enabled, comandaEnabled, kind });
+  return setPrinterConfig({ host, port, enabled, kind: 'both' });
 }
 
 // Compatibilidad: window.* exposures
