@@ -119,13 +119,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       container.style.opacity = '0';
       container.style.transform = 'scale(0.96)';
     }
+    // Ocultar hamburguesa / menu toggle durante la transicion
+    var menuToggle = document.querySelector('button[aria-label="Alternar menú"]');
+    if (menuToggle) menuToggle.style.display = 'none';
+
     setTimeout(function () {
-      if (typeof window.showLoadingTransition === 'function') {
-        window.showLoadingTransition(callback);
-      } else {
-        callback();
-      }
+      showLoginLoading(['Bienvenido!', 'Cargando tu espacio...'], callback);
     }, 250);
+  }
+
+  function showLoginLoading(steps, callback) {
+    if (typeof Swal === 'undefined') { callback(); return; }
+    var s = 0;
+    Swal.fire({
+      title: steps[0],
+      html: '<div class="pos-loading"><div class="pos-loading-ring"></div><div class="pos-loading-dots"><span></span><span></span><span></span></div></div>',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      backdrop: 'rgba(15, 23, 42, 0.55)',
+      customClass: { popup: 'pos-loading-popup', title: 'pos-loading-title' },
+      didOpen: function () {
+        function next() {
+          s++;
+          if (s >= steps.length) {
+            setTimeout(function () { Swal.close(); if (callback) callback(); }, 400);
+            return;
+          }
+          var titleEl = document.querySelector('.swal2-title');
+          if (titleEl) {
+            titleEl.style.opacity = '0';
+            titleEl.style.transition = 'opacity 0.3s ease';
+            setTimeout(function () {
+              titleEl.textContent = steps[s];
+              titleEl.style.opacity = '1';
+            }, 300);
+          }
+          setTimeout(next, 1500);
+        }
+        setTimeout(next, 1500);
+      }
+    });
   }
 
   // === LOGIN ===
