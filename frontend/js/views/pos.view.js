@@ -488,20 +488,22 @@ async function submitPOSOrder() {
         }
       } catch (e) { /* noop */ }
 
-      // Paso 3: comanda a cocina (si esta habilitada)
+      // Paso 3: comanda a cocina (SIEMPRE activa)
       var sendsComanda = false;
       var posAutoRedirect = true;
       try {
         var cfg = await window.ServicesConfig.get();
         posAutoRedirect = cfg.data.posRedirectAuto !== false;
-        if (cfg && cfg.data && cfg.data.comandaEnabled) {
-          advance();
-          sendsComanda = true;
-          // No esperamos a la termica: fire-and-forget
-          printThermalKitchen(res.data);
-        }
+        // Comanda siempre se envia, sin importar config
+        advance();
+        sendsComanda = true;
+        printThermalKitchen(res.data);
       } catch (e) {
         console.warn('No se pudo verificar comanda_enabled:', e.message);
+        // Fallback: enviar comanda igual
+        advance();
+        sendsComanda = true;
+        printThermalKitchen(res.data);
       }
 
       // Cerrar loading y mostrar exito
@@ -1019,10 +1021,10 @@ async function configureTicketButtons() {
   try {
     var cfg = await window.ServicesConfig.get();
     var kind = (cfg && cfg.data && cfg.data.printerKind) || 'browser';
-    var enabled = !!(cfg && cfg.data && cfg.data.printerEnabled);
     var thermalBtn = document.getElementById('printThermalBtn');
     if (!thermalBtn) return;
-    if (kind === 'thermal' || (kind === 'both' && enabled)) {
+    // Mostrar boton termico si la config no es 'browser' (es 'thermal' o 'both')
+    if (kind !== 'browser') {
       thermalBtn.classList.remove('hidden');
       thermalBtn.classList.add('flex');
     } else {
@@ -1030,7 +1032,7 @@ async function configureTicketButtons() {
       thermalBtn.classList.remove('flex');
     }
   } catch (e) {
-    // Mantener solo navegador en caso de error
+    // Fallback: ocultar termico
   }
 }
 
