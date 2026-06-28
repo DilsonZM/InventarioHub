@@ -72,7 +72,9 @@ function initUsers() {
 async function loadUsers() {
   if (!window.can('puedeGestionarUsuarios')) return;
   try {
-    var res = await API.users.list();
+    var showAll = $('#showAllUsers') ? $('#showAllUsers').checked : false;
+    var params = showAll ? { todos: '1' } : {};
+    var res = await API.users.list(params);
     var users = res.data || [];
     var tbody = $('#usersTable');
     var cards = $('#usersCards');
@@ -86,23 +88,30 @@ async function loadUsers() {
       var activeCount = Object.values(u.permisos).filter(Boolean).length;
       var pendiente = u.estadoAprobacion === 'pendiente';
       var rechazado = u.estadoAprobacion === 'rechazado';
-      return '<tr class="hover:bg-slate-50 transition-colors' + (pendiente ? ' bg-amber-100/30' : '') + '">'
+      var inactivo = u.activo === false;
+      var rowClass = pendiente ? ' bg-amber-100/30' : (inactivo ? ' bg-slate-100/50 opacity-60' : '');
+      var actionsHtml = '';
+      if (pendiente) {
+        actionsHtml = '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-brand-600 bg-brand-100 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Aprobar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>'
+          + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-red-600 bg-red-100 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Rechazar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
+      } else if (inactivo) {
+        actionsHtml = '<button onclick="window.reactivateUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-green-600 bg-green-100 hover:bg-green-100 rounded-lg transition-colors touch-target" title="Reactivar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>';
+      } else {
+        actionsHtml = '<button onclick="window.editUser(\'' + u.id + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Editar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>'
+          + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Desactivar">'
+          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></button>';
+      }
+      return '<tr class="hover:bg-slate-50 transition-colors' + rowClass + '">'
         + '<td class="px-6 py-3"><div class="text-sm font-medium text-slate-800">' + escapeHtml(u.username) + '</div><div class="text-xs text-slate-400">' + escapeHtml(u.email || '') + '</div></td>'
         + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(u.nombreCompleto || '-') + '</td>'
         + '<td class="px-6 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-100 text-violet-800' : 'bg-brand-100 text-brand-800') + '">' + u.role + '</span></td>'
         + '<td class="px-6 py-3 text-center"><span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">' + activeCount + '/13</span></td>'
-        + '<td class="px-6 py-3">' + estadoBadge(u.estadoAprobacion) + '</td>'
-        + '<td class="px-6 py-3 text-right">'
-        + '<div class="flex items-center justify-end gap-1">'
-        + (pendiente ? '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-brand-600 bg-brand-100 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Aprobar">'
-          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>'
-          + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-red-600 bg-red-100 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Rechazar">'
-          + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>' : '')
-        + '<button onclick="window.editUser(\'' + u.id + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Editar">'
-        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>'
-        + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Eliminar">'
-        + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>'
-        + '</div></td>'
+        + '<td class="px-6 py-3">' + (inactivo ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Inactivo</span>' : estadoBadge(u.estadoAprobacion)) + '</td>'
+        + '<td class="px-6 py-3 text-right"><div class="flex items-center justify-end gap-1">' + actionsHtml + '</div></td>'
         + '</tr>';
     }).join('');
     cards.innerHTML = users.map(function (u) {
@@ -119,7 +128,7 @@ async function loadUsers() {
       } else {
         actionsHtml = '<div class="flex gap-1 pt-2 border-t border-slate-100">'
           + '<button onclick="window.editUser(\'' + u.id + '\')" class="flex-1 p-2 text-amber-600 bg-amber-100 rounded-lg text-sm font-medium touch-target">Editar</button>'
-          + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-red-600 bg-red-100 rounded-lg text-sm font-medium touch-target">Eliminar</button>'
+          + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-amber-600 bg-amber-100 rounded-lg text-sm font-medium touch-target">Desactivar</button>'
           + '</div>';
       }
       return '<div class="bg-white border ' + (pendiente ? 'border-amber-300' : 'border-slate-200') + ' rounded-xl p-4 space-y-2">'
@@ -235,14 +244,32 @@ window.editUser = async function (id) {
 window.deleteUser = function (id, username) {
   showConfirm({
     title: '¿Desactivar usuario?',
-    message: '"' + username + '" sera desactivado. No podra iniciar sesion hasta que lo reactives.',
+    message: '"' + username + '" sera desactivado. No podra iniciar sesion. Podes reactivarlo desde la vista de usuarios.',
     confirmText: 'Desactivar',
-    variant: 'danger',
-    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
+    variant: 'warning',
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>'
   }, async function () {
     try {
       await API.users.delete(id);
       showToast('Usuario desactivado', 'success');
+      loadUsers();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  });
+}
+
+window.reactivateUser = function (id, username) {
+  showConfirm({
+    title: '¿Reactivar usuario?',
+    message: '"' + username + '" podra iniciar sesion nuevamente.',
+    confirmText: 'Reactivar',
+    variant: 'info',
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>'
+  }, async function () {
+    try {
+      await API.users.update(id, { activo: true });
+      showToast('Usuario reactivado', 'success');
       loadUsers();
     } catch (err) {
       showToast('Error: ' + err.message, 'error');
@@ -295,6 +322,7 @@ if (typeof window !== "undefined") {
   if (typeof saveUser === "function") window.saveUser = saveUser;
   if (typeof editUser === "function") window.editUser = editUser;
   if (typeof deleteUser === "function") window.deleteUser = deleteUser;
+  if (typeof reactivateUser === "function") window.reactivateUser = reactivateUser;
   if (typeof approveUser === "function") window.approveUser = approveUser;
   if (typeof rejectUser === "function") window.rejectUser = rejectUser;
   if (typeof openUserModal === "function") window.openUserModal = openUserModal;

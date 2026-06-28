@@ -63,11 +63,16 @@ function plantillaPorRol(role) {
 // GET /api/users - listar usuarios
 router.get('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
   try {
-    const { data, error } = await supabase
+    var query = supabase
       .from('perfiles')
-      .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
-      .eq('activo', true)
-      .order('creado_en', { ascending: true });
+      .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS);
+
+    // Por defecto solo activos. Si ?todos=1, mostrar todos.
+    if (req.query.todos !== '1') {
+      query = query.eq('activo', true);
+    }
+
+    var { data, error } = await query.order('creado_en', { ascending: true });
     if (error) throw error;
     res.json({ success: true, data: (data || []).map(userPublic) });
   } catch (err) {
