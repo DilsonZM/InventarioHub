@@ -144,6 +144,8 @@ const API = (() => {
         request(`/sales/${id}`, { method: 'PUT', body: JSON.stringify(sale) }),
       delete: (id) =>
         request(`/sales/${id}`, { method: 'DELETE' }),
+      advanceEstado: (id, estado) =>
+        request(`/sales/${id}/estado-cocina`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
     },
 
     stats: (params = {}) => {

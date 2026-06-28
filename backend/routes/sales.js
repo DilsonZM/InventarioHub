@@ -49,6 +49,9 @@ router.get('/', async (req, res) => {
       impuesto: sale.impuesto,
       paymentMethod: sale.metodo_pago,
       estado: sale.estado,
+      estadoCocina: sale.estado_cocina || 'pendiente',
+      mesaId: sale.mesa_id || null,
+      mesaNombre: sale.mesas?.nombre || null,
       userId: sale.usuario_id,
       username: sale.perfiles?.username || 'Desconocido',
       usuario_nombre: sale.perfiles?.nombre_completo || sale.perfiles?.username || 'Desconocido',
@@ -508,12 +511,13 @@ function mapSaleResponse(sale) {
     id: sale.id, numero_venta: sale.numero_venta, total: sale.total,
     subtotal: sale.subtotal, impuesto: sale.impuesto,
     paymentMethod: sale.metodo_pago, estado: sale.estado,
+    estadoCocina: sale.estado_cocina || 'pendiente',
     userId: sale.usuario_id,
     username: sale.perfiles ? sale.perfiles.username : 'Desconocido',
     usuario_nombre: sale.perfiles ? (sale.perfiles.nombre_completo || sale.perfiles.username) : 'Desconocido',
     clienteNombre: sale.cliente_nombre, createdAt: sale.creado_en,
-    mesa_id: sale.mesa_id || null,
-    mesa_nombre: sale.mesas ? sale.mesas.nombre : null,
+    mesaId: sale.mesa_id || null,
+    mesaNombre: sale.mesas ? sale.mesas.nombre : null,
     items: (sale.venta_detalles || []).map(function (item) {
       return {
         productId: item.producto_id, productName: item.producto_nombre,
@@ -663,5 +667,33 @@ async function handleDishSale(req, res) {
     res.status(500).json({ success: false, message: err.message || 'Error al procesar pedido' });
   }
 }
+
+// Avanzar estado de cocina
+router.patch('/:id/estado-cocina', requirePermission('puede_crear_salidas'), async (req, res) => {
+  try {
+    var { estado } = req.body;
+    var validos = ['pendiente', 'preparando', 'listo', 'entregado'];
+    if (!estado || !validos.includes(estado)) {
+      return res.status(400).json({ success: false, message: 'Estado invalido. Valores: pendiente, preparando, listo, entregado' });
+    }
+
+    var { data: venta } = await supabase.from('ventas').select('estado_cocina').eq('id', req.params.id).single();
+    if (!venta) return res.status(404).json({ success: false, message: 'Pedido no encontrado' });
+
+    var secuencia = { pendiente: 'preparando', preparando: 'listo', listo: 'entregado' };
+    var actual = venta.estado_cocina || 'pendiente';
+    if (estado !== secuencia[actual]) {
+      return res.status(400).json({ success: false, message: 'Transicion invalida de ' + actual + ' a ' + estado });
+    }
+
+    var { error } = await supabase.from('ventas').update({ estado_cocina: estado }).eq('id', req.params.id);
+    if (error) throw error;
+
+    res.json({ success: true, data: { estadoCocina: estado }, message: 'Estado actualizado a ' + estado });
+  } catch (err) {
+    console.error('PATCH estado-cocina error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
 
 module.exports = router;

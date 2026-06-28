@@ -155,7 +155,7 @@ export function initFilters(view) {
     period: '#filterQuickPeriod' + prefix,
     product: '#filterProductSearch' + prefix,
     clear: '#clearFiltersBtn' + prefix,
-    extra: view === 'sales' ? '#filterCocina' : (view === 'movimientos' ? '#filterTipoMov' : null)
+    extra: view === 'movimientos' ? '#filterTipoMov' : null
   };
   var loader = getLoaderForView(view);
 
@@ -200,7 +200,6 @@ export function openMobileFiltersModal(view) {
     '#filterQuickPeriod' + prefix,
     '#filterProductSearch' + prefix
   ];
-  if (view === 'sales') sourceSelectors.push('#filterCocina');
   if (view === 'movimientos') sourceSelectors.push('#filterTipoMov');
 
   content.innerHTML = sourceSelectors
@@ -238,7 +237,6 @@ export function applyMobileFilters(view) {
     '#filterQuickPeriod' + prefix,
     '#filterProductSearch' + prefix
   ];
-  if (view === 'sales') sourceSelectors.push('#filterCocina');
   if (view === 'movimientos') sourceSelectors.push('#filterTipoMov');
 
   sourceSelectors.forEach(function (sel) {

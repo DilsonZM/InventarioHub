@@ -29,6 +29,9 @@ function normalizeSale(s) {
     impuesto: s.impuesto,
     paymentMethod: s.metodo_pago || s.paymentMethod,
     estado: s.estado,
+    estadoCocina: s.estadoCocina || s.estado_cocina || 'pendiente',
+    mesaId: s.mesaId || s.mesa_id || null,
+    mesaNombre: s.mesaNombre || s.mesa_nombre || null,
     userId: s.usuario_id,
     username: s.perfiles?.username || s.username || 'Desconocido',
     clienteNombre: s.cliente_nombre,
@@ -59,6 +62,10 @@ export async function remove(id) {
   return window.API.sales.delete(id);
 }
 
+export async function advanceEstado(id, estado) {
+  return window.API.sales.advanceEstado(id, estado);
+}
+
 export async function loadSalesIntoState(params) {
   const res = await list(params);
   store.state.sales = res.data || [];
@@ -82,6 +89,7 @@ if (typeof window !== 'undefined') {
     create: create,
     update: update,
     remove: remove,
+    advanceEstado: advanceEstado,
     loadIntoState: loadSalesIntoState,
     normalize: normalizeSale,
     computeTotal: computeTotal

@@ -85,12 +85,10 @@ async function loadSales() {
   var params = {};
   var from = $('#filterDateFrom').value;
   var to = $('#filterDateTo').value;
-  var cocina = $('#filterCocina').value;
   var search = ($('#filterProductSearch').value || '').trim();
 
   if (from) params.from = from;
   if (to) params.to = to;
-  if (cocina) params.cocina = cocina;
   if (search) params.search = search;
 
   try {
@@ -131,23 +129,41 @@ function renderSalesTable() {
   }
 
   tbody.innerHTML = state.sales.map(function (s) {
+    var estado = s.estadoCocina || 'pendiente';
+    var estadoBadge = {
+      pendiente: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>Pendiente</span>',
+      preparando: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03z"/></svg>Preparando</span>',
+      listo: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Listo</span>',
+      entregado: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>Entregado</span>'
+    }[estado] || estadoBadge.pendiente;
+
+    // Boton de avance de estado
+    var advanceBtn = '';
+    if (estado === 'pendiente') {
+      advanceBtn = '<button onclick="window.advanceOrderState(\'' + s.id + '\')" class="p-2 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Iniciar preparacion"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button>';
+    } else if (estado === 'preparando') {
+      advanceBtn = '<button onclick="window.advanceOrderState(\'' + s.id + '\')" class="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors touch-target" title="Marcar como listo"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>';
+    } else if (estado === 'listo') {
+      advanceBtn = '<button onclick="window.advanceOrderState(\'' + s.id + '\')" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors touch-target" title="Entregar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></button>';
+    }
+
+    var mesaName = s.mesaNombre || (s.mesaId ? 'Mesa ' + s.mesaId.slice(-4) : '—');
+
     return '<tr class="hover:bg-slate-50 transition-colors">'
       + '<td class="px-6 py-4 text-sm font-mono text-slate-600">#' + s.id.slice(-6) + '</td>'
+      + '<td class="px-6 py-4 text-sm text-slate-700">' + escapeHtml(mesaName) + '</td>'
       + '<td class="px-6 py-4">'
       + s.items.map(function (i) {
-        var pres = '';
-        if (i.unidadPresentacion && i.factorConversion && i.factorConversion !== 1) {
-          pres = ' <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-medium ml-1">' + escapeHtml(i.unidadPresentacion) + '</span>';
-        }
-        return '<div class="text-sm text-slate-700 mb-0.5">' + escapeHtml(i.productName) + ' x' + (i.unidadPresentacion && i.factorConversion !== 1 ? i.cantidadPresentacion : i.quantity) + pres + '</div>';
+        var qty = i.unidadPresentacion && i.factorConversion !== 1 ? i.cantidadPresentacion : i.quantity;
+        return '<div class="text-sm text-slate-700 mb-0.5">' + escapeHtml(i.productName) + ' x' + qty + '</div>';
       }).join('')
       + '</td>'
-      + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + s.items.reduce(function (sum, i) { return sum + i.quantity; }, 0) + ' unid.</td>'
-      + '<td class="px-6 py-4"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800">' + escapeHtml(s.paymentMethod) + '</span></td>'
+      + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + Utils.formatCurrency(s.total) + '</td>'
+      + '<td class="px-6 py-4 text-center">' + estadoBadge + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-500">' + formatDate(s.createdAt) + '</td>'
-      + '<td class="px-6 py-4 text-sm text-slate-600"><div class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(s.usuario_nombre || '') + '</div></td>'
       + '<td class="px-6 py-4 text-right">'
       + '<div class="flex items-center justify-end gap-1">'
+      + advanceBtn
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Ver detalle">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
@@ -168,31 +184,41 @@ function renderSalesTable() {
   }).join('');
 
   cards.innerHTML = state.sales.map(function (s) {
-    var totalBase = s.items.reduce(function (sum, i) { return sum + i.quantity; }, 0);
+    var estado = s.estadoCocina || 'pendiente';
+    var estadoColors = {
+      pendiente: 'bg-amber-100 text-amber-800',
+      preparando: 'bg-orange-100 text-orange-800',
+      listo: 'bg-green-100 text-green-800',
+      entregado: 'bg-slate-100 text-slate-600'
+    };
+    var estadoLabel = { pendiente: 'Pendiente', preparando: 'Preparando', listo: 'Listo', entregado: 'Entregado' }[estado];
+
+    var mesaName = s.mesaNombre || (s.mesaId ? 'Mesa ' + s.mesaId.slice(-4) : '—');
+
     return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
       + '<div class="flex items-center justify-between">'
       + '<span class="font-mono text-sm text-slate-500">#' + s.id.slice(-6) + '</span>'
-      + '<span class="text-lg font-bold text-slate-800">' + totalBase + ' unid.</span>'
+      + '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ' + estadoColors[estado] + '">' + estadoLabel + '</span>'
       + '</div>'
       + '<div class="space-y-1">'
       + s.items.map(function (i) {
         var qty = i.unidadPresentacion && i.factorConversion !== 1 ? i.cantidadPresentacion : i.quantity;
-        var presHtml = '';
-        if (i.unidadPresentacion && i.factorConversion !== 1) {
-          presHtml = '<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-medium ml-1">' + escapeHtml(i.unidadPresentacion) + '</span>';
-        }
-        return '<div class="flex justify-between text-sm">'
-          + '<span class="text-slate-600">' + escapeHtml(i.productName) + ' x' + qty + presHtml + '</span>'
-          + '</div>';
+        return '<div class="text-sm text-slate-600">' + escapeHtml(i.productName) + ' x' + qty + '</div>';
       }).join('')
       + '</div>'
       + '<div class="flex items-center justify-between pt-2 border-t border-slate-100">'
       + '<div class="flex items-center gap-2 flex-wrap">'
-      + '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-800">' + escapeHtml(s.paymentMethod) + '</span>'
       + '<span class="text-xs text-slate-400">' + formatDate(s.createdAt) + '</span>'
-      + '<span class="text-xs text-slate-500 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(s.usuario_nombre || '') + '</span>'
+      + '<span class="text-xs text-slate-500">' + escapeHtml(mesaName) + '</span>'
+      + '<span class="text-sm font-semibold text-slate-800">' + Utils.formatCurrency(s.total) + '</span>'
       + '</div>'
       + '<div class="flex items-center gap-1">'
+      + (estado !== 'entregado'
+        ? '<button onclick="window.advanceOrderState(\'' + s.id + '\')" class="p-2 text-' + (estado === 'pendiente' ? 'amber' : estado === 'preparando' ? 'green' : 'slate') + '-600 hover:bg-' + (estado === 'pendiente' ? 'amber' : estado === 'preparando' ? 'green' : 'slate') + '-100 rounded-lg transition-colors touch-target" title="' + (estado === 'pendiente' ? 'Iniciar' : estado === 'preparando' ? 'Listo' : 'Entregar') + '">'
+        + (estado === 'pendiente' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+         : estado === 'preparando' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+         : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>')
+        + '</button>' : '')
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="p-2 text-brand-500 hover:bg-brand-100 rounded-lg transition-colors touch-target" title="Ver">'
       + '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
@@ -215,15 +241,15 @@ function renderSalesTable() {
 
 function updateSalesSummary() {
   var sales = state.sales;
-  var count = sales.length;
-  var totalQty = sales.reduce(function (sum, s) { return sum + s.items.reduce(function (iSum, i) { return iSum + i.quantity; }, 0); }, 0);
-  var avg = count > 0 ? Math.round(totalQty / count) : 0;
-  var distinctItems = sales.reduce(function (set, s) { s.items.forEach(function (i) { set.add(i.productId); }); return set; }, new Set()).size;
+  var pendientes = sales.filter(function (s) { return (s.estadoCocina || 'pendiente') === 'pendiente'; }).length;
+  var preparando = sales.filter(function (s) { return s.estadoCocina === 'preparando'; }).length;
+  var listos = sales.filter(function (s) { return s.estadoCocina === 'listo'; }).length;
+  var entregados = sales.filter(function (s) { return s.estadoCocina === 'entregado'; }).length;
 
-  $('#summaryCount').textContent = count;
-  $('#summaryTotal').textContent = totalQty;
-  $('#summaryAvg').textContent = avg;
-  $('#summaryItems').textContent = distinctItems;
+  $('#summaryPendientes').textContent = pendientes;
+  $('#summaryPreparando').textContent = preparando;
+  $('#summaryListos').textContent = listos;
+  $('#summaryEntregados').textContent = entregados;
 }
 
 async function openSaleModal() {
@@ -652,6 +678,29 @@ window.editSale = async function (id) {
     openSaleModal();
   } catch (err) {
     showToast('Error al cargar salida: ' + err.message, 'error');
+  }
+};
+
+window.advanceOrderState = async function (id) {
+  if (!can('puedeCrearSalidas')) {
+    showToast('Sin permiso', 'error');
+    return;
+  }
+  try {
+    var sale = state.sales.find(function (s) { return s.id === id; });
+    if (!sale) return;
+    var actual = sale.estadoCocina || 'pendiente';
+    var next = { pendiente: 'preparando', preparando: 'listo', listo: 'entregado' }[actual];
+    if (!next) { showToast('El pedido ya fue entregado', 'info'); return; }
+
+    await window.ServicesSales.advanceEstado(id, next);
+    sale.estadoCocina = next;
+    renderSalesTable();
+    updateSalesSummary();
+    var labels = { preparando: 'En preparacion', listo: 'Listo para servir', entregado: 'Entregado' };
+    showToast(labels[next] || next, 'success');
+  } catch (err) {
+    showToast('Error: ' + (err.message || 'No se pudo avanzar estado'), 'error');
   }
 };
 
