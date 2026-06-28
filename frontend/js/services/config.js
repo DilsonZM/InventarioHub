@@ -44,7 +44,8 @@ export async function getConfig() {
         printerPort: res.data.printerPort || 9100,
         printerEnabled: !!res.data.printerEnabled,
         comandaEnabled: !!res.data.comandaEnabled,
-        printerKind: res.data.printerKind || 'browser'
+        printerKind: res.data.printerKind || 'browser',
+        posRedirectAuto: res.data.posRedirectAuto !== false
       };
       setCachedConfig(cfg);
       return { success: true, data: cfg };
@@ -61,7 +62,8 @@ export async function getConfig() {
         printerPort: 9100,
         printerEnabled: false,
         comandaEnabled: false,
-        printerKind: 'browser'
+        printerKind: 'browser',
+        posRedirectAuto: true
       }
     };
   }

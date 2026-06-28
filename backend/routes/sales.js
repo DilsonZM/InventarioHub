@@ -157,7 +157,7 @@ router.get('/:id', async (req, res) => {
 // PUT /api/sales/:id - editar salida con recalculo de stock
 router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) => {
   try {
-    const { items, platos, paymentMethod } = req.body;
+    const { items, platos, paymentMethod, mesa_id } = req.body;
     const hasItems = items && Array.isArray(items) && items.length > 0;
     const hasPlatos = platos && Array.isArray(platos) && platos.length > 0;
     if (!hasItems && !hasPlatos) {
@@ -370,6 +370,8 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
       .from('ventas')
       .update({
         metodo_pago: paymentMethod,
+        mesa_id: mesa_id || null,
+        estado_cocina: 'pendiente',
         subtotal: subtotal,
         impuesto: impuesto,
         total: total

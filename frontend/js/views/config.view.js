@@ -10,6 +10,7 @@ async function loadConfig() {
   try {
     var res = await API.config.get();
     $('#modoPublicoCheck').checked = !!res.data.modoPublico;
+    $('#posRedirectCheck').checked = res.data.posRedirectAuto !== false;
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
   }
@@ -18,8 +19,9 @@ async function loadConfig() {
 
 async function saveConfig() {
   var modoPublico = $('#modoPublicoCheck').checked;
+  var posRedirect = $('#posRedirectCheck').checked;
   try {
-    await API.config.update({ modoPublico: modoPublico });
+    await API.config.update({ modoPublico: modoPublico, posRedirectAuto: posRedirect });
     showToast('Configuracion guardada. ' + (modoPublico ? 'Los visitantes ya pueden entrar.' : 'Acceso publico deshabilitado.'), 'success');
   } catch (err) {
     showToast('Error: ' + err.message, 'error');

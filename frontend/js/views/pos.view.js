@@ -497,6 +497,17 @@ async function submitPOSOrder() {
         hideLoading();
         showToast(editingSale ? 'Pedido actualizado' : 'Pedido registrado correctamente', 'success');
         if (editingSale) { renderPOSCategories(state._posDishes, state._posProducts); }
+        // Redirigir a Pedidos si la config lo indica (solo para nuevos, no ediciones)
+        if (!editingSale) {
+          try {
+            var cfg = window.ServicesConfig ? (window.ServicesConfig.get ? window.ServicesConfig.get() : null) : null;
+            if (cfg && cfg.then) {
+              cfg.then(function (r) {
+                if (r && r.data && r.data.posRedirectAuto !== false) location.hash = '#sales';
+              });
+            }
+          } catch (e) { /* noop */ }
+        }
       }, sendsComanda ? 600 : 350);
     } else {
       hideLoading();
