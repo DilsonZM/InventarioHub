@@ -72,9 +72,7 @@ function initUsers() {
 async function loadUsers() {
   if (!window.can('puedeGestionarUsuarios')) return;
   try {
-    var showAll = $('#showAllUsers') ? $('#showAllUsers').checked : true;
-    var params = showAll ? { todos: '1' } : {};
-    var res = await API.users.list(params);
+    var res = await API.users.list({ todos: '1' });
     var users = res.data || [];
     var tbody = $('#usersTable');
     var cards = $('#usersCards');
@@ -110,13 +108,14 @@ async function loadUsers() {
         + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(u.nombreCompleto || '-') + '</td>'
         + '<td class="px-6 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-100 text-violet-800' : 'bg-brand-100 text-brand-800') + '">' + u.role + '</span></td>'
         + '<td class="px-6 py-3 text-center"><span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">' + activeCount + '/13</span></td>'
-        + '<td class="px-6 py-3">' + (inactivo ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Inactivo</span>' : estadoBadge(u.estadoAprobacion)) + '</td>'
+        + '<td class="px-6 py-3">' + (inactivo ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Archivado</span>' : estadoBadge(u.estadoAprobacion)) + '</td>'
         + '<td class="px-6 py-3 text-right"><div class="flex items-center justify-end gap-1">' + actionsHtml + '</div></td>'
         + '</tr>';
     }).join('');
     cards.innerHTML = users.map(function (u) {
       var activeCount = Object.values(u.permisos).filter(Boolean).length;
       var pendiente = u.estadoAprobacion === 'pendiente';
+      var inactivo = u.activo === false;
       var actionsHtml = '';
       if (pendiente) {
         actionsHtml = '<div class="flex gap-2 pt-2">'
@@ -125,19 +124,24 @@ async function loadUsers() {
           + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-red-800 bg-red-100 hover:bg-red-100 rounded-lg text-sm font-medium touch-target flex items-center justify-center gap-1.5">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> Rechazar</button>'
           + '</div>';
+      } else if (inactivo) {
+        actionsHtml = '<div class="flex gap-1 pt-2 border-t border-slate-100">'
+          + '<button onclick="window.reactivateUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-green-600 bg-green-100 rounded-lg text-sm font-medium touch-target">Reactivar</button>'
+          + '</div>';
       } else {
         actionsHtml = '<div class="flex gap-1 pt-2 border-t border-slate-100">'
           + '<button onclick="window.editUser(\'' + u.id + '\')" class="flex-1 p-2 text-amber-600 bg-amber-100 rounded-lg text-sm font-medium touch-target">Editar</button>'
           + '<button onclick="window.deleteUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="flex-1 p-2 text-amber-600 bg-amber-100 rounded-lg text-sm font-medium touch-target">Desactivar</button>'
           + '</div>';
       }
-      return '<div class="bg-white border ' + (pendiente ? 'border-amber-300' : 'border-slate-200') + ' rounded-xl p-4 space-y-2">'
+      var estadoLabel = inactivo ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Archivado</span>' : estadoBadge(u.estadoAprobacion);
+      return '<div class="bg-white border ' + (pendiente ? 'border-amber-300' : (inactivo ? 'border-slate-300 opacity-60' : 'border-slate-200')) + ' rounded-xl p-4 space-y-2">'
         + '<div class="flex items-start justify-between"><div><p class="text-sm font-semibold text-slate-800">' + escapeHtml(u.username) + '</p><p class="text-xs text-slate-500">' + escapeHtml(u.email || '') + '</p></div>'
         + '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (u.role === 'admin' ? 'bg-violet-100 text-violet-800' : 'bg-brand-100 text-brand-800') + '">' + u.role + '</span></div>'
         + '<p class="text-xs text-slate-500">' + escapeHtml(u.nombreCompleto || '-') + '</p>'
         + '<div class="flex items-center justify-between text-xs">'
         + '<span class="text-slate-500">Permisos: ' + activeCount + '/13</span>'
-        + estadoBadge(u.estadoAprobacion)
+        + estadoLabel
         + '</div>'
         + actionsHtml
         + '</div>';
