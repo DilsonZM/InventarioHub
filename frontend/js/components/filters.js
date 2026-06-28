@@ -65,7 +65,7 @@ export function updateFilterChips(ids) {
   }
   if ($(ids.product) && $(ids.product).value) {
     var pEl = $(ids.product);
-    var pLabel = ids.view === 'sales' ? 'Mesa' : 'Producto';
+    var pLabel = ids.view === 'sales' ? 'Destino' : 'Producto';
     var pText = pEl.options && pEl.options[pEl.selectedIndex] ? pEl.options[pEl.selectedIndex].textContent : pEl.value;
     chips.push({ label: pLabel + ': ' + pText, clear: function () { pEl.value = ''; } });
   }

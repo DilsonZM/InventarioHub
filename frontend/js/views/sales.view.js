@@ -14,19 +14,23 @@ async function initSales() {
   if (newOrderBtn) newOrderBtn.addEventListener('click', function () { location.hash = '#pos'; });
   var newOrderBtnMobile = $('#newOrderBtnMobile');
   if (newOrderBtnMobile) newOrderBtnMobile.addEventListener('click', function () { location.hash = '#pos'; });
-  initFilters('sales');
 
-  // Cargar mesas en el filtro
+  // Cargar mesas + domicilio/recoger en el filtro ANTES de initFilters
   try {
     var mesas = await API.mesas.list();
     var sel = $('#filterMesa');
     if (sel && mesas.data) {
-      sel.innerHTML = '<option value="">Todas</option>'
+      sel.innerHTML = '<option value="">Todos los destinos</option>'
         + mesas.data.filter(function (m) { return m.activa; }).map(function (m) {
           return '<option value="' + m.id + '">' + escapeHtml(m.nombre) + '</option>';
-        }).join('');
+        }).join('')
+        + '<option disabled>──────────</option>'
+        + '<option value="__domicilio__">🛵 Domicilio</option>'
+        + '<option value="__recogido__">🏠 Recoger</option>';
     }
   } catch (e) { /* noop */ }
+
+  initFilters('sales');
   var saleForm = $('#saleForm');
   if (saleForm) {
     saleForm.addEventListener('input', markSaleDirty);
@@ -101,7 +105,9 @@ async function loadSales() {
 
   if (from) params.from = from;
   if (to) params.to = to;
-  if (mesa) params.mesa = mesa;
+  if (mesa === '__domicilio__') params.modo = 'domicilio';
+  else if (mesa === '__recogido__') params.modo = 'recogido';
+  else if (mesa) params.mesa = mesa;
 
   try {
     var res = await API.sales.list(params);
