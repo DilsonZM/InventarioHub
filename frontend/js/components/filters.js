@@ -75,14 +75,18 @@ export function updateFilterChips(ids) {
     chips.push({ label: exText, clear: function () { $(ids.extra).value = ''; } });
   }
 
-  // Badge en el boton mobile
-  var countSpan = document.querySelector('[data-open-filters="' + view + '"] .mobile-filters-count');
+  // Badge en el boton mobile FAB
+  var countSpan = document.querySelector('#filterFabBadge');
+  var fab = document.getElementById('filterFab');
   if (countSpan) {
-    if (chips.length > 0) {
-      countSpan.textContent = chips.length;
+    var count = chips.length;
+    if (count > 0) {
+      countSpan.textContent = count;
       countSpan.classList.remove('hidden');
+      if (fab) fab.classList.add('has-filters');
     } else {
       countSpan.classList.add('hidden');
+      if (fab) fab.classList.remove('has-filters');
     }
   }
 
@@ -173,11 +177,46 @@ export function initFilters(view) {
   }
   if ($(ids.clear)) $(ids.clear).addEventListener('click', function () { clearFilters(ids, loader); });
 
-  // Mobile: boton Filtros y limpiar
-  var openBtn = document.querySelector('[data-open-filters="' + view + '"]');
-  if (openBtn) openBtn.addEventListener('click', function () { openMobileFiltersModal(view); });
-  var clearMobile = document.getElementById('clearFiltersBtn' + (view === 'sales' ? 'Mobile' : (view === 'entradas' ? 'EntradasMobile' : (view === 'movimientos' ? 'MovMobile' : 'DashMobile'))));
-  if (clearMobile) clearMobile.addEventListener('click', function () { clearFilters(ids, loader); });
+  // FAB: mostrar en mobile y abrir drawer
+  var fab = document.getElementById('filterFab');
+  if (fab) {
+    fab.classList.remove('hidden');
+    fab.addEventListener('click', function () { openMobileFiltersDrawer(view); });
+  }
+
+  // Wire up close button and backdrop in the drawer
+  var closeBtn = document.getElementById('mobileFiltersClose');
+  if (closeBtn && !closeBtn._wired) {
+    closeBtn._wired = true;
+    closeBtn.addEventListener('click', closeMobileFiltersDrawer);
+  }
+  // Wire up Apply button
+  var applyBtn = document.getElementById('mobileFiltersApply');
+  if (applyBtn && !applyBtn._wired) {
+    applyBtn._wired = true;
+    applyBtn.addEventListener('click', function () {
+      var v = applyBtn.getAttribute('data-view') || view;
+      applyMobileFilters(v);
+    });
+  }
+  var clearBtn = document.getElementById('mobileFiltersClear');
+  if (clearBtn && !clearBtn._wired) {
+    clearBtn._wired = true;
+    clearBtn.addEventListener('click', function () {
+      var v = document.getElementById('mobileFiltersApply').getAttribute('data-view') || view;
+      var ids = getFilterIds(v);
+      var ld = getLoaderForView(v);
+      clearFilters(ids, ld);
+      closeMobileFiltersDrawer();
+    });
+  }
+
+  // Backdrop click cierra el drawer
+  var overlay = document.querySelector('#mobileFiltersModal [data-apply-filters-overlay]');
+  if (overlay && !overlay._wired) {
+    overlay._wired = true;
+    overlay.addEventListener('click', closeMobileFiltersDrawer);
+  }
 
   // Default periodo = Hoy al cargar
   if ($(ids.period) && !$(ids.period).value) {
@@ -186,6 +225,70 @@ export function initFilters(view) {
   }
 
   updateClearBtn(ids);
+}
+
+// Helper: reconstruir filter IDs para una vista dada
+function getFilterIds(view) {
+  var prefix = view === 'sales' ? '' : (view === 'entradas' ? 'Entradas' : 'Mov');
+  return {
+    view: view,
+    dateFrom: '#filterDateFrom' + prefix,
+    dateTo: '#filterDateTo' + prefix,
+    period: '#filterQuickPeriod' + prefix,
+    product: view === 'sales' ? '#filterMesa' : ('#filterProductSearch' + prefix),
+    clear: '#clearFiltersBtn' + prefix,
+    extra: view === 'movimientos' ? '#filterTipoMov' : null
+  };
+}
+
+function openMobileFiltersDrawer(view) {
+  var modal = document.getElementById('mobileFiltersModal');
+  var sheet = document.getElementById('mobileFiltersSheet');
+  if (!modal || !sheet) return;
+  var prefix = view === 'sales' ? '' : (view === 'entradas' ? 'Entradas' : 'Mov');
+  var content = document.getElementById('mobileFiltersContent');
+  if (!content) return;
+
+  // Clonar los inputs del desktop
+  var sourceSelectors = [
+    '#filterDateFrom' + prefix,
+    '#filterDateTo' + prefix,
+    '#filterQuickPeriod' + prefix,
+    view === 'sales' ? '#filterMesa' : ('#filterProductSearch' + prefix)
+  ];
+  if (view === 'movimientos') sourceSelectors.push('#filterTipoMov');
+
+  content.innerHTML = sourceSelectors.map(function (sel) {
+    var el = document.querySelector(sel);
+    if (!el) return '';
+    var wrap = el.closest('div');
+    return wrap ? wrap.outerHTML : '';
+  }).join('');
+
+  // Sincronizar valores
+  sourceSelectors.forEach(function (sel) {
+    var src = document.querySelector(sel);
+    var dst = content.querySelector(sel);
+    if (src && dst) dst.value = src.value;
+  });
+
+  document.getElementById('mobileFiltersApply').setAttribute('data-view', view);
+
+  // Mostrar con animacion slide-up
+  modal.classList.remove('hidden');
+  requestAnimationFrame(function () {
+    sheet.style.transform = 'translateY(0)';
+  });
+}
+
+function closeMobileFiltersDrawer() {
+  var modal = document.getElementById('mobileFiltersModal');
+  var sheet = document.getElementById('mobileFiltersSheet');
+  if (!modal || !sheet) return;
+  sheet.style.transform = 'translateY(100%)';
+  setTimeout(function () {
+    modal.classList.add('hidden');
+  }, 300);
 }
 
 // Modal de filtros para mobile. Clona los inputs del desktop al modal.
@@ -265,6 +368,7 @@ if (typeof window !== 'undefined') {
   window.hasActiveFilters = hasActiveFilters;
   window.updateClearBtn = updateClearBtn;
   window.updateFilterChips = updateFilterChips;
-  window.openMobileFiltersModal = openMobileFiltersModal;
+  window.openMobileFiltersDrawer = openMobileFiltersDrawer;
+  window.closeMobileFiltersDrawer = closeMobileFiltersDrawer;
   window.applyMobileFilters = applyMobileFilters;
 }

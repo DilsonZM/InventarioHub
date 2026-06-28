@@ -509,6 +509,31 @@
       background: #3dad85;
     }
 
+    /* Mobile filter chips container - hide on mobile, show on desktop+ */
+    @media (max-width: 767px) {
+      [data-chips] { display: none !important; }
+      .active-filter-chips { display: none !important; }
+    }
+
+    /* FAB: boton flotante de filtros */
+    #filterFab {
+      display: none;
+    }
+    @media (max-width: 1023px) {
+      #filterFab {
+        display: flex !important;
+      }
+    }
+    #filterFab.has-filters {
+      background: #0d6b4e;
+      box-shadow: 0 4px 20px rgba(13, 107, 78, 0.4);
+    }
+
+    /* Bottom sheet: start off-screen */
+    #mobileFiltersSheet {
+      transform: translateY(100%);
+    }
+
     /* SweetAlert2 backdrop con blur para loading de auth */
     .swal2-backdrop-show {
       backdrop-filter: blur(6px);
