@@ -1,25 +1,30 @@
-// Corner House - Menu publico
-// Carga el menu desde /api/public/menu (sin auth) y maneja el flujo de
-// reserva via /api/public/reservas. Sin dependencias externas.
+// Corner House - Menu publico (Light theme, app nativa)
+// Carga el menu desde /api/public/menu y maneja reservas via /api/public/reservas.
+// Sin dependencias externas.
 
 (function () {
   'use strict';
 
   // ===== Config =====
   var CATS = [
-    { id: 'entradas', label: 'Entradas', emoji: '🥗' },
-    { id: 'platos',   label: 'Platos',   emoji: '🍽️' },
-    { id: 'bebidas',  label: 'Bebidas',  emoji: '🥤' },
-    { id: 'postres',  label: 'Postres',  emoji: '🍰' }
+    { id: 'entradas', label: 'Entradas',    emoji: '🥗' },
+    { id: 'platos',   label: 'Platos',      emoji: '🍽️' },
+    { id: 'bebidas',  label: 'Bebidas',     emoji: '🥤' },
+    { id: 'postres',  label: 'Postres',     emoji: '🍰' }
   ];
-  var DEFAULT_EMOJI = {
-    entradas: '🥗', platos: '🍽️', bebidas: '🥤', postres: '🍰'
-  };
+  // Rating pseudo-aleatorio pero estable por plato (mismo plato = mismo rating)
+  function ratingFor(id) {
+    var n = 0;
+    var s = String(id || '');
+    for (var i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) & 0xffff;
+    return 4.4 + (n % 7) * 0.1; // 4.4 - 5.0
+  }
 
   // ===== State =====
   var menuData = [];
   var activeCat = null;
   var personas = 2;
+  var searchQuery = '';
 
   // ===== Elementos DOM =====
   var $ = function (id) { return document.getElementById(id); };
@@ -38,6 +43,7 @@
   var elErrorBox = $('reservaError');
   var elSuccess = $('successOverlay');
   var elSuccessMsg = $('successMsg');
+  var elSearch = $('searchInput');
 
   // ===== Init =====
   document.addEventListener('DOMContentLoaded', function () {
@@ -48,7 +54,7 @@
 
   function setDefaultFecha() {
     var d = new Date();
-    d.setDate(d.getDate() + 1); // manana
+    d.setDate(d.getDate() + 1);
     elFecha.value = d.toISOString().slice(0, 10);
     elFecha.min = new Date().toISOString().slice(0, 10);
   }
@@ -59,7 +65,6 @@
     elBackdrop.addEventListener('click', closeSheet);
     elForm.addEventListener('submit', submitReserva);
 
-    // Pills de personas
     document.querySelectorAll('.persona-pill').forEach(function (p) {
       p.addEventListener('click', function () {
         document.querySelectorAll('.persona-pill').forEach(function (x) { x.classList.remove('is-active'); });
@@ -68,13 +73,16 @@
         $('r-personas').value = personas;
       });
     });
-    // Marcar 2 como default
     var pillDefault = document.querySelector('.persona-pill[data-personas="2"]');
     if (pillDefault) { pillDefault.classList.add('is-active'); $('r-personas').value = 2; }
 
     elRetry.addEventListener('click', loadMenu);
 
-    // Cerrar sheet con ESC
+    elSearch.addEventListener('input', function () {
+      searchQuery = this.value.toLowerCase().trim();
+      renderMenu();
+    });
+
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && elSheet.classList.contains('is-open')) closeSheet();
     });
@@ -100,7 +108,15 @@
       });
   }
 
-  // Agrupa por categoria preservando el orden de CATS
+  // ===== Filtrado por busqueda =====
+  function filterBySearch(platos) {
+    if (!searchQuery) return platos;
+    return platos.filter(function (p) {
+      return (p.nombre || '').toLowerCase().indexOf(searchQuery) !== -1
+          || (p.descripcion || '').toLowerCase().indexOf(searchQuery) !== -1;
+    });
+  }
+
   function groupByCategoria(platos) {
     var map = {};
     CATS.forEach(function (c) { map[c.id] = []; });
@@ -112,25 +128,26 @@
     return map;
   }
 
-  // ===== Render del menu =====
+  // ===== Render =====
   function renderMenu() {
     elSkeleton.classList.add('hidden');
     elContent.classList.remove('hidden');
 
-    var grouped = groupByCategoria(menuData);
+    var filtered = filterBySearch(menuData);
+    var grouped = groupByCategoria(filtered);
     var html = '';
+    var firstVisible = null;
 
     CATS.forEach(function (cat) {
       var items = grouped[cat.id] || [];
-      if (items.length === 0) return; // ocultar categorias vacias
+      if (items.length === 0) return;
+      if (!firstVisible) firstVisible = cat.id;
       html += ''
         + '<section id="cat-' + cat.id + '" class="categoria-section">'
         + '  <h2 class="categoria-title">'
-        + '    <span>' + cat.emoji + '</span>'
         + '    <span>' + escapeHtml(cat.label) + '</span>'
-        + '    <span class="text-white/40 text-sm font-sans font-normal">(' + items.length + ')</span>'
+        + '    <span class="categoria-count">' + items.length + '</span>'
         + '  </h2>'
-        + '  <p class="categoria-subtitle">' + subtitleFor(cat.id) + '</p>'
         + '  <div class="platos-grid">'
         + items.map(platoCard).join('')
         + '  </div>'
@@ -138,26 +155,25 @@
     });
 
     if (!html) {
-      elContent.innerHTML = '<div class="text-center py-20 text-white/60">El menu estara disponible pronto.</div>';
+      elContent.innerHTML = '<div class="text-center py-20 text-ink-500">'
+        + (searchQuery ? 'No encontramos platos con "' + escapeHtml(searchQuery) + '"' : 'El menu estara disponible pronto.')
+        + '</div>';
     } else {
       elContent.innerHTML = html;
     }
 
-    renderTabs(grouped);
+    renderTabs(grouped, firstVisible);
   }
 
-  function renderTabs(grouped) {
+  function renderTabs(grouped, firstVisible) {
     var html = '';
-    var firstVisible = null;
     CATS.forEach(function (cat) {
       var count = (grouped[cat.id] || []).length;
       if (count === 0) return;
-      if (!firstVisible) firstVisible = cat.id;
       html += ''
         + '<button class="cat-tab" role="tab" data-cat="' + cat.id + '">'
-        + '  <span>' + cat.emoji + '</span>'
+        + '  <span class="cat-emoji">' + cat.emoji + '</span>'
         + '  <span>' + escapeHtml(cat.label) + '</span>'
-        + '  <span class="cat-count">' + count + '</span>'
         + '</button>';
     });
     elTabs.innerHTML = html;
@@ -166,6 +182,8 @@
     });
     if (firstVisible && !activeCat) {
       activeCat = firstVisible;
+      markActiveTab();
+    } else if (firstVisible) {
       markActiveTab();
     }
   }
@@ -185,38 +203,41 @@
     }
   }
 
-  function subtitleFor(catId) {
-    var subs = {
-      entradas: 'Para empezar',
-      platos:   'Lo fuerte de la casa',
-      bebidas:  'Refrescate',
-      postres:  'El final perfecto'
-    };
-    return subs[catId] || '';
-  }
-
   function platoCard(p) {
-    var emoji = p.imagen_url ? '' : (DEFAULT_EMOJI[p.categoria] || '🍴');
+    var emoji = p.imagen_url ? '' : defaultEmojiFor(p);
     var imgHtml = p.imagen_url
-      ? '<img class="plato-img" src="' + escapeHtml(p.imagen_url) + '" alt="" loading="lazy">'
-      : '<div class="plato-img" aria-hidden="true">' + emoji + '</div>';
+      ? '<img src="' + escapeHtml(p.imagen_url) + '" alt="" loading="lazy">'
+      : '<div class="plato-emoji" aria-hidden="true">' + emoji + '</div>';
 
-    var tagHtml = p.disponible
+    var badgeHtml = p.disponible
       ? ''
-      : '<span class="plato-tag">Agotado</span>';
+      : '<span class="plato-badge is-out">Agotado</span>';
+
+    var rating = ratingFor(p.id);
 
     return ''
       + '<article class="plato-card' + (p.disponible ? '' : ' plato-no-disponible') + '">'
-      + '  ' + imgHtml
+      + '  <div class="plato-img-wrap">'
+      +     imgHtml
+      +     badgeHtml
+      + '  </div>'
       + '  <div class="plato-body">'
       + '    <h3 class="plato-name">' + escapeHtml(p.nombre) + '</h3>'
+      + '    <span class="plato-rating">'
+      + '      <svg class="star w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.05.36a.5.5 0 01.9 0L10.83 3.3a.5.5 0 00.38.27l3.24.47a.5.5 0 01.28.85l-2.34 2.28a.5.5 0 00-.15.45l.55 3.23a.5.5 0 01-.72.52L10 10.13l-2.9 1.52a.5.5 0 01-.72-.52l.55-3.23a.5.5 0 00-.15-.45L4.44 4.9a.5.5 0 01.28-.85l3.24-.47a.5.5 0 00.38-.27L10.05.36z"/></svg>'
+      + '      ' + rating.toFixed(1) + ' <span class="text-ink-400">(124)</span>'
+      + '    </span>'
       + (p.descripcion ? '    <p class="plato-desc">' + escapeHtml(p.descripcion) + '</p>' : '')
       + '    <div class="plato-foot">'
       + '      <span class="plato-precio">$' + formatPrecio(p.precio) + '</span>'
-      + '      ' + tagHtml
       + '    </div>'
       + '  </div>'
       + '</article>';
+  }
+
+  function defaultEmojiFor(p) {
+    var map = { entradas: '🥗', platos: '🍽️', bebidas: '🥤', postres: '🍰' };
+    return map[p.categoria] || map[p.tipo] || '🍴';
   }
 
   function formatPrecio(n) {
@@ -233,7 +254,7 @@
       .replace(/'/g, '&#39;');
   }
 
-  // ===== Bottom sheet reserva =====
+  // ===== Bottom sheet =====
   function openSheet() {
     elSheet.classList.add('is-open');
     elBackdrop.classList.add('is-open');
@@ -286,7 +307,6 @@
       elSuccessMsg.textContent = 'Te esperamos el ' + fechaBonita + ' a las ' + (d.hora || hora) + ' para ' + (d.personas || personasVal) + ' persona' + ((d.personas || personasVal) === 1 ? '' : 's') + '.';
       showSuccess();
       elForm.reset();
-      // reset pills
       document.querySelectorAll('.persona-pill').forEach(function (p) { p.classList.remove('is-active'); });
       var p2 = document.querySelector('.persona-pill[data-personas="2"]');
       if (p2) { p2.classList.add('is-active'); $('r-personas').value = 2; }
