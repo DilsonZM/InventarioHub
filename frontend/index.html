@@ -474,9 +474,16 @@
       </div>
 
       <div id="view-sales" class="view-section hidden">
-        <!-- Isla de filtros: visible en mobile y desktop -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
-          <div class="flex flex-wrap sm:flex-nowrap sm:items-end gap-3">
+        <!-- Isla de filtros: en mobile tiene boton colapsar dentro (esquina sup der), en desktop siempre expandida -->
+        <div id="salesFiltersIsland" class="sales-filters-island bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
+          <!-- Cabecera de la isla (mobile only): banner clickeable completo, icono centrado, badge de filtros activos -->
+          <div id="toggleSalesFiltersBar" class="md:hidden sales-filters-bar flex items-center justify-center mb-2 -mx-4 -mt-4 px-4 py-1.5 cursor-pointer" role="button" tabindex="0" aria-expanded="true" aria-controls="salesFiltersBody" title="Mostrar/ocultar filtros">
+            <button id="toggleSalesFilters" type="button" class="sales-filters-toggle inline-flex items-end justify-center w-6 h-6 pb-0.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-hidden="true" tabindex="-1">
+              <svg id="toggleSalesFiltersIcon" class="sales-filters-toggle-icon w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+            </button>
+            <span id="salesFiltersBadge" class="hidden ml-1 px-1 rounded-full bg-brand-500 text-white text-[9px] font-bold leading-tight min-w-[14px] h-[14px] flex items-center justify-center ring-2 ring-white">0</span>
+          </div>
+          <div id="salesFiltersBody" class="sales-filters-body flex flex-wrap sm:flex-nowrap sm:items-end gap-3">
             <div class="basis-full sm:basis-auto sm:flex-1 min-w-0 order-1">
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
               <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500/50 transition-all">
@@ -500,6 +507,16 @@
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Destino</label>
               <select id="filterMesa" data-view="sales" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
                 <option value="">Todos los destinos</option>
+              </select>
+            </div>
+            <div class="basis-[calc(50%-0.375rem)] sm:basis-auto sm:shrink-0 sm:w-40 order-4">
+              <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5"># Pedido</label>
+              <input type="text" id="filterNumVenta" data-view="sales" placeholder="Ej: V-20260629-4031" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target" title="Buscar por numero de pedido">
+            </div>
+            <div class="basis-[calc(50%-0.375rem)] sm:basis-auto sm:shrink-0 sm:w-48 order-5">
+              <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Vendedor</label>
+              <select id="filterVendedor" data-view="sales" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
+                <option value="">Todos los vendedores</option>
               </select>
             </div>
           </div>
@@ -565,17 +582,18 @@
             <table class="w-full table-desktop">
               <thead class="bg-slate-100">
                 <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  <th class="px-6 py-3">ID Salida</th>
+                  <th class="px-6 py-3"># Pedido</th>
                   <th class="px-6 py-3">Mesa</th>
                   <th class="px-6 py-3">Productos</th>
                   <th class="px-6 py-3 text-right">Total</th>
+                  <th class="px-6 py-3">Vendedor</th>
                   <th class="px-6 py-3 text-center">Estado</th>
                   <th class="px-6 py-3">Fecha</th>
                   <th class="px-6 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody id="salesTable" class="divide-y divide-slate-100">
-                <tr><td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Cargando pedidos...</td></tr>
+                <tr><td colspan="8" class="px-6 py-8 text-center text-sm text-slate-400">Cargando pedidos...</td></tr>
               </tbody>
             </table>
             <div id="salesCards" class="table-card-mobile p-4 space-y-3"></div>

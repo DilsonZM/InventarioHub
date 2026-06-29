@@ -100,10 +100,12 @@ async function tick() {
     newSales.forEach(function (sale) {
       var mesa = (sale.mesas && sale.mesas.nombre) || (sale.mesa_id ? 'Mesa ' + sale.mesa_id : 'Mostrador');
       var total = '$' + (sale.total || 0).toLocaleString('es-CO');
+      var numVenta = sale.numero_venta || 'S/N';
+      var vendedor = sale.usuario_nombre || sale.username || 'Desconocido';
       var productos = (sale.venta_detalles || []).map(function (d) { return d.producto_nombre; }).filter(Boolean);
       var productosStr = productos.length ? productos.slice(0, 3).join(', ') + (productos.length > 3 ? '...' : '') : '';
 
-      showToast('Nuevo pedido en ' + mesa + ' - ' + total + (productosStr ? ' (' + productosStr + ')' : ''), 'success');
+      showToast('Pedido creado · ' + mesa + ' · #' + numVenta + ' · ' + total + ' · Vendedor: ' + vendedor, 'success');
       beep('success');
     });
   } catch (e) {

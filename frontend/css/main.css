@@ -1190,3 +1190,56 @@
 .swal2-popup.toast-hide {
   animation: toastSlideOutRight 0.25s ease-in forwards;
 }
+
+/* Isla de filtros colapsable (vista Pedidos / sales) */
+.sales-filters-island {
+  transition: padding 0.25s ease;
+}
+.sales-filters-bar {
+  position: relative;
+  user-select: none;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  transition: background-color 0.18s ease;
+}
+.sales-filters-bar:hover,
+.sales-filters-bar:focus-visible {
+  background-color: rgba(241, 245, 249, 0.6); /* slate-100/60 */
+  outline: none;
+}
+#salesFiltersIsland.sales-filters-collapsed .sales-filters-bar {
+  margin-left: -1rem;  /* -mx-4 en p-4 island = p-1rem */
+  margin-right: -1rem;
+  margin-top: -1rem;
+  margin-bottom: 0;
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgb(241 245 249); /* divisor sutil */
+}
+.sales-filters-body {
+  max-height: 800px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.28s ease, opacity 0.22s ease, margin 0.25s ease;
+}
+#salesFiltersIsland.sales-filters-collapsed {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+#salesFiltersIsland.sales-filters-collapsed .sales-filters-body {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  pointer-events: none;
+}
+.sales-filters-toggle-icon {
+  display: inline-block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sales-filters-island,
+  .sales-filters-bar,
+  .sales-filters-body,
+  .sales-filters-toggle-icon { transition: none !important; }
+}

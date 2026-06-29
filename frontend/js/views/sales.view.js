@@ -1,4 +1,4 @@
-import { $, escapeHtml } from '../core/dom.js';
+import { $, escapeHtml, debounce } from '../core/dom.js';
 import { updateClearBtn, initFilters, applyMobileFilters } from '../components/filters.js';
 import { openModal, closeModal, showError, markSaleDirty, closeModalWithGuard, showConfirm } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
@@ -40,6 +40,54 @@ async function initSales() {
   if (addSaleItemBtn) addSaleItemBtn.addEventListener('click', markSaleDirty);
   var addDishBtn = $('#addDishSaleItem');
   if (addDishBtn) addDishBtn.addEventListener('click', addDishSaleItem);
+
+  // Filtros # Pedido y Vendedor (no estan en initFilters, los wireamos aqui)
+  var filterNumVenta = $('#filterNumVenta');
+  if (filterNumVenta) {
+    filterNumVenta.addEventListener('input', debounce(function () { loadSales(); }, 300));
+  }
+  var filterVendedor = $('#filterVendedor');
+  if (filterVendedor) {
+    filterVendedor.addEventListener('change', function () { loadSales(); });
+  }
+
+  // Banner + boton colapsar/expandir isla de filtros (solo mobile) — estado persistido en localStorage
+  var FILTERS_COLLAPSED_KEY = 'salesFiltersCollapsed';
+  var toggleBar = document.getElementById('toggleSalesFiltersBar');
+  var toggleFiltersBtn = document.getElementById('toggleSalesFilters');
+  var filtersIsland = document.getElementById('salesFiltersIsland');
+  var toggleIcon = document.getElementById('toggleSalesFiltersIcon');
+  function applyFiltersCollapsed(collapsed) {
+    if (!filtersIsland) return;
+    filtersIsland.classList.toggle('sales-filters-collapsed', collapsed);
+    if (toggleIcon) toggleIcon.style.transform = collapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+    if (toggleBar) {
+      toggleBar.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      toggleBar.title = collapsed ? 'Mostrar filtros' : 'Ocultar filtros';
+    }
+    if (toggleFiltersBtn) toggleFiltersBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    try { localStorage.setItem(FILTERS_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) {}
+  }
+  if (toggleBar && filtersIsland) {
+    // Restaurar estado previo
+    var savedCollapsed = null;
+    try { savedCollapsed = localStorage.getItem(FILTERS_COLLAPSED_KEY); } catch (e) {}
+    applyFiltersCollapsed(savedCollapsed === '1');
+    // Click en cualquier parte del banner toggle (incluido el boton interno)
+    toggleBar.addEventListener('click', function (e) {
+      e.preventDefault();
+      var willCollapse = !filtersIsland.classList.contains('sales-filters-collapsed');
+      applyFiltersCollapsed(willCollapse);
+    });
+    // Accesibilidad: teclado (Enter / Space)
+    toggleBar.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        var willCollapse = !filtersIsland.classList.contains('sales-filters-collapsed');
+        applyFiltersCollapsed(willCollapse);
+      }
+    });
+  }
 
   // Buscador unificado con dropdown
   var searchInput = $('#saleSearch');
@@ -102,6 +150,9 @@ async function loadSales() {
   var from = $('#filterDateFrom').value;
   var to = $('#filterDateTo').value;
   var mesa = $('#filterMesa').value;
+  var numVenta = $('#filterNumVenta') ? $('#filterNumVenta').value.trim() : '';
+  // vendedor se filtra en el cliente (el backend no lo soporta)
+  var vendedor = $('#filterVendedor') ? $('#filterVendedor').value : '';
 
   if (from) params.from = from;
   if (to) params.to = to;
@@ -113,7 +164,19 @@ async function loadSales() {
     var res = await API.sales.list(params);
     var sales = res.data || [];
 
+    // Filtros locales (# Pedido, Vendedor)
+    if (numVenta) {
+      var needle = numVenta.toLowerCase();
+      sales = sales.filter(function (s) {
+        return (s.numero_venta || '').toLowerCase().indexOf(needle) !== -1;
+      });
+    }
+    if (vendedor) {
+      sales = sales.filter(function (s) { return s.username === vendedor; });
+    }
+
     state.sales = sales;
+    populateVendedorFilter();
     renderSalesTable();
     updateSalesSummary();
   } catch (err) {
@@ -121,12 +184,32 @@ async function loadSales() {
   }
 }
 
+// Poblar el select de vendedores con la lista unica de las ventas cargadas
+function populateVendedorFilter() {
+  var select = document.getElementById('filterVendedor');
+  if (!select) return;
+  var currentValue = select.value;
+  var vendedores = {};
+  state.sales.forEach(function (s) {
+    var nombre = s.usuario_nombre || s.username || 'Desconocido';
+    var username = s.username || nombre;
+    if (!vendedores[username]) vendedores[username] = nombre;
+  });
+  var keys = Object.keys(vendedores).sort();
+  var html = '<option value="">Todos los vendedores</option>';
+  keys.forEach(function (u) {
+    var selected = (u === currentValue) ? ' selected' : '';
+    html += '<option value="' + escapeHtml(u) + '"' + selected + '>' + escapeHtml(vendedores[u]) + '</option>';
+  });
+  if (select.innerHTML !== html) select.innerHTML = html;
+}
+
 function renderSalesTable() {
   var tbody = $('#salesTable');
   var cards = $('#salesCards');
 
   if (state.sales.length === 0) {
-    var emptySales = '<tr><td colspan="7" class="px-6 py-16 text-center">'
+    var emptySales = '<tr><td colspan="8" class="px-6 py-16 text-center">'
       + '<div class="flex flex-col items-center gap-3">'
       + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
       + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
@@ -175,7 +258,7 @@ function renderSalesTable() {
     }
 
     return '<tr class="hover:bg-slate-50 transition-colors">'
-      + '<td class="px-6 py-4 text-sm font-mono text-slate-600">#' + s.id.slice(-6) + '</td>'
+      + '<td class="px-6 py-4 text-sm font-mono text-slate-600">' + escapeHtml(s.numero_venta || s.id.slice(-6)) + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-700">' + escapeHtml(mesaName) + '</td>'
       + '<td class="px-6 py-4">'
       + s.items.map(function (i) {
@@ -184,6 +267,7 @@ function renderSalesTable() {
       }).join('')
       + '</td>'
       + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + Utils.formatCurrency(s.total) + '</td>'
+      + '<td class="px-6 py-4 text-sm text-slate-700">' + escapeHtml(s.usuario_nombre || s.username || 'Desconocido') + '</td>'
       + '<td class="px-6 py-4 text-center">' + estadoBadge + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-500">' + formatDate(s.createdAt) + '</td>'
       + '<td class="px-6 py-4 text-right">'
@@ -229,7 +313,7 @@ function renderSalesTable() {
 
     return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
       + '<div class="flex items-center justify-between">'
-      + '<span class="font-mono text-sm text-slate-500">#' + s.id.slice(-6) + '</span>'
+      + '<span class="font-mono text-sm text-slate-500">' + escapeHtml(s.numero_venta || ('#' + s.id.slice(-6))) + '</span>'
       + '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ' + estadoColors[estado] + '">' + estadoLabel + '</span>'
       + '</div>'
       + '<div class="space-y-1">'
