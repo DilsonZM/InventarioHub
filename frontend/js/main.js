@@ -14,6 +14,7 @@ import { initUser, initLogout, buildVisitorUser } from './shell/user.js';
 import { setCurrentDate } from './shell/header.js';
 import { initNavigation, navigate } from './core/router.js';
 import { initCalendar } from './components/calendar.js';
+import { startRealtime, stopRealtime, onNewSales } from './core/realtime.js';
 
 // Carga estatica de las vistas. Cada modulo registra sus handlers en
 // window (compatibilidad con onclick inline) y expone los init*/load*/render*
@@ -97,6 +98,30 @@ async function bootstrap() {
 
   var initialView = location.hash.slice(1) || 'dashboard';
   navigate(initialView);
+
+  // Realtime: polling de ventas recientes. Cuando un mesero registra un
+  // pedido desde el telefono, este modulo detecta el nuevo ID, muestra
+  // un toast de alerta, hace un beep y recarga la lista de ventas y el
+  // dashboard si estan visibles.
+  if (window.API && window.API.isAuthenticated && window.API.isAuthenticated()) {
+    startRealtime();
+    // Recargar ventas cuando hay una nueva Y estamos en una vista que las muestra
+    onNewSales(function () {
+      if (typeof window.loadSales === 'function' &&
+          document.getElementById('view-sales') &&
+          !document.getElementById('view-sales').classList.contains('hidden')) {
+        window.loadSales();
+      }
+      if (typeof window.loadDashboard === 'function' &&
+          document.getElementById('view-dashboard') &&
+          !document.getElementById('view-dashboard').classList.contains('hidden')) {
+        window.loadDashboard();
+      }
+    });
+  }
+
+  // Detener polling al cerrar la pagina (libera el timer)
+  window.addEventListener('beforeunload', stopRealtime);
 
   console.log('[main] Aplicacion inicializada correctamente');
 }
