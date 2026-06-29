@@ -42,7 +42,6 @@ async function loadReservas() {
 function updateReservasSummary(stats) {
   setText('resumenReservasPendientes', stats.pendientes || 0);
   setText('resumenReservasConfirmadas', stats.confirmadas || 0);
-  setText('resumenReservasHoy', stats.hoy || 0);
   setText('resumenReservasTotal', stats.total || 0);
   setText('resumenReservasConItems', stats.con_items || 0);
   setText('resumenReservasPlatos', stats.total_platos || 0);
