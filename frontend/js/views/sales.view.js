@@ -15,6 +15,28 @@ async function initSales() {
   var newOrderBtnMobile = $('#newOrderBtnMobile');
   if (newOrderBtnMobile) newOrderBtnMobile.addEventListener('click', function () { location.hash = '#pos'; });
 
+  // Filtro por estado via cards KPI (Pendientes/Preparando/Listos/Entregados)
+  // Click en una card = filtra la tabla. Click otra vez = quita el filtro.
+  // Los recuentos en los KPIs siempre muestran el total (no el filtrado).
+  state.estadoFilter = null;
+  document.querySelectorAll('.sales-kpi-filter').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var estado = btn.getAttribute('data-filter-estado');
+      if (state.estadoFilter === estado) {
+        state.estadoFilter = null;
+      } else {
+        state.estadoFilter = estado;
+      }
+      // Actualizar visual de las cards
+      document.querySelectorAll('.sales-kpi-filter').forEach(function (b) {
+        var active = b.getAttribute('data-filter-estado') === state.estadoFilter;
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      renderSalesTable();
+    });
+  });
+
   // Cargar mesas + domicilio/recoger en el filtro ANTES de initFilters
   try {
     var mesas = await API.mesas.list();
@@ -197,7 +219,41 @@ function renderSalesTable() {
   var tbody = $('#salesTable');
   var cards = $('#salesCards');
 
-  if (state.sales.length === 0) {
+  // Aplicar filtro por estado (viene de las cards KPI). Los KPIs arriba
+  // siempre muestran el total sin filtrar, solo se filtra la tabla.
+  var salesToRender = state.sales;
+  if (state.estadoFilter) {
+    salesToRender = state.sales.filter(function (s) {
+      return (s.estadoCocina || 'pendiente') === state.estadoFilter;
+    });
+  }
+  var estadoFilterActive = !!state.estadoFilter;
+  var estadoLabels = { pendiente: 'Pendientes', preparando: 'Preparando', listo: 'Listos', entregado: 'Entregados' };
+  var estadoFilterLabel = estadoFilterActive ? estadoLabels[state.estadoFilter] : '';
+
+  if (salesToRender.length === 0) {
+    var emptyTitle = estadoFilterActive
+      ? 'No hay pedidos en estado "' + estadoFilterLabel + '"'
+      : 'No se encontraron salidas';
+    var emptyHint = estadoFilterActive
+      ? 'Haz clic de nuevo en la card "' + estadoFilterLabel + '" para quitar el filtro'
+      : 'Ajusta los filtros o registra una nueva salida';
+    var emptySales = '<tr><td colspan="8" class="px-6 py-16 text-center">'
+      + '<div class="flex flex-col items-center gap-3">'
+      + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
+      + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
+      + '</div>'
+      + '<p class="text-sm font-medium text-slate-600">' + emptyTitle + '</p>'
+      + '<p class="text-xs text-slate-400">' + emptyHint + '</p>'
+      + '</div></td></tr>';
+    tbody.innerHTML = emptySales;
+    var emptySalesMobile = '<div class="flex flex-col items-center gap-3 py-16">'
+      + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
+      + '<svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>'
+      + '</div>'
+      + '<p class="text-sm font-medium text-slate-600">' + emptyTitle + '</p>'
+      + '<p class="text-xs text-slate-400">' + emptyHint + '</p>'
+      + '</div>';
     var emptySales = '<tr><td colspan="8" class="px-6 py-16 text-center">'
       + '<div class="flex flex-col items-center gap-3">'
       + '<div class="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center">'
@@ -218,10 +274,10 @@ function renderSalesTable() {
     return;
   }
 
-  tbody.innerHTML = state.sales.map(function (s) {
+  tbody.innerHTML = salesToRender.map(function (s) {
     var estado = s.estadoCocina || 'pendiente';
     var estadoBadge = {
-      pendiente: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>Pendiente</span>',
+      pendiente: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>Pendiente</span>',
       preparando: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03z"/></svg>Preparando</span>',
       listo: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Listo</span>',
       entregado: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>Entregado</span>'
@@ -281,10 +337,10 @@ function renderSalesTable() {
       + '</tr>';
   }).join('');
 
-  cards.innerHTML = state.sales.map(function (s) {
+  cards.innerHTML = salesToRender.map(function (s) {
     var estado = s.estadoCocina || 'pendiente';
     var estadoColors = {
-      pendiente: 'bg-amber-100 text-amber-800',
+      pendiente: 'bg-rose-100 text-rose-800',
       preparando: 'bg-orange-100 text-orange-800',
       listo: 'bg-green-100 text-green-800',
       entregado: 'bg-slate-100 text-slate-600'

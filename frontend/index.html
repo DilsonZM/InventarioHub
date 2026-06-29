@@ -524,21 +524,21 @@
         </div>
 
         <div id="salesSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <!-- Pendientes — ámbar -->
-          <div class="sales-kpi-card premium-kpi premium-kpi-amber">
+          <!-- Pendientes — rojo pastel (clickable para filtrar) -->
+          <button type="button" data-filter-estado="pendiente" class="sales-kpi-filter sales-kpi-card premium-kpi premium-kpi-rose text-left w-full cursor-pointer" aria-pressed="false" title="Filtrar por Pendientes">
             <div class="premium-kpi-glow"></div>
             <div class="relative z-10">
               <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/10 flex items-center justify-center ring-1 ring-amber-400/30">
-                  <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/></svg>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-400/20 to-rose-500/10 flex items-center justify-center ring-1 ring-rose-400/30">
+                  <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/></svg>
                 </div>
-                <span class="text-xs font-bold text-amber-600/80 uppercase tracking-widest">Pendientes</span>
+                <span class="text-xs font-bold text-rose-600/80 uppercase tracking-widest">Pendientes</span>
               </div>
-              <p class="text-3xl font-bold text-amber-600 tracking-tight" id="summaryPendientes">0</p>
+              <p class="text-3xl font-bold text-rose-600 tracking-tight" id="summaryPendientes">0</p>
             </div>
-          </div>
-          <!-- Preparando — naranja/rojo -->
-          <div class="sales-kpi-card premium-kpi premium-kpi-orange">
+          </button>
+          <!-- Preparando — naranja (clickable para filtrar) -->
+          <button type="button" data-filter-estado="preparando" class="sales-kpi-filter sales-kpi-card premium-kpi premium-kpi-orange text-left w-full cursor-pointer" aria-pressed="false" title="Filtrar por Preparando">
             <div class="premium-kpi-glow"></div>
             <div class="relative z-10">
               <div class="flex items-center gap-3 mb-3">
@@ -549,9 +549,9 @@
               </div>
               <p class="text-3xl font-bold text-orange-600 tracking-tight" id="summaryPreparando">0</p>
             </div>
-          </div>
-          <!-- Listos — verde -->
-          <div class="sales-kpi-card premium-kpi premium-kpi-green">
+          </button>
+          <!-- Listos — verde (clickable para filtrar) -->
+          <button type="button" data-filter-estado="listo" class="sales-kpi-filter sales-kpi-card premium-kpi premium-kpi-green text-left w-full cursor-pointer" aria-pressed="false" title="Filtrar por Listos">
             <div class="premium-kpi-glow"></div>
             <div class="relative z-10">
               <div class="flex items-center gap-3 mb-3">
@@ -562,9 +562,9 @@
               </div>
               <p class="text-3xl font-bold text-emerald-600 tracking-tight" id="summaryListos">0</p>
             </div>
-          </div>
-          <!-- Entregados — gris/plata -->
-          <div class="sales-kpi-card premium-kpi premium-kpi-slate">
+          </button>
+          <!-- Entregados — gris/plata (clickable para filtrar) -->
+          <button type="button" data-filter-estado="entregado" class="sales-kpi-filter sales-kpi-card premium-kpi premium-kpi-slate text-left w-full cursor-pointer" aria-pressed="false" title="Filtrar por Entregados">
             <div class="premium-kpi-glow"></div>
             <div class="relative z-10">
               <div class="flex items-center gap-3 mb-3">
@@ -575,7 +575,7 @@
               </div>
               <p class="text-3xl font-bold text-slate-400 tracking-tight" id="summaryEntregados">0</p>
             </div>
-          </div>
+          </button>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
