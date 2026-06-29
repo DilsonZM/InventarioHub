@@ -1,15 +1,15 @@
 {
   "name": "Corner House",
   "short_name": "Corner House",
-  "description": "Gestion de inventario para comida rapida",
+  "description": "Gestion de inventario para Corner House Restaurant",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f8fafc",
+  "background_color": "#073626",
   "theme_color": "#073626",
   "lang": "es",
-  "categories": ["business", "productivity", "utilities"],
+  "categories": ["business", "productivity", "utilities", "food"],
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -22,9 +22,25 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
     }
   ],
   "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/index.html#dashboard",
+      "description": "Ver el resumen del dia"
+    },
     {
       "name": "Nueva Salida",
       "short_name": "Salida",
@@ -42,6 +58,12 @@
       "short_name": "Inventario",
       "url": "/index.html#inventory",
       "description": "Ver productos en inventario"
+    },
+    {
+      "name": "POS",
+      "short_name": "POS",
+      "url": "/index.html#pos",
+      "description": "Punto de venta"
     }
   ]
 }

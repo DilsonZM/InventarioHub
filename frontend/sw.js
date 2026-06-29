@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inventariohub-v3';
+const CACHE_NAME = 'inventariohub-v4';
 const PRECACHE = [
   '/',
   '/index.html',
