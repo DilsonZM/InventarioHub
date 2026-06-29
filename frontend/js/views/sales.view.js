@@ -246,7 +246,7 @@ function renderSalesTable() {
       mesaName = s.mesaNombre || (s.mesaId ? 'Mesa ' + s.mesaId.slice(-4) : '—');
     }
 
-    return '<tr class="hover:bg-slate-50 transition-colors">'
+    return '<tr class="sales-row-estado-' + estado + ' hover:bg-slate-50 transition-colors">'
       + '<td class="px-6 py-4 text-sm font-mono text-slate-600">' + escapeHtml(s.numero_venta || s.id.slice(-6)) + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-700">' + escapeHtml(mesaName) + '</td>'
       + '<td class="px-6 py-4">'
@@ -300,7 +300,7 @@ function renderSalesTable() {
       mesaName = s.mesaNombre || (s.mesaId ? 'Mesa ' + s.mesaId.slice(-4) : '—');
     }
 
-    return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
+    return '<div class="sales-card-estado-' + estado + ' bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
       + '<div class="flex items-center justify-between">'
       + '<span class="font-mono text-sm text-slate-500">' + escapeHtml(s.numero_venta || ('#' + s.id.slice(-6))) + '</span>'
       + '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ' + estadoColors[estado] + '">' + estadoLabel + '</span>'

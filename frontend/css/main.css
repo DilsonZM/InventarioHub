@@ -1247,3 +1247,31 @@
 .pos-mobile-fab-btn:active {
   transform: scale(0.95);
 }
+
+/* Ribbon lateral de color segun el estado del pedido (vista Pedidos).
+   Tabla desktop: box-shadow inset en <tr> dibuja una linea de 4px a la izq.
+   Cards mobile: border-l-4 lo hace con CSS nativo. */
+.sales-row-estado-pendiente > td:first-child {
+  box-shadow: inset 4px 0 0 0 #f59e0b !important; /* amber-500 */
+}
+.sales-row-estado-preparando > td:first-child {
+  box-shadow: inset 4px 0 0 0 #f97316 !important; /* orange-500 */
+}
+.sales-row-estado-listo > td:first-child {
+  box-shadow: inset 4px 0 0 0 #10b981 !important; /* emerald-500 */
+}
+.sales-row-estado-entregado > td:first-child {
+  box-shadow: inset 4px 0 0 0 #94a3b8 !important; /* slate-400 */
+}
+.sales-card-estado-pendiente {
+  border-left: 4px solid #f59e0b !important; /* amber-500 */
+}
+.sales-card-estado-preparando {
+  border-left: 4px solid #f97316 !important; /* orange-500 */
+}
+.sales-card-estado-listo {
+  border-left: 4px solid #10b981 !important; /* emerald-500 */
+}
+.sales-card-estado-entregado {
+  border-left: 4px solid #94a3b8 !important; /* slate-400 */
+}
