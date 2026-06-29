@@ -47,27 +47,35 @@ export function updateFilterChips(ids) {
   var chips = [];
   var dateFrom = $(ids.dateFrom) ? $(ids.dateFrom).value : '';
   var dateTo = $(ids.dateTo) ? $(ids.dateTo).value : '';
+  // Formato corto de fecha: dd/mm (sin anio para ahorrar espacio en el chip)
+  function shortDate(s) {
+    if (!s) return '';
+    var parts = s.split('-');
+    return parts.length === 3 ? parts[2] + '/' + parts[1] : s;
+  }
+
   if (dateFrom && dateTo) {
-    chips.push({ label: 'Fechas: ' + dateFrom + ' - ' + dateTo, clear: function () { $(ids.dateFrom).value = ''; $(ids.dateTo).value = ''; } });
+    chips.push({ label: shortDate(dateFrom) + '–' + shortDate(dateTo), clear: function () { $(ids.dateFrom).value = ''; $(ids.dateTo).value = ''; } });
   } else if (dateFrom) {
-    chips.push({ label: 'Desde: ' + dateFrom, clear: function () { $(ids.dateFrom).value = ''; } });
+    chips.push({ label: '≥ ' + shortDate(dateFrom), clear: function () { $(ids.dateFrom).value = ''; } });
   } else if (dateTo) {
-    chips.push({ label: 'Hasta: ' + dateTo, clear: function () { $(ids.dateTo).value = ''; } });
+    chips.push({ label: '≤ ' + shortDate(dateTo), clear: function () { $(ids.dateTo).value = ''; } });
   }
 
   var period = $(ids.period) ? $(ids.period).value : '';
   if (period) {
-    var periodLabels = { today: 'Hoy', week: 'Esta semana', month: 'Este mes', quarter: 'Este trimestre', year: 'Este ano' };
-    chips.push({ label: 'Periodo: ' + (periodLabels[period] || period), clear: function () { $(ids.period).value = ''; } });
+    var periodLabels = { today: 'Hoy', week: 'Semana', month: 'Mes', quarter: 'Trimestre', year: 'Año' };
+    chips.push({ label: periodLabels[period] || period, clear: function () { $(ids.period).value = ''; } });
   }
   if ($(ids.cocina) && $(ids.cocina).value) {
-    chips.push({ label: 'Cocina: ' + $(ids.cocina).value, clear: function () { $(ids.cocina).value = ''; } });
+    chips.push({ label: $(ids.cocina).value, clear: function () { $(ids.cocina).value = ''; } });
   }
   if ($(ids.product) && $(ids.product).value) {
     var pEl = $(ids.product);
-    var pLabel = ids.view === 'sales' ? 'Destino' : 'Producto';
     var pText = pEl.options && pEl.options[pEl.selectedIndex] ? pEl.options[pEl.selectedIndex].textContent : pEl.value;
-    chips.push({ label: pLabel + ': ' + pText, clear: function () { pEl.value = ''; } });
+    // Truncar a 12 chars para ahorrar espacio
+    if (pText.length > 12) pText = pText.substring(0, 11) + '…';
+    chips.push({ label: pText, clear: function () { pEl.value = ''; } });
   }
   if (ids.extra && $(ids.extra) && $(ids.extra).value) {
     var exEl = $(ids.extra);
