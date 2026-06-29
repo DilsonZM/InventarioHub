@@ -268,11 +268,53 @@ export function openMobileFiltersModal(view) {
     }
   });
 
-  // Guardar la vista actual en el boton Aplicar (por compat con el handler global)
+  // Wire del boton Aplicar: cierra el drawer (los filtros ya se aplicaron live)
   var applyBtn = document.getElementById('mobileFiltersApply');
-  if (applyBtn) applyBtn.setAttribute('data-view', view);
+  if (applyBtn) {
+    applyBtn.setAttribute('data-view', view);
+    // Reemplazar el handler (clonar para evitar duplicar listeners al reabrir)
+    var newApply = applyBtn.cloneNode(true);
+    applyBtn.parentNode.replaceChild(newApply, applyBtn);
+    newApply.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      applyMobileFilters(view);
+    });
+  }
+
+  // Wire del boton Limpiar del drawer: vacia todos los inputs (desktop + drawer),
+  // recarga la vista y cierra el drawer.
+  var clearBtn = document.getElementById('mobileFiltersClear');
+  if (clearBtn) {
+    clearBtn.setAttribute('data-view', view);
+    var newClear = clearBtn.cloneNode(true);
+    clearBtn.parentNode.replaceChild(newClear, clearBtn);
+    newClear.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      sourceSelectors.forEach(function (sel) {
+        var de = document.querySelector(sel);
+        if (de) {
+          de.value = '';
+          de.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      // Re-render drawer con valores vacios
+      renderBottomSheet(view);
+      // Recargar vista con filtros vacios
+      if (loader) loader();
+      // Cerrar drawer
+      applyMobileFilters(view);
+    });
+  }
 
   openModal('mobileFiltersModal');
+}
+
+function renderBottomSheet(view) {
+  // Helper publico para re-renderizar el drawer desde fuera (usado por Limpiar).
+  // Redirige a openMobileFiltersModal con re-apertura forzada.
+  openMobileFiltersModal(view);
 }
 
 // Cierra el modal mobile. Los filtros ya se aplican en vivo via los listeners
