@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5">
-  <meta name="theme-color" content="#0f172a">
-  <meta name="description" content="Corner House Restaurant — Menu digital y reservas. Villanueva, La Guajira.">
+  <meta name="theme-color" content="#0d6b4e">
+  <meta name="description" content="Corner House Restaurant — Menu digital y reservas. Villanueva, La Guajira. Un restaurante acogedor donde cada detalle está pensado para hacerte sentir en casa.">
   <title>Corner House · Menu & Reservas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,6 +17,7 @@
         extend: {
           colors: {
             ink:    { 900:'#0f172a', 800:'#1e293b', 700:'#334155', 600:'#475569', 500:'#64748b', 400:'#94a3b8', 300:'#cbd5e1', 200:'#e2e8f0', 100:'#f1f5f9', 50:'#f8fafc' },
+            brand:  { 50:'#e6f5ef', 100:'#c2e6d6', 200:'#9ad7bd', 300:'#6cc2a1', 400:'#3dad85', 500:'#1a8a66', 600:'#0d6b4e', 700:'#0a5a3f', 800:'#073626', 900:'#052b1d' },
             gold:   { 50:'#fdf8ed', 100:'#faeed1', 300:'#e6c069', 500:'#c7942d', 600:'#a87a1f', 700:'#85620f' },
             leaf:   { 50:'#f0fdf4', 100:'#dcfce7', 500:'#22c55e', 600:'#16a34a', 700:'#15803d' }
           },
@@ -37,13 +38,16 @@
     <div class="intro-content">
       <header class="intro-header">
         <div class="intro-logo">
-          <svg class="intro-logo-svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-            <path d="M14 20c0-5.523 4.477-10 10-10s10 4.477 10 10v10c0 2.21-1.79 4-4 4H18c-2.21 0-4-1.79-4-4V20z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-            <path d="M18 18c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="24" cy="12" r="1.5" fill="currentColor"/>
-            <path d="M19 30c0 1.5 1 2.5 2.5 2.5h5c1.5 0 2.5-1 2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="24" y1="4" x2="24" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <div class="intro-logo-mark">
+            <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <!-- Monograma CH dentro de circulo -->
+              <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2.2" fill="none"/>
+              <path d="M22 18h8a6 6 0 0 1 0 12h-8V18zm0 12h9a6 6 0 0 1 0 12h-9V30z" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <path d="M34 18h8M34 30h9M34 42h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+              <!-- Hoja pequeña arriba -->
+              <path d="M48 14c0-2 2-4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
           <div>
             <p class="intro-eyebrow">Corner House</p>
             <p class="intro-tag">Restaurant</p>
@@ -54,7 +58,7 @@
 
       <div class="intro-body">
         <h1 class="intro-title">Sabor que <span class="italic">cuenta</span></h1>
-        <p class="intro-subtitle">Cocina honesta con ingredientes frescos, de la huerta a la mesa. Reserva tu mesa y anade tus platos favoritos desde el menu.</p>
+        <p class="intro-subtitle">Un restaurante acogedor donde cada detalle está pensado para hacerte sentir en casa. Aquí la comida se prepara con amor, ingredientes frescos y sabores que reconfortan el alma. Ven, disfruta y déjate cuidar por una experiencia gastronómica hecha con corazón.</p>
 
         <div class="intro-features">
           <div class="intro-feat">
@@ -83,10 +87,13 @@
 
       <div class="intro-cta-wrap">
         <button id="introStartBtn" type="button" class="intro-cta">
-          <span>Explorar menu y reservar</span>
+          <span id="introCtaText">Explorar menu y reservar</span>
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </button>
         <p class="intro-eta">Llegaras en ~53 min desde el centro de Villanueva</p>
+        <p id="introLoginLink" class="intro-login-link hidden">
+          <a href="#" id="introLoginBtn">¿Ya tienes cuenta? Inicia sesion</a>
+        </p>
       </div>
     </div>
   </section>
@@ -124,7 +131,7 @@
           <span class="submit-label">Continuar al menu</span>
           <span class="submit-spinner hidden">
             <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
-            Creando...
+            Entrando...
           </span>
         </button>
         <p class="text-xs text-center text-ink-400 mt-3">Al continuar aceptas ser contactado por WhatsApp para confirmar tu reserva.</p>

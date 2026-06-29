@@ -63,7 +63,21 @@
   });
 
   // ===== Pantallas =====
-  function showIntro() { toggle('introScreen', false); toggle('loginScreen', true); toggle('menuScreen', true); window.scrollTo(0, 0); }
+  function showIntro() {
+    toggle('introScreen', false); toggle('loginScreen', true); toggle('menuScreen', true); window.scrollTo(0, 0);
+    // Si ya hay sesion guardada, mostrar link "¿Ya tienes cuenta? Inicia sesion"
+    var link = $('introLoginLink');
+    var ctaText = $('introCtaText');
+    if (link && ctaText) {
+      if (session) {
+        link.classList.remove('hidden');
+        ctaText.textContent = 'Continuar mi reserva';
+      } else {
+        link.classList.add('hidden');
+        ctaText.textContent = 'Explorar menu y reservar';
+      }
+    }
+  }
   function showLogin() { toggle('introScreen', true); toggle('loginScreen', false); toggle('menuScreen', true); window.scrollTo(0, 0); }
   function showMenu() { toggle('introScreen', true); toggle('loginScreen', true); toggle('menuScreen', false); window.scrollTo(0, 0); }
   function toggle(id, hide) { var el = $(id); if (el) el.classList.toggle('hidden', hide); }
@@ -225,6 +239,15 @@
       if (session) { showMenu(); loadMenu(); loadMisReservas(); return; }
       showLogin();
     });
+    // Link "¿Ya tienes cuenta? Inicia sesion" (en la intro, si hay sesion)
+    var introLoginBtn = $('introLoginBtn');
+    if (introLoginBtn) {
+      introLoginBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (session) { showMenu(); loadMenu(); loadMisReservas(); return; }
+        showLogin();
+      });
+    }
     $('loginBackBtn').addEventListener('click', function () { showIntro(); });
     $('loginForm').addEventListener('submit', submitLogin);
     $('headerLogoutBtn').addEventListener('click', function () {
