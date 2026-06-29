@@ -1228,3 +1228,22 @@
   .sales-filters-body,
   .sales-filters-toggle-icon { transition: none !important; }
 }
+
+/* FAB mobile del carrito en POS — círculo verde brand con shadow fuerte.
+   Se define aqui porque Tailwind JIT de CDN a veces no escanea elementos
+   que estan fuera del flujo principal del documento. */
+.pos-mobile-fab-btn {
+  background-color: #0d6b4e !important; /* brand-600 */
+  color: #ffffff !important;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.20),
+    0 8px 10px -6px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(13, 107, 78, 0.30) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+.pos-mobile-fab-btn:hover {
+  background-color: #0a5a3f !important; /* brand-700 */
+}
+.pos-mobile-fab-btn:active {
+  transform: scale(0.95);
+}
