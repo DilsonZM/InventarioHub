@@ -34,12 +34,8 @@
 
   <!-- ================== PANTALLA INTRO ================== -->
   <section id="introScreen" class="intro">
-    <!-- Fondo claro con destellos verde + dorado -->
-    <div class="intro-bg" aria-hidden="true">
-      <div class="intro-bg-blob intro-bg-blob-1"></div>
-      <div class="intro-bg-blob intro-bg-blob-2"></div>
-      <div class="intro-bg-blob intro-bg-blob-3"></div>
-    </div>
+    <!-- Fondo con gradient radial: brand arriba, blanco abajo -->
+    <div class="intro-bg" aria-hidden="true"></div>
 
     <div class="intro-content">
       <!-- Header: logo + lang -->
@@ -54,64 +50,47 @@
         <div class="intro-lang" aria-hidden="true">ES</div>
       </header>
 
-      <!-- Galeria circular: 3 imagenes del restaurante (optimizadas para web) -->
+      <!-- Galeria circular: imagenes del restaurante (estilo dating app) -->
       <div class="intro-gallery">
         <div class="intro-circle intro-circle-1">
-          <img src="/public/img/Bar_web.jpg" alt="Bar de Corner House" width="120" height="120" loading="eager" decoding="async">
+          <img src="/public/img/Bebida_web.jpg" alt="Coctel de Corner House" width="130" height="130" loading="eager" decoding="async">
         </div>
         <div class="intro-circle intro-circle-2">
-          <img src="/public/img/Arroz_web.jpg" alt="Plato tipico de Corner House" width="140" height="140" loading="eager" decoding="async">
+          <img src="/public/img/Arroz_web.jpg" alt="Plato tipico de Corner House" width="150" height="150" loading="eager" decoding="async">
         </div>
         <div class="intro-circle intro-circle-3">
-          <img src="/public/img/Bebida_web.jpg" alt="Bebida de Corner House" width="120" height="120" loading="eager" decoding="async">
+          <img src="/public/img/Bar_web.jpg" alt="Bar de Corner House" width="130" height="130" loading="eager" decoding="async">
+        </div>
+        <div class="intro-circle intro-circle-4">
+          <img src="/public/img/Arroz_web.jpg" alt="Comida casera de Corner House" width="110" height="110" loading="eager" decoding="async">
+        </div>
+        <div class="intro-circle intro-circle-5">
+          <img src="/public/img/Bebida_web.jpg" alt="Bebida artesanal de Corner House" width="120" height="120" loading="eager" decoding="async">
         </div>
       </div>
 
-      <!-- Info principal -->
+      <!-- Titulo principal + subtitulo -->
       <div class="intro-body">
-        <h1 class="intro-title">Sabor que <span class="italic">cuenta</span></h1>
-        <p class="intro-subtitle">Un restaurante acogedor donde cada detalle está pensado para hacerte sentir en casa. Aquí la comida se prepara con amor, ingredientes frescos y sabores que reconfortan el alma.</p>
+        <h1 class="intro-title">Reserva tu <span class="italic">Mesa</span></h1>
+        <p class="intro-subtitle">Un restaurante acogedor donde cada detalle está pensado para hacerte sentir en casa. Cocina honesta con ingredientes frescos y sabores que reconfortan el alma.</p>
       </div>
 
-      <!-- Features (horario, direccion, telefono) -->
-      <div class="intro-features">
-        <div class="intro-feat">
-          <div class="intro-feat-ico">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <div>
-            <p class="intro-feat-title">Mar - Dom · 12:00 - 22:00</p>
-          </div>
-        </div>
-        <div class="intro-feat">
-          <div class="intro-feat-ico">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          </div>
-          <div>
-            <p class="intro-feat-title">Cl. 11 #11-34, Villanueva</p>
-          </div>
-        </div>
-        <div class="intro-feat">
-          <div class="intro-feat-ico">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-          </div>
-          <div>
-            <p class="intro-feat-title">304 6365259</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- CTA principal -->
-      <div class="intro-cta-wrap">
-        <button id="introStartBtn" type="button" class="intro-cta">
+      <!-- Formulario de inicio (estilo sign up) -->
+      <form id="introQuickForm" class="intro-form" novalidate>
+        <input type="text" id="intro-name" placeholder="Nombre completo" class="form-input" autocomplete="name" required>
+        <input type="tel" id="intro-tel" placeholder="WhatsApp" class="form-input" autocomplete="tel" required>
+        <button type="submit" id="introQuickSubmit" class="intro-cta">
           <span id="introCtaText">Explorar menu y reservar</span>
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l4 4m0 0l-4 4m4-4H3"/></svg>
         </button>
-        <p class="intro-eta">Llegaras en ~53 min desde el centro de Villanueva</p>
-        <p id="introLoginLink" class="intro-login-link hidden">
-          <a href="#" id="introLoginBtn">¿Ya tienes cuenta? Inicia sesion</a>
-        </p>
-      </div>
+      </form>
+
+      <!-- Link a iniciar sesion (si ya tiene cuenta) -->
+      <p class="intro-alt-link">
+        ¿Ya tienes cuenta? <a href="#" id="introLoginLinkBtn">Inicia sesion</a>
+      </p>
+
+      <p class="intro-eta">Llegaras en ~53 min desde el centro de Villanueva</p>
     </div>
   </section>
 

@@ -65,17 +65,10 @@
   // ===== Pantallas =====
   function showIntro() {
     toggle('introScreen', false); toggle('loginScreen', true); toggle('menuScreen', true); window.scrollTo(0, 0);
-    // Si ya hay sesion guardada, mostrar link "¿Ya tienes cuenta? Inicia sesion"
-    var link = $('introLoginLink');
+    // Si ya hay sesion guardada, cambiar texto del CTA
     var ctaText = $('introCtaText');
-    if (link && ctaText) {
-      if (session) {
-        link.classList.remove('hidden');
-        ctaText.textContent = 'Continuar mi reserva';
-      } else {
-        link.classList.add('hidden');
-        ctaText.textContent = 'Explorar menu y reservar';
-      }
+    if (ctaText) {
+      ctaText.textContent = session ? 'Continuar mi reserva' : 'Explorar menu y reservar';
     }
   }
   function showLogin() { toggle('introScreen', true); toggle('loginScreen', false); toggle('menuScreen', true); window.scrollTo(0, 0); }
@@ -235,14 +228,24 @@
 
   // ===== UI binding =====
   function bindUI() {
-    $('introStartBtn').addEventListener('click', function () {
-      if (session) { showMenu(); loadMenu(); loadMisReservas(); return; }
-      showLogin();
-    });
-    // Link "¿Ya tienes cuenta? Inicia sesion" (en la intro, si hay sesion)
-    var introLoginBtn = $('introLoginBtn');
-    if (introLoginBtn) {
-      introLoginBtn.addEventListener('click', function (e) {
+    // Form de la intro: 2 campos (nombre + WhatsApp) que disparan login
+    var introForm = $('introQuickForm');
+    if (introForm) {
+      introForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (session) { showMenu(); loadMenu(); loadMisReservas(); return; }
+        // Si no hay sesion, abrir el sheet de login con los datos pre-llenados
+        showLogin();
+        var name = $('intro-name').value.trim();
+        var tel = $('intro-tel').value.trim();
+        if (name) $('l-nombre').value = name;
+        if (tel) $('l-telefono').value = tel;
+      });
+    }
+    // Link "¿Ya tienes cuenta? Inicia sesion" (en la intro)
+    var introLoginLinkBtn = $('introLoginLinkBtn');
+    if (introLoginLinkBtn) {
+      introLoginLinkBtn.addEventListener('click', function (e) {
         e.preventDefault();
         if (session) { showMenu(); loadMenu(); loadMisReservas(); return; }
         showLogin();

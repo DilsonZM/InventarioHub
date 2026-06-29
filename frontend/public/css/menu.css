@@ -1,4 +1,4 @@
-/* Corner House - Menu publico (tema claro + verde brand + dorado) */
+/* Corner House - Menu publico (intro estilo dating app + menu claro) */
 
 * { -webkit-tap-highlight-color: transparent; }
 html, body { background: #ffffff; }
@@ -26,7 +26,7 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   --gold-500: #c7942d;
 }
 
-/* ============== INTRO (tema claro con destellos) ============== */
+/* ============== INTRO (estilo dating app: gradient brand arriba -> blanco abajo) ============== */
 .intro {
   position: relative;
   min-height: 100dvh;
@@ -34,38 +34,28 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   align-items: center;
   overflow: hidden;
   isolation: isolate;
-  background: #ffffff;
 }
+/* El fondo: gradient brand radial arriba, fade a blanco abajo */
 .intro-bg {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 0%, var(--brand-600) 0%, var(--brand-500) 30%, var(--brand-100) 55%, #ffffff 75%, #ffffff 100%);
 }
-.intro-bg-blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.5;
-}
-.intro-bg-blob-1 {
-  width: 22rem; height: 22rem;
-  top: -6rem; left: -6rem;
-  background: radial-gradient(circle, rgba(13, 107, 78, 0.20) 0%, transparent 70%);
-}
-.intro-bg-blob-2 {
-  width: 18rem; height: 18rem;
-  bottom: -4rem; right: -4rem;
-  background: radial-gradient(circle, rgba(199, 148, 45, 0.18) 0%, transparent 70%);
-}
-.intro-bg-blob-3 {
-  width: 14rem; height: 14rem;
-  top: 50%; left: 60%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(108, 194, 161, 0.15) 0%, transparent 70%);
+.intro-bg::after {
+  /* Textura sutil de puntos */
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(180deg, black 0%, transparent 35%);
+  -webkit-mask-image: linear-gradient(180deg, black 0%, transparent 35%);
+  opacity: 0.6;
 }
 
 .intro-content {
   position: relative; z-index: 2;
   width: 100%;
-  padding: 1.75rem 1.25rem 2rem;
+  padding: 1.5rem 1.25rem 2rem;
   color: var(--ink-900);
   display: flex; flex-direction: column;
   min-height: 100dvh;
@@ -74,17 +64,17 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 /* Header */
 .intro-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1.5rem;
-  animation: fadeDown 0.6s ease-out both;
+  margin-bottom: 1.25rem;
+  animation: fadeDown 0.5s ease-out both;
 }
 .intro-logo { display: inline-flex; align-items: center; gap: 0.75rem; }
 .intro-logo-mark {
-  width: 3.25rem; height: 3.25rem;
+  width: 3rem; height: 3rem;
   background: white;
-  border: 1.5px solid var(--ink-200);
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
   border-radius: 0.85rem;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 6px 20px -6px rgba(15, 23, 42, 0.20);
   object-fit: cover;
   object-position: center;
   display: block;
@@ -92,36 +82,36 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 .intro-logo-text { line-height: 1; }
 .intro-eyebrow {
   font-size: 0.7rem; font-weight: 800; letter-spacing: 0.25em;
-  text-transform: uppercase; line-height: 1; color: var(--brand-700);
+  text-transform: uppercase; line-height: 1; color: white;
 }
 .intro-tag {
-  font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600;
-  font-style: italic; line-height: 1; margin-top: 0.2rem; color: var(--ink-900);
+  font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 600;
+  font-style: italic; line-height: 1; margin-top: 0.2rem; color: white;
 }
 .intro-lang {
   font-size: 0.7rem; font-weight: 700; padding: 0.3rem 0.6rem;
-  border: 1.5px solid var(--ink-200); border-radius: 9999px;
-  color: var(--ink-700); background: white;
+  border: 1.5px solid rgba(255, 255, 255, 0.5); border-radius: 9999px;
+  color: white; background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
 }
 
-/* Galeria circular: 3 imagenes superpuestas */
+/* Galeria circular: estilo dating app, 5 imagenes superpuestas */
 .intro-gallery {
   position: relative;
   display: flex; align-items: center; justify-content: center;
-  height: 12rem; margin: 0.5rem auto 1.5rem;
+  height: 14rem; margin: 0.5rem auto 1.5rem;
   max-width: 22rem;
-  animation: fadeUpIntro 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 .intro-circle {
   position: absolute;
-  width: 7rem; height: 7rem;
   border-radius: 50%;
   overflow: hidden;
   background: white;
   border: 3px solid white;
   box-shadow:
-    0 12px 30px -8px rgba(15, 23, 42, 0.20),
-    0 4px 12px -4px rgba(13, 107, 78, 0.15);
+    0 10px 25px -6px rgba(15, 23, 42, 0.18),
+    0 4px 10px -4px rgba(15, 23, 42, 0.10);
   transition: transform 0.3s ease;
 }
 .intro-circle img {
@@ -129,104 +119,97 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   object-fit: cover;
   display: block;
 }
-.intro-circle-1 {
-  left: 8%;
-  top: 0;
-  z-index: 1;
-  transform: rotate(-8deg);
-}
-.intro-circle-2 {
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) scale(1.15);
-  z-index: 3;
-  border-color: var(--brand-100);
-  box-shadow:
-    0 16px 40px -8px rgba(15, 23, 42, 0.25),
-    0 0 0 6px rgba(255, 255, 255, 0.6);
-}
-.intro-circle-3 {
-  right: 8%;
-  bottom: 0;
-  z-index: 2;
-  transform: rotate(8deg);
-}
-.intro-circle:hover { transform: scale(1.05) rotate(0deg); }
-.intro-circle-2:hover { transform: translate(-50%, -50%) scale(1.2); }
+.intro-circle-1 { left: 2%; top: 18%; width: 5rem; height: 5rem; z-index: 1; transform: rotate(-6deg); }
+.intro-circle-2 { left: 50%; top: 0; transform: translateX(-50%); z-index: 4; width: 7rem; height: 7rem;
+  box-shadow: 0 14px 32px -6px rgba(15, 23, 42, 0.22), 0 0 0 4px rgba(255, 255, 255, 0.4); }
+.intro-circle-3 { right: 2%; top: 18%; width: 5rem; height: 5rem; z-index: 2; transform: rotate(6deg); }
+.intro-circle-4 { left: 18%; bottom: 0; width: 4.5rem; height: 4.5rem; z-index: 2; transform: rotate(-8deg); }
+.intro-circle-5 { right: 18%; bottom: 0; width: 4.75rem; height: 4.75rem; z-index: 3; transform: rotate(8deg); }
+.intro-circle:hover { transform: scale(1.05) rotate(0deg); z-index: 5; }
 
 /* Body / texto */
-.intro-body { flex: 0; text-align: center; margin-bottom: 1.25rem; }
+.intro-body { text-align: center; margin-bottom: 1.5rem; padding: 0 0.5rem; }
 .intro-title {
   font-family: 'Fraunces', serif;
-  font-size: clamp(2rem, 7vw, 2.75rem);
+  font-size: clamp(2rem, 7vw, 2.5rem);
   font-weight: 600;
-  line-height: 1.05;
+  line-height: 1.1;
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
   color: var(--ink-900);
-  animation: fadeUpIntro 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 .intro-title .italic {
   font-style: italic;
-  background: linear-gradient(135deg, var(--brand-600) 0%, var(--gold-500) 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  color: var(--brand-600);
 }
 .intro-subtitle {
   font-size: 0.85rem;
   line-height: 1.55;
   color: var(--ink-500);
-  max-width: 30rem;
+  max-width: 28rem;
   margin: 0 auto;
-  padding: 0 0.5rem;
-  animation: fadeUpIntro 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 }
 
-/* Features */
-.intro-features {
-  display: flex; flex-direction: column; gap: 0.5rem;
-  max-width: 24rem; margin: 0 auto 1.5rem;
+/* Formulario estilo dating app (sign up) */
+.intro-form {
+  display: flex; flex-direction: column; gap: 0.65rem;
+  max-width: 24rem;
+  margin: 0 auto 1rem;
   padding: 0 0.5rem;
-  animation: fadeUpIntro 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
 }
-.intro-feat {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.6rem 0.85rem;
+.intro-form .form-input {
+  width: 100%;
   background: white;
-  border: 1px solid var(--ink-200);
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  border: 1.5px solid var(--ink-200);
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  color: var(--ink-900); font-size: 0.92rem; font-family: inherit;
+  transition: all 0.15s ease;
 }
-.intro-feat-ico {
-  width: 2rem; height: 2rem; flex-shrink: 0;
-  border-radius: 0.55rem;
-  background: linear-gradient(135deg, var(--brand-50) 0%, var(--brand-100) 100%);
-  color: var(--brand-700);
-  display: flex; align-items: center; justify-content: center;
-}
-.intro-feat-title { font-size: 0.82rem; font-weight: 600; color: var(--ink-900); line-height: 1.2; }
-
-/* CTA */
-.intro-cta-wrap {
-  margin-top: auto;
-  animation: fadeUpIntro 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
+.intro-form .form-input::placeholder { color: var(--ink-500); }
+.intro-form .form-input:focus {
+  outline: none; background: white;
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 4px rgba(13, 107, 78, 0.12);
 }
 .intro-cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-  padding: 0.95rem 1.75rem;
+  padding: 0.95rem 1.5rem;
   width: 100%;
   background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-700) 100%);
   color: white; font-weight: 700; font-size: 0.95rem;
   border: none; border-radius: 0.85rem;
   cursor: pointer; transition: all 0.18s ease; font-family: inherit;
   box-shadow: 0 10px 28px -8px rgba(13, 107, 78, 0.45);
+  margin-top: 0.25rem;
 }
 .intro-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 36px -8px rgba(13, 107, 78, 0.55); }
 .intro-cta:active { transform: translateY(0) scale(0.99); }
-.intro-eta { margin-top: 0.75rem; font-size: 0.72rem; color: var(--ink-500); text-align: center; }
-.intro-login-link { margin-top: 0.85rem; font-size: 0.8rem; color: var(--ink-500); text-align: center; }
-.intro-login-link a {
-  color: var(--brand-700); font-weight: 700; text-decoration: underline;
+.intro-cta:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.intro-alt-link {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--ink-500);
+  margin-top: 0.5rem;
+  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+.intro-alt-link a {
+  color: var(--brand-700);
+  font-weight: 700;
+  text-decoration: underline;
   text-underline-offset: 3px;
+}
+.intro-eta {
+  margin-top: auto;
+  font-size: 0.72rem;
+  color: var(--ink-500);
+  text-align: center;
+  padding-top: 1.5rem;
+  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
 }
 
 @keyframes fadeDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
