@@ -196,8 +196,16 @@ export function openMobileFiltersModal(view) {
   var content = document.getElementById('mobileFiltersContent');
   if (!content) return;
 
-  // Clonar el contenido de los filtros del desktop
-  var sourceSelectors = [
+  // Selectores de los inputs a clonar al drawer.
+  // Nota: el dashboard tiene 'filterDateFromDash'/'filterDateToDash', los demas
+  // vistas usan 'filterDateFrom'/'filterDateTo' con prefijo opcional.
+  var sourceSelectors = view === 'dashboard' ? [
+    '#filterDateFromDash',
+    '#filterDateToDash',
+    '#filterQuickPeriodDash',
+    '#filterCocinaDash',
+    '#filterProductDash'
+  ] : [
     '#filterDateFrom' + prefix,
     '#filterDateTo' + prefix,
     '#filterQuickPeriod' + prefix,
@@ -205,56 +213,73 @@ export function openMobileFiltersModal(view) {
   ];
   if (view === 'movimientos') sourceSelectors.push('#filterTipoMov');
 
-  content.innerHTML = sourceSelectors
-    .map(function (sel) {
-      var el = document.querySelector(sel);
-      if (!el) return '';
-      // Clonar el contenedor padre para mantener label
-      var wrap = el.closest('div');
-      return wrap ? wrap.outerHTML : '';
-    })
-    .join('');
+  // Deduplicar wrappers: si dos inputs comparten el mismo wrapper padre (caso comun
+  // en dashboard donde Desde/Hasta estan en el mismo <div class="flex items-stretch">),
+  // clonar UNA sola vez ese wrapper en vez de duplicarlo.
+  // Ademas, si el wrapper padre directo tiene un <label> (caso "Rango de fechas"),
+  // subimos un nivel mas para incluir el label en el clon.
+  var seen = new Set();
+  var html = '';
+  sourceSelectors.forEach(function (sel) {
+    var el = document.querySelector(sel);
+    if (!el) return;
+    var wrap = el.closest('div');
+    if (!wrap || seen.has(wrap)) return;
+    // Subir un nivel si el padre directo del wrap tiene un <label> (label del grupo)
+    var candidate = wrap;
+    if (wrap.parentElement && wrap.parentElement.querySelector(':scope > label')) {
+      candidate = wrap.parentElement;
+    }
+    if (seen.has(candidate)) return;
+    seen.add(candidate);
+    // Tambien marcar todos los descendientes para que no se vuelvan a procesar
+    var descendants = candidate.querySelectorAll('input, select');
+    descendants.forEach(function (d) { seen.add(d.parentElement); });
+    html += candidate.outerHTML;
+  });
+  content.innerHTML = html;
 
-  // Sincronizar valores actuales
+  // Sincronizar valores actuales (desktop -> drawer)
   sourceSelectors.forEach(function (sel) {
     var src = document.querySelector(sel);
     var dst = content.querySelector(sel);
     if (src && dst) dst.value = src.value;
   });
 
-  // Guardar la vista actual en el boton Aplicar
+  // Wire de eventos en el drawer: cambio en un input del drawer se propaga al
+  // desktop y dispara el loader de la vista, para que los filtros se apliquen
+  // automaticamente sin necesidad de tocar "Aplicar".
+  var loader = getLoaderForView(view);
+  sourceSelectors.forEach(function (sel) {
+    var drawerEl = content.querySelector(sel);
+    var desktopEl = document.querySelector(sel);
+    if (!drawerEl || !desktopEl) return;
+    var handler = function () {
+      // Sincronizar valor al desktop y disparar el evento change para que
+      // los listeners existentes del desktop (initFilters) se ejecuten.
+      if (desktopEl.value !== drawerEl.value) {
+        desktopEl.value = drawerEl.value;
+      }
+      desktopEl.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    drawerEl.addEventListener('change', handler);
+    if (drawerEl.type === 'text' || drawerEl.type === 'search') {
+      drawerEl.addEventListener('input', handler);
+    }
+  });
+
+  // Guardar la vista actual en el boton Aplicar (por compat con el handler global)
   var applyBtn = document.getElementById('mobileFiltersApply');
   if (applyBtn) applyBtn.setAttribute('data-view', view);
 
   openModal('mobileFiltersModal');
 }
 
-// Aplica los filtros del modal mobile a los inputs del desktop y recarga.
+// Cierra el modal mobile. Los filtros ya se aplican en vivo via los listeners
+// wireados en openMobileFiltersModal, asi que "Aplicar" solo cierra.
 export function applyMobileFilters(view) {
-  var prefix = view === 'sales' ? '' : (view === 'entradas' ? 'Entradas' : 'Mov');
-  var content = document.getElementById('mobileFiltersContent');
-  if (!content) return;
-  var sourceSelectors = [
-    '#filterDateFrom' + prefix,
-    '#filterDateTo' + prefix,
-    '#filterQuickPeriod' + prefix,
-    view === 'sales' ? '#filterMesa' : ('#filterProductSearch' + prefix)
-  ];
-  if (view === 'movimientos') sourceSelectors.push('#filterTipoMov');
-
-  sourceSelectors.forEach(function (sel) {
-    var src = content.querySelector(sel);
-    var dst = document.querySelector(sel);
-    if (src && dst) dst.value = src.value;
-  });
-
-  // Cerrar el modal
   var modal = document.getElementById('mobileFiltersModal');
   if (modal) modal.classList.add('hidden');
-
-  // Recargar la vista
-  var loader = getLoaderForView(view);
-  if (loader) loader();
 }
 
 // Re-exponer en window para el codigo heredado
