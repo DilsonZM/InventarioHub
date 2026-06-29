@@ -68,16 +68,16 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 }
 .intro-logo { display: inline-flex; align-items: center; gap: 0.85rem; }
 .intro-logo-mark {
-  width: 3.25rem; height: 3.25rem;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  width: 4.25rem; height: 4.25rem;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
   border-radius: 0.85rem;
-  display: flex; align-items: center; justify-content: center;
-  color: white;
-  backdrop-filter: blur(8px);
   flex-shrink: 0;
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.25);
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
-.intro-logo-mark svg { width: 2rem; height: 2rem; }
 .intro-logo-text { line-height: 1; }
 .intro-eyebrow {
   font-size: 0.78rem; font-weight: 800; letter-spacing: 0.28em;
