@@ -1,6 +1,6 @@
 // routes/reservas.js
-// Gestion de reservas (solo admin). Permite listar, filtrar, cambiar
-// estado (confirmar/cancelar/completar) y ver detalle de cada reserva.
+// Gestion de reservas (solo admin). Lista con filtros, detalle con items,
+// cambio de estado, eliminar.
 
 const express = require('express');
 const router = express.Router();
@@ -17,7 +17,7 @@ router.get('/', requirePermission('puede_gestionar_usuarios'), async (req, res) 
 
     var query = supabase
       .from('reservas')
-      .select('id, nombre, telefono, fecha, hora, personas, notas, estado, usuario_id, creado_en')
+      .select('id, nombre, telefono, email, fecha, hora, personas, notas, estado, subtotal_platos, usuario_id, creado_en, reserva_items(id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
       .order('fecha', { ascending: false })
       .order('hora', { ascending: false })
       .limit(limitNum);
@@ -28,17 +28,24 @@ router.get('/', requirePermission('puede_gestionar_usuarios'), async (req, res) 
     var { data, error } = await query;
     if (error) throw error;
 
-    // Stats rapidas para los KPIs
-    var stats = {
-      total: (data || []).length,
-      pendientes: (data || []).filter(function (r) { return r.estado === 'pendiente'; }).length,
-      confirmadas: (data || []).filter(function (r) { return r.estado === 'confirmada'; }).length,
-      hoy: 0
-    };
-    var todayStr = new Date().toISOString().slice(0, 10);
-    stats.hoy = (data || []).filter(function (r) { return r.fecha === todayStr; }).length;
+    var reservas = (data || []).map(function (r) {
+      var items = r.reserva_items || [];
+      return Object.assign({}, r, {
+        items_count: items.length,
+        items: items
+      });
+    });
 
-    return res.json({ success: true, data: data || [], stats: stats });
+    var stats = {
+      total: reservas.length,
+      pendientes: reservas.filter(function (r) { return r.estado === 'pendiente'; }).length,
+      confirmadas: reservas.filter(function (r) { return r.estado === 'confirmada'; }).length,
+      hoy: reservas.filter(function (r) { return r.fecha === new Date().toISOString().slice(0, 10); }).length,
+      con_items: reservas.filter(function (r) { return r.items_count > 0; }).length,
+      total_platos: reservas.reduce(function (s, r) { return s + (r.items_count || 0); }, 0)
+    };
+
+    return res.json({ success: true, data: reservas, stats: stats });
   } catch (err) {
     console.error('[reservas] list error:', err.message);
     return res.status(500).json({ success: false, message: 'Error al listar reservas' });

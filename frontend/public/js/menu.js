@@ -1,7 +1,6 @@
-// Corner House - Menu publico (Light theme, app nativa)
-// - Carga menu desde /api/public/menu
-// - Login/registro con nombre + WhatsApp (token guardado en localStorage)
-// - Reserva de mesa, vinculada al usuario si esta logueado.
+// Corner House - Menu publico
+// Flujo: Intro -> Login (nombre+WhatsApp+email) -> Menu con carrito -> Reserva.
+// Persistencia: localStorage (session, cart).
 
 (function () {
   'use strict';
@@ -13,97 +12,309 @@
     { id: 'bebidas',  label: 'Bebidas',  emoji: '🥤' },
     { id: 'postres',  label: 'Postres',  emoji: '🍰' }
   ];
-  var STORAGE_KEY = 'ch_public_user_v1';
+  var STORAGE_SESSION = 'ch_public_user_v1';
+  var STORAGE_CART = 'ch_public_cart_v1';
+
   function ratingFor(id) {
     var n = 0, s = String(id || '');
     for (var i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) & 0xffff;
     return 4.4 + (n % 7) * 0.1;
   }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function formatPrecio(n) {
+    return '$' + (parseFloat(n) || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 });
+  }
 
   // ===== State =====
+  var session = null;
   var menuData = [];
   var activeCat = null;
-  var personas = 2;
+  var cart = []; // { platoId, nombre, precio, cantidad, emoji }
   var searchQuery = '';
-  var session = loadSession(); // { token, usuario } o null
+  var personas = 2;
 
-  // ===== Elementos DOM =====
+  // ===== Elementos =====
   var $ = function (id) { return document.getElementById(id); };
-  var elTabs = $('catTabsList');
-  var elContent = $('menuContent');
-  var elSkeleton = $('menuSkeleton');
-  var elError = $('menuError');
-  var elRetry = $('retryBtn');
-  var elFab = $('openReservaFab');
-  var elBackdrop = $('reservaBackdrop');
-  var elSheet = $('reservaSheet');
-  var elForm = $('reservaForm');
-  var elClose = $('closeReservaBtn');
+  var elIntro = $('introScreen');
+  var elLogin = $('loginScreen');
+  var elMenu = $('menuScreen');
+  var elCatTabs = $('catTabsList');
+  var elMenuContent = $('menuContent');
+  var elMenuSkeleton = $('menuSkeleton');
+  var elMenuError = $('menuError');
+  var elRetryBtn = $('retryBtn');
+  var elSearch = $('searchInput');
+  var elCartFab = $('cartFab');
+  var elCartFabCount = $('cartFabCount');
+  var elCartFabTotal = $('cartFabTotal');
+  var elCartBackdrop = $('cartBackdrop');
+  var elCartSheet = $('cartSheet');
+  var elCartItems = $('cartItems');
+  var elCartEmpty = $('cartEmpty');
+  var elCartTotals = $('cartTotals');
+  var elCartSubtotal = $('cartSubtotal');
+  var elCloseCartBtn = $('closeCartBtn');
+  var elCartEmptyCta = $('cartEmptyCta');
+  var elReservaFab = $('openReservaFab');
+  var elReservaBtnText = $('reservarBtnText');
+  var elReservaBackdrop = $('reservaBackdrop');
+  var elReservaSheet = $('reservaSheet');
+  var elReservaForm = $('reservaForm');
+  var elCloseReservaBtn = $('closeReservaBtn');
   var elFecha = $('r-fecha');
-  var elSubmit = $('reservaSubmitBtn');
-  var elErrorBox = $('reservaError');
+  var elReservaSubmit = $('reservaSubmitBtn');
+  var elReservaError = $('reservaError');
+  var elReservaCartSummary = $('reservaCartSummary');
+  var elReservaCartItems = $('reservaCartItems');
+  var elReservaCartTotal = $('reservaCartTotal');
+  var elReservaEditCartBtn = $('reservaEditCartBtn');
   var elSuccess = $('successOverlay');
   var elSuccessMsg = $('successMsg');
-  var elSearch = $('searchInput');
-  var elUserChip = $('userChip');
-  var elUserGreeting = $('userGreeting');
+  var elHeaderSaludo = $('headerSaludo');
+  var elHeaderNombre = $('headerNombre');
+  var elHeaderLogout = $('headerLogoutBtn');
+  var elLoginBack = $('loginBackBtn');
+  var elIntroStart = $('introStartBtn');
+  var elLoginForm = $('loginForm');
+  var elLoginSubmit = $('loginSubmitBtn');
+  var elLoginError = $('loginError');
 
   // ===== Init =====
   document.addEventListener('DOMContentLoaded', function () {
-    setDefaultFecha();
+    session = loadSession();
+    cart = loadCart();
     bindUI();
-    renderUserChip();
-    loadMenu();
+    setDefaultFecha();
+    // Decidir pantalla inicial
+    if (session) {
+      // Ya logueado: ir directo al menu
+      showMenu();
+      renderHeader();
+      loadMenu();
+    } else {
+      showIntro();
+    }
+    renderCart();
   });
+
+  // ===== Pantallas =====
+  function showIntro() {
+    elIntro.classList.remove('hidden');
+    elLogin.classList.add('hidden');
+    elMenu.classList.add('hidden');
+    window.scrollTo(0, 0);
+  }
+  function showLogin() {
+    elIntro.classList.add('hidden');
+    elLogin.classList.remove('hidden');
+    elMenu.classList.add('hidden');
+    window.scrollTo(0, 0);
+  }
+  function showMenu() {
+    elIntro.classList.add('hidden');
+    elLogin.classList.add('hidden');
+    elMenu.classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }
 
   // ===== Session =====
   function loadSession() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      var s = JSON.parse(raw);
-      if (!s || !s.token) return null;
-      return s;
-    } catch (e) { return null; }
+    try { var raw = localStorage.getItem(STORAGE_SESSION); if (!raw) return null;
+      var s = JSON.parse(raw); if (!s || !s.token) return null; return s; }
+    catch (e) { return null; }
   }
   function saveSession(s) {
     session = s;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
-    renderUserChip();
+    try { localStorage.setItem(STORAGE_SESSION, JSON.stringify(s)); } catch (e) {}
+    renderHeader();
   }
   function clearSession() {
     session = null;
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-    renderUserChip();
+    try { localStorage.removeItem(STORAGE_SESSION); } catch (e) {}
+    renderHeader();
   }
-  function renderUserChip() {
-    if (!elUserChip) return;
-    if (session && session.usuario) {
-      var u = session.usuario;
-      var first = (u.nombre || '').split(' ')[0] || 'amigo';
-      elUserGreeting.textContent = 'Hola, ' + first + ' 👋';
-      elUserChip.classList.remove('hidden');
-      elUserChip.classList.add('flex');
+  function renderHeader() {
+    if (!session || !session.usuario) return;
+    var u = session.usuario;
+    var first = (u.nombre || '').split(' ')[0] || 'amigo';
+    elHeaderSaludo.textContent = 'Hola, ' + first + '!';
+    elHeaderNombre.textContent = u.nombre || '';
+  }
+
+  // ===== Cart =====
+  function loadCart() {
+    try { var raw = localStorage.getItem(STORAGE_CART); if (!raw) return [];
+      var c = JSON.parse(raw); return Array.isArray(c) ? c : []; }
+    catch (e) { return []; }
+  }
+  function saveCart() {
+    try { localStorage.setItem(STORAGE_CART, JSON.stringify(cart)); } catch (e) {}
+  }
+  function cartSubtotal() {
+    return cart.reduce(function (s, it) { return s + (it.precio * it.cantidad); }, 0);
+  }
+  function cartItemCount() {
+    return cart.reduce(function (s, it) { return s + it.cantidad; }, 0);
+  }
+  function addToCart(plato) {
+    var existing = null;
+    for (var i = 0; i < cart.length; i++) if (cart[i].platoId === plato.id) { existing = cart[i]; break; }
+    if (existing) {
+      existing.cantidad += 1;
     } else {
-      elUserChip.classList.add('hidden');
-      elUserChip.classList.remove('flex');
+      cart.push({
+        platoId: plato.id,
+        nombre: plato.nombre,
+        precio: plato.precio,
+        cantidad: 1,
+        emoji: defaultEmojiFor(plato)
+      });
     }
+    saveCart();
+    renderCart();
+    showToast('Anadido al pedido', 'success');
+  }
+  function changeCartQty(platoId, delta) {
+    for (var i = 0; i < cart.length; i++) {
+      if (cart[i].platoId === platoId) {
+        cart[i].cantidad += delta;
+        if (cart[i].cantidad <= 0) cart.splice(i, 1);
+        break;
+      }
+    }
+    saveCart();
+    renderCart();
+  }
+  function renderCart() {
+    var count = cartItemCount();
+    var subtotal = cartSubtotal();
+    if (elCartFab) {
+      if (count > 0) {
+        elCartFab.classList.remove('hidden');
+        elCartFab.classList.add('flex');
+        elCartFabCount.textContent = count;
+        elCartFabTotal.textContent = formatPrecio(subtotal);
+      } else {
+        elCartFab.classList.add('hidden');
+        elCartFab.classList.remove('flex');
+      }
+    }
+    // Texto del boton reservar
+    if (elReservaBtnText) {
+      elReservaBtnText.textContent = count > 0
+        ? 'Reservar mesa y pedir (' + formatPrecio(subtotal) + ')'
+        : 'Reservar Mesa';
+    }
+    // Render de items en el sheet de carrito
+    renderCartItems();
+  }
+  function renderCartItems() {
+    if (cart.length === 0) {
+      elCartItems.classList.add('hidden');
+      elCartTotals.classList.add('hidden');
+      elCartEmpty.classList.remove('hidden');
+      return;
+    }
+    elCartEmpty.classList.add('hidden');
+    elCartItems.classList.remove('hidden');
+    elCartTotals.classList.remove('hidden');
+    elCartSubtotal.textContent = formatPrecio(cartSubtotal());
+    elCartItems.innerHTML = cart.map(function (it) {
+      return ''
+        + '<div class="cart-item">'
+        + '  <div class="cart-item-emoji" aria-hidden="true">' + it.emoji + '</div>'
+        + '  <div class="cart-item-info">'
+        + '    <p class="cart-item-name">' + escapeHtml(it.nombre) + '</p>'
+        + '    <p class="cart-item-price">' + formatPrecio(it.precio) + ' c/u</p>'
+        + '  </div>'
+        + '  <div class="cart-item-qty">'
+        + '    <button type="button" class="cart-qty-btn" data-qty="' + it.platoId + ':-1" aria-label="Quitar uno">−</button>'
+        + '    <span class="cart-qty-num">' + it.cantidad + '</span>'
+        + '    <button type="button" class="cart-qty-btn" data-qty="' + it.platoId + ':+1" aria-label="Anadir uno">+</button>'
+        + '  </div>'
+        + '</div>';
+    }).join('');
+  }
+  function openCart() {
+    renderCart();
+    elCartSheet.classList.add('is-open');
+    elCartBackdrop.classList.add('is-open');
+    elCartSheet.setAttribute('aria-hidden', 'false');
+  }
+  function closeCart() {
+    elCartSheet.classList.remove('is-open');
+    elCartBackdrop.classList.remove('is-open');
+    elCartSheet.setAttribute('aria-hidden', 'true');
   }
 
-  // ===== UI =====
-  function setDefaultFecha() {
-    var d = new Date();
-    d.setDate(d.getDate() + 1);
-    elFecha.value = d.toISOString().slice(0, 10);
-    elFecha.min = new Date().toISOString().slice(0, 10);
-  }
-
+  // ===== UI binding =====
   function bindUI() {
-    elFab.addEventListener('click', openSheet);
-    elClose.addEventListener('click', closeSheet);
-    elBackdrop.addEventListener('click', closeSheet);
-    elForm.addEventListener('submit', submitReserva);
-
+    // Intro
+    elIntroStart.addEventListener('click', function () {
+      // Si ya tiene sesion, ir directo al menu
+      if (session) { showMenu(); loadMenu(); return; }
+      showLogin();
+    });
+    // Login back
+    elLoginBack.addEventListener('click', function () { showIntro(); });
+    // Login form
+    elLoginForm.addEventListener('submit', submitLogin);
+    // Header logout
+    elHeaderLogout.addEventListener('click', function () {
+      if (!confirm('Cerrar sesion? Tu pedido se mantendra.')) return;
+      clearSession();
+      showIntro();
+    });
+    // Search
+    elSearch.addEventListener('input', function () {
+      searchQuery = this.value.toLowerCase().trim();
+      renderMenu();
+    });
+    // Retry
+    elRetryBtn.addEventListener('click', loadMenu);
+    // Cart FAB
+    elCartFab.addEventListener('click', openCart);
+    // Cart close
+    elCloseCartBtn.addEventListener('click', closeCart);
+    elCartBackdrop.addEventListener('click', closeCart);
+    elCartEmptyCta.addEventListener('click', closeCart);
+    // Cart qty buttons (delegation)
+    elCartItems.addEventListener('click', function (e) {
+      var btn = e.target.closest('.cart-qty-btn');
+      if (!btn) return;
+      var parts = btn.getAttribute('data-qty').split(':');
+      changeCartQty(parts[0], parseInt(parts[1], 10));
+    });
+    // Add to cart buttons (delegation en menuContent)
+    elMenuContent.addEventListener('click', function (e) {
+      var btn = e.target.closest('.plato-add-btn');
+      if (!btn) return;
+      var id = btn.getAttribute('data-add');
+      var plato = null;
+      for (var i = 0; i < menuData.length; i++) if (menuData[i].id === id) { plato = menuData[i]; break; }
+      if (plato) {
+        addToCart(plato);
+        // Animacion: cambiar a check brevemente
+        var orig = btn.innerHTML;
+        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+        btn.classList.add('is-added');
+        setTimeout(function () {
+          btn.innerHTML = orig;
+          btn.classList.remove('is-added');
+        }, 700);
+      }
+    });
+    // Reserva FAB
+    elReservaFab.addEventListener('click', openReserva);
+    elCloseReservaBtn.addEventListener('click', closeReserva);
+    elReservaBackdrop.addEventListener('click', closeReserva);
+    elReservaForm.addEventListener('submit', submitReserva);
+    elReservaEditCartBtn.addEventListener('click', function () { closeReserva(); openCart(); });
+    // Personas
     document.querySelectorAll('.persona-pill').forEach(function (p) {
       p.addEventListener('click', function () {
         document.querySelectorAll('.persona-pill').forEach(function (x) { x.classList.remove('is-active'); });
@@ -114,31 +325,59 @@
     });
     var pillDefault = document.querySelector('.persona-pill[data-personas="2"]');
     if (pillDefault) { pillDefault.classList.add('is-active'); $('r-personas').value = 2; }
-
-    elRetry.addEventListener('click', loadMenu);
-
-    elSearch.addEventListener('input', function () {
-      searchQuery = this.value.toLowerCase().trim();
-      renderMenu();
-    });
-
-    // Logout chip
-    var logoutBtn = $('userChipLogout');
-    if (logoutBtn) logoutBtn.addEventListener('click', function () {
-      clearSession();
-      showToast('Sesion cerrada', 'info');
-    });
-
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && elSheet.classList.contains('is-open')) closeSheet();
+      if (e.key === 'Escape') {
+        if (elReservaSheet.classList.contains('is-open')) closeReserva();
+        else if (elCartSheet.classList.contains('is-open')) closeCart();
+      }
     });
   }
+  function setDefaultFecha() {
+    var d = new Date();
+    d.setDate(d.getDate() + 1);
+    elFecha.value = d.toISOString().slice(0, 10);
+    elFecha.min = new Date().toISOString().slice(0, 10);
+  }
+
+  // ===== Login flow =====
+  function submitLogin(e) {
+    e.preventDefault();
+    hideLoginError();
+    var nombre = $('l-nombre').value.trim();
+    var telefono = $('l-telefono').value.trim();
+    var email = $('l-email').value.trim();
+    if (nombre.length < 2) return showLoginError('Ingresa tu nombre completo');
+    if (telefono.length < 7) return showLoginError('Ingresa un WhatsApp valido (min 7 digitos)');
+    setLoginLoading(true);
+    fetch('/api/public/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: nombre, telefono: telefono, email: email || undefined })
+    })
+    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+    .then(function (res) {
+      if (!res.ok || !res.json.success) throw new Error(res.json.message || 'Error');
+      saveSession(res.json.data);
+      showMenu();
+      loadMenu();
+      showToast(res.json.message || 'Bienvenido', 'success');
+    })
+    .catch(function (err) { showLoginError(err.message || 'Error al crear la cuenta'); })
+    .finally(function () { setLoginLoading(false); });
+  }
+  function setLoginLoading(on) {
+    elLoginSubmit.disabled = on;
+    elLoginSubmit.querySelector('.submit-label').classList.toggle('hidden', on);
+    elLoginSubmit.querySelector('.submit-spinner').classList.toggle('hidden', !on);
+  }
+  function showLoginError(msg) { elLoginError.textContent = msg; elLoginError.classList.remove('hidden'); }
+  function hideLoginError() { elLoginError.classList.add('hidden'); }
 
   // ===== Menu =====
   function loadMenu() {
-    elSkeleton.classList.remove('hidden');
-    elContent.classList.add('hidden');
-    elError.classList.add('hidden');
+    elMenuSkeleton.classList.remove('hidden');
+    elMenuContent.classList.add('hidden');
+    elMenuError.classList.add('hidden');
     fetch('/api/public/menu', { headers: { 'Accept': 'application/json' } })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
       .then(function (res) {
@@ -148,11 +387,10 @@
       })
       .catch(function (err) {
         console.error('[menu] error:', err);
-        elSkeleton.classList.add('hidden');
-        elError.classList.remove('hidden');
+        elMenuSkeleton.classList.add('hidden');
+        elMenuError.classList.remove('hidden');
       });
   }
-
   function filterBySearch(platos) {
     if (!searchQuery) return platos;
     return platos.filter(function (p) {
@@ -170,10 +408,17 @@
     });
     return map;
   }
-
+  function defaultEmojiFor(p) {
+    var map = { entradas: '🥗', platos: '🍽️', bebidas: '🥤', postres: '🍰' };
+    return map[p.categoria] || map[p.tipo] || '🍴';
+  }
+  function cartQtyFor(platoId) {
+    for (var i = 0; i < cart.length; i++) if (cart[i].platoId === platoId) return cart[i].cantidad;
+    return 0;
+  }
   function renderMenu() {
-    elSkeleton.classList.add('hidden');
-    elContent.classList.remove('hidden');
+    elMenuSkeleton.classList.add('hidden');
+    elMenuContent.classList.remove('hidden');
     var filtered = filterBySearch(menuData);
     var grouped = groupByCategoria(filtered);
     var html = '', firstVisible = null;
@@ -189,15 +434,14 @@
         + '</section>';
     });
     if (!html) {
-      elContent.innerHTML = '<div class="text-center py-20 text-ink-500">'
+      elMenuContent.innerHTML = '<div class="text-center py-20 text-ink-500">'
         + (searchQuery ? 'No encontramos platos con "' + escapeHtml(searchQuery) + '"' : 'El menu estara disponible pronto.')
         + '</div>';
     } else {
-      elContent.innerHTML = html;
+      elMenuContent.innerHTML = html;
     }
     renderTabs(grouped, firstVisible);
   }
-
   function renderTabs(grouped, firstVisible) {
     var html = '';
     CATS.forEach(function (cat) {
@@ -207,19 +451,15 @@
         + '<span class="cat-emoji">' + cat.emoji + '</span>'
         + '<span>' + escapeHtml(cat.label) + '</span></button>';
     });
-    elTabs.innerHTML = html;
-    elTabs.querySelectorAll('.cat-tab').forEach(function (tab) {
+    elCatTabs.innerHTML = html;
+    elCatTabs.querySelectorAll('.cat-tab').forEach(function (tab) {
       tab.addEventListener('click', function () { scrollToCat(tab.getAttribute('data-cat')); });
     });
-    if (firstVisible && !activeCat) {
-      activeCat = firstVisible;
-      markActiveTab();
-    } else if (firstVisible) {
-      markActiveTab();
-    }
+    if (firstVisible && !activeCat) { activeCat = firstVisible; markActiveTab(); }
+    else if (firstVisible) { markActiveTab(); }
   }
   function markActiveTab() {
-    elTabs.querySelectorAll('.cat-tab').forEach(function (t) {
+    elCatTabs.querySelectorAll('.cat-tab').forEach(function (t) {
       t.classList.toggle('is-active', t.getAttribute('data-cat') === activeCat);
     });
   }
@@ -231,17 +471,22 @@
       sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
-
   function platoCard(p) {
     var emoji = p.imagen_url ? '' : defaultEmojiFor(p);
     var imgHtml = p.imagen_url
       ? '<img src="' + escapeHtml(p.imagen_url) + '" alt="" loading="lazy">'
       : '<div class="plato-emoji" aria-hidden="true">' + emoji + '</div>';
-    var badgeHtml = p.disponible ? '' : '<span class="plato-badge is-out">Agotado</span>';
     var rating = ratingFor(p.id);
+    var inCart = cartQtyFor(p.id);
+    var addBtnHtml;
+    if (!p.disponible) {
+      addBtnHtml = '<button class="plato-add-btn" disabled style="background:#cbd5e1;cursor:not-allowed;box-shadow:none" aria-label="No disponible"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>';
+    } else {
+      addBtnHtml = '<button class="plato-add-btn' + (inCart > 0 ? ' is-added' : '') + '" data-add="' + p.id + '" aria-label="Anadir al pedido"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></button>';
+    }
     return ''
-      + '<article class="plato-card' + (p.disponible ? '' : ' plato-no-disponible') + '">'
-      + '  <div class="plato-img-wrap">' + imgHtml + badgeHtml + '</div>'
+      + '<article class="plato-card">'
+      + '  <div class="plato-img-wrap">' + imgHtml + '</div>'
       + '  <div class="plato-body">'
       + '    <h3 class="plato-name">' + escapeHtml(p.nombre) + '</h3>'
       + '    <span class="plato-rating">'
@@ -249,123 +494,117 @@
       + '      ' + rating.toFixed(1) + ' <span class="text-ink-400">(124)</span></span>'
       + (p.descripcion ? '<p class="plato-desc">' + escapeHtml(p.descripcion) + '</p>' : '')
       + '    <div class="plato-foot">'
-      + '      <span class="plato-precio">$' + formatPrecio(p.precio) + '</span>'
-      + '    </div></div></article>';
-  }
-  function defaultEmojiFor(p) {
-    var map = { entradas: '🥗', platos: '🍽️', bebidas: '🥤', postres: '🍰' };
-    return map[p.categoria] || map[p.tipo] || '🍴';
-  }
-  function formatPrecio(n) {
-    return (parseFloat(n) || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 });
-  }
-  function escapeHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      + '      <span class="plato-precio">' + formatPrecio(p.precio) + '</span>'
+      + '      ' + addBtnHtml
+      + '    </div>'
+      + '  </div>'
+      + '</article>';
   }
 
-  // ===== Bottom sheet =====
-  function openSheet() {
-    elSheet.classList.add('is-open');
-    elBackdrop.classList.add('is-open');
-    elSheet.setAttribute('aria-hidden', 'false');
-    // Pre-rellenar con datos del usuario si esta logueado
-    if (session && session.usuario) {
-      $('r-nombre').value = session.usuario.nombre || '';
-      $('r-telefono').value = session.usuario.telefono || '';
-      // Mostrar nota informativa
-      var note = $('loggedInNote');
-      if (note) note.classList.remove('hidden');
-    } else {
-      var note = $('loggedInNote');
-      if (note) note.classList.add('hidden');
+  // ===== Reserva flow =====
+  function openReserva() {
+    // Si no hay sesion, ir a login primero
+    if (!session) { showLogin(); return; }
+    renderReservaCartSummary();
+    elReservaSheet.classList.add('is-open');
+    elReservaBackdrop.classList.add('is-open');
+    elReservaSheet.setAttribute('aria-hidden', 'false');
+  }
+  function closeReserva() {
+    elReservaSheet.classList.remove('is-open');
+    elReservaBackdrop.classList.remove('is-open');
+    elReservaSheet.setAttribute('aria-hidden', 'true');
+    hideReservaError();
+  }
+  function renderReservaCartSummary() {
+    if (cart.length === 0) {
+      elReservaCartSummary.classList.add('hidden');
+      return;
     }
-    setTimeout(function () { $('r-nombre').focus(); }, 320);
+    elReservaCartSummary.classList.remove('hidden');
+    elReservaCartItems.innerHTML = cart.map(function (it) {
+      return '<div class="flex items-center justify-between text-xs">'
+        + '<span class="text-brand-900 font-medium">' + it.cantidad + 'x ' + escapeHtml(it.nombre) + '</span>'
+        + '<span class="text-brand-700 font-semibold">' + formatPrecio(it.precio * it.cantidad) + '</span>'
+        + '</div>';
+    }).join('');
+    elReservaCartTotal.textContent = formatPrecio(cartSubtotal());
   }
-  function closeSheet() {
-    elSheet.classList.remove('is-open');
-    elBackdrop.classList.remove('is-open');
-    elSheet.setAttribute('aria-hidden', 'true');
-    hideError();
-  }
-  function showError(msg) { elErrorBox.textContent = msg; elErrorBox.classList.remove('hidden'); }
-  function hideError() { elErrorBox.classList.add('hidden'); }
+  function showReservaError(msg) { elReservaError.textContent = msg; elReservaError.classList.remove('hidden'); }
+  function hideReservaError() { elReservaError.classList.add('hidden'); }
 
   function submitReserva(e) {
     e.preventDefault();
-    hideError();
-
-    var nombre = $('r-nombre').value.trim();
-    var telefono = $('r-telefono').value.trim();
-    var fecha = $('r-fecha').value;
+    hideReservaError();
+    if (!session) { showLogin(); return; }
+    var fecha = elFecha.value;
     var hora = $('r-hora').value;
     var notas = $('r-notas').value.trim();
     var personasVal = $('r-personas').value;
+    if (!fecha) return showReservaError('Selecciona una fecha');
+    if (!hora) return showReservaError('Selecciona una hora');
+    if (!personasVal) return showReservaError('Selecciona el numero de personas');
 
-    if (nombre.length < 2) return showError('Ingresa tu nombre completo');
-    if (telefono.length < 7) return showError('Ingresa un WhatsApp valido (min 7 digitos)');
-    if (!fecha) return showError('Selecciona una fecha');
-    if (!hora) return showError('Selecciona una hora');
-    if (!personasVal) return showError('Selecciona el numero de personas');
+    setReservaLoading(true);
 
-    setLoading(true);
+    var itemsPayload = cart.map(function (it) {
+      return { plato_id: it.platoId, cantidad: it.cantidad };
+    });
 
-    // Paso 1: login/registro (upsert del usuario)
-    var authHeader = '';
-    fetch('/api/public/login', {
+    fetch('/api/public/reservas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ nombre: nombre, telefono: telefono })
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer ' + session.token
+      },
+      body: JSON.stringify({
+        nombre: session.usuario.nombre,
+        telefono: session.usuario.telefono,
+        email: session.usuario.email || undefined,
+        fecha: fecha,
+        hora: hora,
+        personas: parseInt(personasVal, 10),
+        notas: notas,
+        items: itemsPayload
+      })
     })
     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
-    .then(function (loginRes) {
-      if (!loginRes.ok || !loginRes.json.success) throw new Error(loginRes.json.message || 'Error en login');
-      saveSession(loginRes.json.data);
-      authHeader = loginRes.json.data.token;
-      // Paso 2: enviar la reserva con el token
-      return fetch('/api/public/reservas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ' + authHeader
-        },
-        body: JSON.stringify({
-          nombre: nombre, telefono: telefono, fecha: fecha, hora: hora,
-          personas: parseInt(personasVal, 10), notas: notas
-        })
-      }).then(function (r2) { return r2.json().then(function (j) { return { ok: r2.ok, json: j }; }); });
-    })
     .then(function (res) {
       if (!res.ok || !res.json.success) throw new Error(res.json.message || 'Error al enviar');
       var d = res.json.data || {};
+      var itemsCount = d.items_count || 0;
       var fechaBonita = formatFechaBonita(d.fecha || fecha);
-      elSuccessMsg.textContent = 'Te esperamos el ' + fechaBonita + ' a las ' + (d.hora || hora) + ' para ' + (d.personas || personasVal) + ' persona' + ((d.personas || personasVal) === 1 ? '' : 's') + '.';
+      var msg = 'Te esperamos el ' + fechaBonita + ' a las ' + (d.hora || hora).slice(0, 5)
+        + ' para ' + (d.personas || personasVal) + ' persona' + ((d.personas || personasVal) === 1 ? '' : 's');
+      if (itemsCount > 0) msg += '. Plato(s): ' + itemsCount;
+      msg += '.';
+      elSuccessMsg.textContent = msg;
       showSuccess();
-      elForm.reset();
+      // Limpiar carrito
+      cart = [];
+      saveCart();
+      renderCart();
+      elReservaForm.reset();
       document.querySelectorAll('.persona-pill').forEach(function (p) { p.classList.remove('is-active'); });
       var p2 = document.querySelector('.persona-pill[data-personas="2"]');
       if (p2) { p2.classList.add('is-active'); $('r-personas').value = 2; }
       setDefaultFecha();
     })
-    .catch(function (err) {
-      showError(err.message || 'No pudimos enviar tu reserva. Intenta de nuevo.');
-    })
-    .finally(function () { setLoading(false); });
+    .catch(function (err) { showReservaError(err.message || 'No pudimos enviar tu reserva'); })
+    .finally(function () { setReservaLoading(false); });
   }
-
-  function setLoading(on) {
-    elSubmit.disabled = on;
-    elSubmit.querySelector('.submit-label').classList.toggle('hidden', on);
-    elSubmit.querySelector('.submit-spinner').classList.toggle('hidden', !on);
+  function setReservaLoading(on) {
+    elReservaSubmit.disabled = on;
+    elReservaSubmit.querySelector('.submit-label').classList.toggle('hidden', on);
+    elReservaSubmit.querySelector('.submit-spinner').classList.toggle('hidden', !on);
   }
   function showSuccess() {
     elSuccess.classList.add('is-open');
     setTimeout(function () {
       elSuccess.classList.remove('is-open');
-      closeSheet();
-    }, 2800);
+      closeReserva();
+    }, 3200);
   }
   function formatFechaBonita(yyyy_mm_dd) {
     var parts = String(yyyy_mm_dd).split('-');
@@ -375,11 +614,11 @@
     return d.getDate() + ' de ' + meses[d.getMonth()];
   }
 
-  // ===== Toast simple (sin SweetAlert para mantener la pagina ligera) =====
+  // ===== Toast simple =====
   function showToast(msg, type) {
     var t = document.createElement('div');
-    t.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-sm font-medium shadow-lg ' +
-      (type === 'info' ? 'bg-ink-800 text-white' : 'bg-leaf-600 text-white');
+    var bg = type === 'success' ? 'bg-brand-600' : (type === 'error' ? 'bg-rose-600' : 'bg-ink-800');
+    t.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-xl text-sm font-semibold shadow-lg text-white ' + bg;
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(function () { t.remove(); }, 2200);

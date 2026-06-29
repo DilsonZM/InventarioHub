@@ -1180,7 +1180,7 @@
     <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-6">Reservas</h1>
 
     <!-- KPIs de reservas -->
-    <div id="reservasSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div id="reservasSummary" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         <p class="text-xs font-bold text-amber-600/80 uppercase tracking-widest mb-1">Pendientes</p>
         <p class="text-3xl font-bold text-amber-600" id="resumenReservasPendientes">0</p>
@@ -1194,8 +1194,16 @@
         <p class="text-3xl font-bold text-slate-700" id="resumenReservasHoy">0</p>
       </div>
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Total listadas</p>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Total</p>
         <p class="text-3xl font-bold text-slate-700" id="resumenReservasTotal">0</p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <p class="text-xs font-bold text-brand-600/80 uppercase tracking-widest mb-1">Con pedido</p>
+        <p class="text-3xl font-bold text-brand-600" id="resumenReservasConItems">0</p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <p class="text-xs font-bold text-brand-600/80 uppercase tracking-widest mb-1">Platos totales</p>
+        <p class="text-3xl font-bold text-brand-600" id="resumenReservasPlatos">0</p>
       </div>
     </div>
 
@@ -1234,12 +1242,13 @@
               <th class="px-6 py-3">Fecha y hora</th>
               <th class="px-6 py-3 text-center">Personas</th>
               <th class="px-6 py-3">Estado</th>
+              <th class="px-6 py-3">Pedido</th>
               <th class="px-6 py-3">Notas</th>
               <th class="px-6 py-3 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody id="reservasTable" class="divide-y divide-slate-100">
-            <tr><td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Cargando reservas...</td></tr>
+            <tr><td colspan="8" class="px-6 py-8 text-center text-sm text-slate-400">Cargando reservas...</td></tr>
           </tbody>
         </table>
       </div>
