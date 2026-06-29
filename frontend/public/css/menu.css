@@ -1,4 +1,4 @@
-/* Corner House - Menu publico (intro estilo dating app + menu claro) */
+/* Corner House - Menu publico (intro light con gradiente brand arriba) */
 
 * { -webkit-tap-highlight-color: transparent; }
 html, body { background: #ffffff; }
@@ -26,7 +26,7 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   --gold-500: #c7942d;
 }
 
-/* ============== INTRO (estilo dating app: gradient brand arriba -> blanco abajo) ============== */
+/* ============== INTRO (light con gradiente brand arriba) ============== */
 .intro {
   position: relative;
   min-height: 100dvh;
@@ -35,21 +35,11 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   overflow: hidden;
   isolation: isolate;
 }
-/* El fondo: gradient brand radial arriba, fade a blanco abajo */
+/* Fondo: gradient radial brand arriba (40% superior) -> blanco abajo */
 .intro-bg {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse 100% 60% at 50% 0%, var(--brand-600) 0%, var(--brand-500) 30%, var(--brand-100) 55%, #ffffff 75%, #ffffff 100%);
-}
-.intro-bg::after {
-  /* Textura sutil de puntos */
-  content: '';
-  position: absolute; inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px);
-  background-size: 24px 24px;
-  mask-image: linear-gradient(180deg, black 0%, transparent 35%);
-  -webkit-mask-image: linear-gradient(180deg, black 0%, transparent 35%);
-  opacity: 0.6;
+    radial-gradient(ellipse 110% 55% at 50% 0%, var(--brand-600) 0%, var(--brand-500) 25%, var(--brand-200) 50%, var(--brand-50) 70%, #ffffff 85%, #ffffff 100%);
 }
 
 .intro-content {
@@ -63,43 +53,37 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 
 /* Header */
 .intro-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center;
   margin-bottom: 1.25rem;
   animation: fadeDown 0.5s ease-out both;
 }
-.intro-logo { display: inline-flex; align-items: center; gap: 0.75rem; }
+.intro-logo { display: inline-flex; align-items: center; gap: 0.7rem; }
 .intro-logo-mark {
-  width: 3rem; height: 3rem;
+  width: 2.75rem; height: 2.75rem;
   background: white;
   border: 1.5px solid rgba(255, 255, 255, 0.6);
-  border-radius: 0.85rem;
+  border-radius: 0.75rem;
   flex-shrink: 0;
-  box-shadow: 0 6px 20px -6px rgba(15, 23, 42, 0.20);
+  box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.15);
   object-fit: cover;
   object-position: center;
   display: block;
 }
 .intro-logo-text { line-height: 1; }
 .intro-eyebrow {
-  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.25em;
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.25em;
   text-transform: uppercase; line-height: 1; color: white;
 }
 .intro-tag {
-  font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 600;
-  font-style: italic; line-height: 1; margin-top: 0.2rem; color: white;
-}
-.intro-lang {
-  font-size: 0.7rem; font-weight: 700; padding: 0.3rem 0.6rem;
-  border: 1.5px solid rgba(255, 255, 255, 0.5); border-radius: 9999px;
-  color: white; background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(4px);
+  font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 600;
+  font-style: italic; line-height: 1; margin-top: 0.18rem; color: white;
 }
 
-/* Galeria circular: estilo dating app, 5 imagenes superpuestas */
+/* Galeria: 3 imagenes, disposicion triangulo natural */
 .intro-gallery {
   position: relative;
   display: flex; align-items: center; justify-content: center;
-  height: 14rem; margin: 0.5rem auto 1.5rem;
+  height: 11rem; margin: 0.5rem auto 1.25rem;
   max-width: 22rem;
   animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
@@ -119,23 +103,43 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   object-fit: cover;
   display: block;
 }
-.intro-circle-1 { left: 2%; top: 18%; width: 5rem; height: 5rem; z-index: 1; transform: rotate(-6deg); }
-.intro-circle-2 { left: 50%; top: 0; transform: translateX(-50%); z-index: 4; width: 7rem; height: 7rem;
-  box-shadow: 0 14px 32px -6px rgba(15, 23, 42, 0.22), 0 0 0 4px rgba(255, 255, 255, 0.4); }
-.intro-circle-3 { right: 2%; top: 18%; width: 5rem; height: 5rem; z-index: 2; transform: rotate(6deg); }
-.intro-circle-4 { left: 18%; bottom: 0; width: 4.5rem; height: 4.5rem; z-index: 2; transform: rotate(-8deg); }
-.intro-circle-5 { right: 18%; bottom: 0; width: 4.75rem; height: 4.75rem; z-index: 3; transform: rotate(8deg); }
+/* Centro: mas grande, centrado horizontal, un poco mas arriba */
+.intro-circle-2 {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 7rem; height: 7rem;
+  z-index: 3;
+  box-shadow: 0 14px 32px -6px rgba(15, 23, 42, 0.22), 0 0 0 4px rgba(255, 255, 255, 0.5);
+}
+/* Izquierda: mas pequena, abajo a la izquierda, rotada -8 */
+.intro-circle-1 {
+  left: 8%;
+  bottom: 0;
+  width: 5.5rem; height: 5.5rem;
+  z-index: 2;
+  transform: rotate(-8deg);
+}
+/* Derecha: mas pequena, abajo a la derecha, rotada +8 */
+.intro-circle-3 {
+  right: 8%;
+  bottom: 0;
+  width: 5.5rem; height: 5.5rem;
+  z-index: 2;
+  transform: rotate(8deg);
+}
 .intro-circle:hover { transform: scale(1.05) rotate(0deg); z-index: 5; }
+.intro-circle-2:hover { transform: translateX(-50%) scale(1.05); }
 
 /* Body / texto */
-.intro-body { text-align: center; margin-bottom: 1.5rem; padding: 0 0.5rem; }
+.intro-body { text-align: center; margin-bottom: 1.25rem; padding: 0 0.5rem; }
 .intro-title {
   font-family: 'Fraunces', serif;
-  font-size: clamp(2rem, 7vw, 2.5rem);
+  font-size: clamp(1.85rem, 6.5vw, 2.35rem);
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   color: var(--ink-900);
   animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
@@ -144,36 +148,44 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   color: var(--brand-600);
 }
 .intro-subtitle {
-  font-size: 0.85rem;
-  line-height: 1.55;
+  font-size: 0.82rem;
+  line-height: 1.5;
   color: var(--ink-500);
   max-width: 28rem;
   margin: 0 auto;
   animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 }
 
-/* Formulario estilo dating app (sign up) */
-.intro-form {
-  display: flex; flex-direction: column; gap: 0.65rem;
-  max-width: 24rem;
-  margin: 0 auto 1rem;
+/* Features */
+.intro-features {
+  display: flex; flex-direction: column; gap: 0.45rem;
+  max-width: 22rem;
+  margin: 0 auto 1.25rem;
   padding: 0 0.5rem;
   animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
 }
-.intro-form .form-input {
-  width: 100%;
+.intro-feat {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.55rem 0.8rem;
   background: white;
-  border: 1.5px solid var(--ink-200);
-  border-radius: 0.85rem;
-  padding: 0.85rem 1rem;
-  color: var(--ink-900); font-size: 0.92rem; font-family: inherit;
-  transition: all 0.15s ease;
+  border: 1px solid var(--ink-200);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
-.intro-form .form-input::placeholder { color: var(--ink-500); }
-.intro-form .form-input:focus {
-  outline: none; background: white;
-  border-color: var(--brand-500);
-  box-shadow: 0 0 0 4px rgba(13, 107, 78, 0.12);
+.intro-feat-ico {
+  width: 1.85rem; height: 1.85rem; flex-shrink: 0;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, var(--brand-50) 0%, var(--brand-100) 100%);
+  color: var(--brand-700);
+  display: flex; align-items: center; justify-content: center;
+}
+.intro-feat-title { font-size: 0.8rem; font-weight: 600; color: var(--ink-900); line-height: 1.2; }
+
+/* CTA */
+.intro-cta-wrap {
+  margin-top: auto;
+  padding-top: 1.25rem;
+  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
 }
 .intro-cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
@@ -184,38 +196,16 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   border: none; border-radius: 0.85rem;
   cursor: pointer; transition: all 0.18s ease; font-family: inherit;
   box-shadow: 0 10px 28px -8px rgba(13, 107, 78, 0.45);
-  margin-top: 0.25rem;
 }
 .intro-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 36px -8px rgba(13, 107, 78, 0.55); }
 .intro-cta:active { transform: translateY(0) scale(0.99); }
 .intro-cta:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.intro-alt-link {
-  text-align: center;
-  font-size: 0.82rem;
-  color: var(--ink-500);
-  margin-top: 0.5rem;
-  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
-}
-.intro-alt-link a {
-  color: var(--brand-700);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.intro-eta {
-  margin-top: auto;
-  font-size: 0.72rem;
-  color: var(--ink-500);
-  text-align: center;
-  padding-top: 1.5rem;
-  animation: fadeUpIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
-}
+.intro-eta { margin-top: 0.6rem; font-size: 0.7rem; color: var(--ink-500); text-align: center; letter-spacing: 0.05em; }
 
 @keyframes fadeDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeUpIntro { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ============== SCREENS (continue + login + menu) ============== */
+/* ============== SCREENS (continue + login + register) ============== */
 .screen { min-height: 100dvh; position: relative; overflow-x: hidden; }
 .screen-bg { position: fixed; inset: 0; z-index: -1; background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); }
 .back-btn {
@@ -228,11 +218,10 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 }
 .back-btn:hover { background: var(--brand-100); }
 
-/* Continue options (Crear cuenta / Login / Mis reservas) */
 .continue-option {
   width: 100%;
   display: flex; align-items: center; gap: 0.85rem;
-  padding: 1rem 1rem;
+  padding: 1rem;
   background: white;
   border: 1.5px solid var(--ink-200);
   border-radius: 1rem;
@@ -645,7 +634,7 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   animation: strokeTick 0.35s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
 }
 @keyframes strokeCircle { to { stroke-dashoffset: 0; } }
-@keyframes strokeTick { to { stroke-dashoffset: 0; } }
+@keyframes strokeTick  { to { stroke-dashoffset: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
