@@ -40,15 +40,25 @@
         <div class="intro-logo">
           <div class="intro-logo-mark">
             <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
-              <!-- Monograma CH dentro de circulo -->
-              <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2.2" fill="none"/>
-              <path d="M22 18h8a6 6 0 0 1 0 12h-8V18zm0 12h9a6 6 0 0 1 0 12h-9V30z" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-              <path d="M34 18h8M34 30h9M34 42h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-              <!-- Hoja pequeña arriba -->
-              <path d="M48 14c0-2 2-4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <!-- Platos concéntricos (visto desde arriba) -->
+              <circle cx="32" cy="32" r="26" stroke="currentColor" stroke-width="1.8" fill="none"/>
+              <circle cx="32" cy="32" r="19" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.55"/>
+              <!-- Tenedor a la izquierda (mango arriba, dientes abajo) -->
+              <g transform="translate(20.5 14) rotate(20 4 18)">
+                <line x1="4" y1="0" x2="4" y2="22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="1.5" y1="20" x2="6.5" y2="20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="2" y1="24" x2="6" y2="24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="2.5" y1="28" x2="5.5" y2="28" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="3" y1="32" x2="5" y2="32" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </g>
+              <!-- Cuchillo a la derecha (mango arriba, hoja abajo) -->
+              <g transform="translate(39.5 14) rotate(-20 4 18)">
+                <line x1="4" y1="0" x2="4" y2="22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M2 24 Q4 22 6 24 L5 36 L3 36 Z" fill="currentColor" opacity="0.95"/>
+              </g>
             </svg>
           </div>
-          <div>
+          <div class="intro-logo-text">
             <p class="intro-eyebrow">Corner House</p>
             <p class="intro-tag">Restaurant</p>
           </div>

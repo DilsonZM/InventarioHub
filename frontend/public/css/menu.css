@@ -66,24 +66,26 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   margin-bottom: 2.5rem;
   animation: fadeDown 0.6s ease-out both;
 }
-.intro-logo { display: inline-flex; align-items: center; gap: 0.75rem; }
+.intro-logo { display: inline-flex; align-items: center; gap: 0.85rem; }
 .intro-logo-mark {
-  width: 2.75rem; height: 2.75rem;
+  width: 3.25rem; height: 3.25rem;
   background: rgba(255, 255, 255, 0.15);
   border: 1.5px solid rgba(255, 255, 255, 0.3);
-  border-radius: 0.75rem;
+  border-radius: 0.85rem;
   display: flex; align-items: center; justify-content: center;
   color: white;
   backdrop-filter: blur(8px);
+  flex-shrink: 0;
 }
-.intro-logo-mark svg { width: 1.65rem; height: 1.65rem; }
+.intro-logo-mark svg { width: 2rem; height: 2rem; }
+.intro-logo-text { line-height: 1; }
 .intro-eyebrow {
-  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.25em;
-  text-transform: uppercase; line-height: 1; color: var(--brand-200);
+  font-size: 0.78rem; font-weight: 800; letter-spacing: 0.28em;
+  text-transform: uppercase; line-height: 1; color: rgba(255, 255, 255, 0.9);
 }
 .intro-tag {
-  font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600;
-  font-style: italic; line-height: 1; margin-top: 0.15rem; color: white;
+  font-family: 'Fraunces', serif; font-size: 1.65rem; font-weight: 600;
+  font-style: italic; line-height: 1; margin-top: 0.25rem; color: white;
 }
 .intro-lang {
   font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.6rem;
