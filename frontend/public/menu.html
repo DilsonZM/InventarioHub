@@ -32,13 +32,11 @@
 </head>
 <body class="min-h-screen bg-white text-ink-900 font-sans antialiased">
 
-  <!-- ================== PANTALLA INTRO ================== -->
+  <!-- ================== PANTALLA INTRO (solo presentacion) ================== -->
   <section id="introScreen" class="intro">
-    <!-- Fondo con gradient radial: brand arriba, blanco abajo -->
     <div class="intro-bg" aria-hidden="true"></div>
 
     <div class="intro-content">
-      <!-- Header: logo + lang -->
       <header class="intro-header">
         <div class="intro-logo">
           <img src="/public/img/corner-house-logo_web.jpg" alt="Corner House Restaurant" class="intro-logo-mark" width="52" height="52" loading="eager">
@@ -47,10 +45,8 @@
             <p class="intro-tag">Restaurant</p>
           </div>
         </div>
-        <div class="intro-lang" aria-hidden="true">ES</div>
       </header>
 
-      <!-- Galeria circular: imagenes del restaurante (estilo dating app) -->
       <div class="intro-gallery">
         <div class="intro-circle intro-circle-1">
           <img src="/public/img/Bebida_web.jpg" alt="Coctel de Corner House" width="130" height="130" loading="eager" decoding="async">
@@ -69,32 +65,118 @@
         </div>
       </div>
 
-      <!-- Titulo principal + subtitulo -->
       <div class="intro-body">
         <h1 class="intro-title">Reserva tu <span class="italic">Mesa</span></h1>
         <p class="intro-subtitle">Un restaurante acogedor donde cada detalle está pensado para hacerte sentir en casa. Cocina honesta con ingredientes frescos y sabores que reconfortan el alma.</p>
       </div>
 
-      <!-- Formulario de inicio (estilo sign up) -->
-      <form id="introQuickForm" class="intro-form" novalidate>
-        <input type="text" id="intro-name" placeholder="Nombre completo" class="form-input" autocomplete="name" required>
-        <input type="tel" id="intro-tel" placeholder="WhatsApp" class="form-input" autocomplete="tel" required>
-        <button type="submit" id="introQuickSubmit" class="intro-cta">
-          <span id="introCtaText">Explorar menu y reservar</span>
+      <div class="intro-cta-wrap">
+        <button id="introStartBtn" type="button" class="intro-cta">
+          <span>Continuar</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l4 4m0 0l-4 4m4-4H3"/></svg>
         </button>
-      </form>
-
-      <!-- Link a iniciar sesion (si ya tiene cuenta) -->
-      <p class="intro-alt-link">
-        ¿Ya tienes cuenta? <a href="#" id="introLoginLinkBtn">Inicia sesion</a>
-      </p>
-
-      <p class="intro-eta">Llegaras en ~53 min desde el centro de Villanueva</p>
+        <p class="intro-eta">Corner House</p>
+      </div>
     </div>
   </section>
 
-  <!-- ================== PANTALLA LOGIN ================== -->
+  <!-- ================== PANTALLA CONTINUAR (elegir: registro / login / mis reservas) ================== -->
+  <section id="continueScreen" class="screen hidden">
+    <div class="screen-bg"></div>
+    <div class="screen-content max-w-md mx-auto px-5 pt-10 pb-10">
+      <button id="continueBackBtn" type="button" class="back-btn" aria-label="Volver">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="inline-flex w-14 h-14 rounded-2xl bg-brand-600 text-white items-center justify-center mb-4">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <h2 class="text-2xl font-extrabold text-ink-900">Como quieres continuar?</h2>
+        <p class="text-sm text-ink-500 mt-1">Crea una cuenta nueva, inicia sesion o revisa tus reservas.</p>
+      </div>
+
+      <!-- Opcion 1: Crear cuenta -->
+      <button id="continueRegisterBtn" type="button" class="continue-option">
+        <div class="continue-option-ico continue-option-ico-brand">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        </div>
+        <div class="continue-option-text">
+          <p class="continue-option-title">Crear cuenta nueva</p>
+          <p class="continue-option-sub">Registrate con tu nombre y WhatsApp en 10 segundos.</p>
+        </div>
+        <svg class="w-4 h-4 text-ink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <!-- Opcion 2: Iniciar sesion -->
+      <button id="continueLoginBtn" type="button" class="continue-option">
+        <div class="continue-option-ico continue-option-ico-gold">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+        </div>
+        <div class="continue-option-text">
+          <p class="continue-option-title">Ya tengo cuenta, iniciar sesion</p>
+          <p class="continue-option-sub">Ingresa solo tu WhatsApp para ver tus reservas.</p>
+        </div>
+        <svg class="w-4 h-4 text-ink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <!-- Opcion 3: Ver mis reservas -->
+      <button id="continueMyReservasBtn" type="button" class="continue-option">
+        <div class="continue-option-ico continue-option-ico-leaf">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <div class="continue-option-text">
+          <p class="continue-option-title">Ver mis reservas</p>
+          <p class="continue-option-sub">Consulta, modifica o crea nuevas reservas.</p>
+        </div>
+        <svg class="w-4 h-4 text-ink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ================== PANTALLA REGISTRO (form completo) ================== -->
+  <section id="registerScreen" class="screen hidden">
+    <div class="screen-bg"></div>
+    <div class="screen-content max-w-md mx-auto px-5 pt-10 pb-10">
+      <button id="registerBackBtn" type="button" class="back-btn" aria-label="Volver">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="inline-flex w-14 h-14 rounded-2xl bg-brand-600 text-white items-center justify-center mb-4">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <h2 class="text-2xl font-extrabold text-ink-900">Crea tu cuenta</h2>
+        <p class="text-sm text-ink-500 mt-1">Para reservar y hacer pedidos.</p>
+      </div>
+
+      <form id="registerForm" class="space-y-3.5" novalidate>
+        <div class="form-row">
+          <label for="r-nombre" class="form-label">Nombre completo</label>
+          <input id="r-nombre" name="nombre" type="text" required minlength="2" maxlength="150" placeholder="Ej: Maria Garcia" class="form-input" autocomplete="name">
+        </div>
+        <div class="form-row">
+          <label for="r-telefono" class="form-label">WhatsApp</label>
+          <input id="r-telefono" name="telefono" type="tel" required minlength="7" maxlength="30" placeholder="Ej: 304 6365259" class="form-input" autocomplete="tel">
+        </div>
+        <div class="form-row">
+          <label for="r-email" class="form-label">Email <span class="text-ink-400 font-normal">(opcional)</span></label>
+          <input id="r-email" name="email" type="email" maxlength="150" placeholder="tu@email.com" class="form-input" autocomplete="email">
+        </div>
+        <div id="registerError" class="hidden text-sm text-rose-700 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2.5"></div>
+        <button type="submit" id="registerSubmitBtn" class="submit-btn">
+          <span class="submit-label">Crear cuenta y continuar</span>
+          <span class="submit-spinner hidden">
+            <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+            Creando...
+          </span>
+        </button>
+        <p class="text-xs text-center text-ink-400 mt-3">Al continuar aceptas ser contactado por WhatsApp para confirmar tu reserva.</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================== PANTALLA LOGIN (solo WhatsApp) ================== -->
   <section id="loginScreen" class="screen hidden">
     <div class="screen-bg"></div>
     <div class="screen-content max-w-md mx-auto px-5 pt-10 pb-10">
@@ -102,35 +184,27 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       </button>
       <div class="text-center mb-7">
-        <div class="inline-flex w-14 h-14 rounded-2xl bg-ink-900 text-gold-300 items-center justify-center mb-4">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <div class="inline-flex w-14 h-14 rounded-2xl bg-gold-500 text-white items-center justify-center mb-4">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
         </div>
-        <h2 class="text-2xl font-extrabold text-ink-900">Crea tu cuenta</h2>
-        <p class="text-sm text-ink-500 mt-1">Para reservar y hacer pedidos.</p>
+        <h2 class="text-2xl font-extrabold text-ink-900">Inicia sesion</h2>
+        <p class="text-sm text-ink-500 mt-1">Ingresa tu WhatsApp para ver tus reservas.</p>
       </div>
 
       <form id="loginForm" class="space-y-3.5" novalidate>
         <div class="form-row">
-          <label for="l-nombre" class="form-label">Nombre completo</label>
-          <input id="l-nombre" name="nombre" type="text" required minlength="2" maxlength="150" placeholder="Ej: Maria Garcia" class="form-input" autocomplete="name">
-        </div>
-        <div class="form-row">
           <label for="l-telefono" class="form-label">WhatsApp</label>
           <input id="l-telefono" name="telefono" type="tel" required minlength="7" maxlength="30" placeholder="Ej: 304 6365259" class="form-input" autocomplete="tel">
         </div>
-        <div class="form-row">
-          <label for="l-email" class="form-label">Email <span class="text-ink-400 font-normal">(opcional)</span></label>
-          <input id="l-email" name="email" type="email" maxlength="150" placeholder="tu@email.com" class="form-input" autocomplete="email">
-        </div>
         <div id="loginError" class="hidden text-sm text-rose-700 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2.5"></div>
         <button type="submit" id="loginSubmitBtn" class="submit-btn">
-          <span class="submit-label">Continuar al menu</span>
+          <span class="submit-label">Entrar</span>
           <span class="submit-spinner hidden">
             <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
             Entrando...
           </span>
         </button>
-        <p class="text-xs text-center text-ink-400 mt-3">Al continuar aceptas ser contactado por WhatsApp para confirmar tu reserva.</p>
+        <p class="text-xs text-center text-ink-400 mt-3">Si no tienes cuenta todavia, <a href="#" id="loginToRegisterLink" class="text-brand-700 font-semibold underline">crea una aqui</a>.</p>
       </form>
     </div>
   </section>

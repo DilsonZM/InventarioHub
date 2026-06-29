@@ -64,15 +64,51 @@
 
   // ===== Pantallas =====
   function showIntro() {
-    toggle('introScreen', false); toggle('loginScreen', true); toggle('menuScreen', true); window.scrollTo(0, 0);
-    // Si ya hay sesion guardada, cambiar texto del CTA
-    var ctaText = $('introCtaText');
-    if (ctaText) {
-      ctaText.textContent = session ? 'Continuar mi reserva' : 'Explorar menu y reservar';
-    }
+    // Pantalla de presentacion: solo header + galeria + titulo + CTA "Continuar"
+    toggle('introScreen', false);
+    toggle('continueScreen', true);
+    toggle('registerScreen', true);
+    toggle('loginScreen', true);
+    toggle('menuScreen', true);
+    window.scrollTo(0, 0);
   }
-  function showLogin() { toggle('introScreen', true); toggle('loginScreen', false); toggle('menuScreen', true); window.scrollTo(0, 0); }
-  function showMenu() { toggle('introScreen', true); toggle('loginScreen', true); toggle('menuScreen', false); window.scrollTo(0, 0); }
+  function showContinue() {
+    // Pantalla intermedia: elegir entre Crear cuenta / Login / Mis reservas
+    toggle('introScreen', true);
+    toggle('continueScreen', false);
+    toggle('registerScreen', true);
+    toggle('loginScreen', true);
+    toggle('menuScreen', true);
+    window.scrollTo(0, 0);
+  }
+  function showRegister() {
+    // Pantalla de registro (form completo con nombre + WhatsApp + email)
+    toggle('introScreen', true);
+    toggle('continueScreen', true);
+    toggle('registerScreen', false);
+    toggle('loginScreen', true);
+    toggle('menuScreen', true);
+    window.scrollTo(0, 0);
+    setTimeout(function () { $('r-nombre').focus(); }, 250);
+  }
+  function showLogin() {
+    // Pantalla de login (solo WhatsApp, con link a registro)
+    toggle('introScreen', true);
+    toggle('continueScreen', true);
+    toggle('registerScreen', true);
+    toggle('loginScreen', false);
+    toggle('menuScreen', true);
+    window.scrollTo(0, 0);
+    setTimeout(function () { $('l-telefono').focus(); }, 250);
+  }
+  function showMenu() {
+    toggle('introScreen', true);
+    toggle('continueScreen', true);
+    toggle('registerScreen', true);
+    toggle('loginScreen', true);
+    toggle('menuScreen', false);
+    window.scrollTo(0, 0);
+  }
   function toggle(id, hide) { var el = $(id); if (el) el.classList.toggle('hidden', hide); }
 
   // ===== Session =====
@@ -228,31 +264,45 @@
 
   // ===== UI binding =====
   function bindUI() {
-    // Form de la intro: 2 campos (nombre + WhatsApp) que disparan login
-    var introForm = $('introQuickForm');
-    if (introForm) {
-      introForm.addEventListener('submit', function (e) {
-        e.preventDefault();
+    // Intro -> Continue (3 opciones)
+    var introStartBtn = $('introStartBtn');
+    if (introStartBtn) {
+      introStartBtn.addEventListener('click', function () {
         if (session) { showMenu(); loadMenu(); loadMisReservas(); return; }
-        // Si no hay sesion, abrir el sheet de login con los datos pre-llenados
-        showLogin();
-        var name = $('intro-name').value.trim();
-        var tel = $('intro-tel').value.trim();
-        if (name) $('l-nombre').value = name;
-        if (tel) $('l-telefono').value = tel;
+        showContinue();
       });
     }
-    // Link "¿Ya tienes cuenta? Inicia sesion" (en la intro)
-    var introLoginLinkBtn = $('introLoginLinkBtn');
-    if (introLoginLinkBtn) {
-      introLoginLinkBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (session) { showMenu(); loadMenu(); loadMisReservas(); return; }
-        showLogin();
-      });
-    }
-    $('loginBackBtn').addEventListener('click', function () { showIntro(); });
+    // Continue: Crear cuenta
+    var continueRegisterBtn = $('continueRegisterBtn');
+    if (continueRegisterBtn) continueRegisterBtn.addEventListener('click', showRegister);
+    // Continue: Iniciar sesion
+    var continueLoginBtn = $('continueLoginBtn');
+    if (continueLoginBtn) continueLoginBtn.addEventListener('click', showLogin);
+    // Continue: Ver mis reservas
+    var continueMyReservasBtn = $('continueMyReservasBtn');
+    if (continueMyReservasBtn) continueMyReservasBtn.addEventListener('click', showLogin);
+
+    // Back buttons
+    var continueBackBtn = $('continueBackBtn');
+    if (continueBackBtn) continueBackBtn.addEventListener('click', showIntro);
+    var loginBackBtn = $('loginBackBtn');
+    if (loginBackBtn) loginBackBtn.addEventListener('click', showContinue);
+    var registerBackBtn = $('registerBackBtn');
+    if (registerBackBtn) registerBackBtn.addEventListener('click', showContinue);
+
+    // Login form
     $('loginForm').addEventListener('submit', submitLogin);
+    // Link "crea una aqui" desde login -> ir a registro
+    var loginToRegisterLink = $('loginToRegisterLink');
+    if (loginToRegisterLink) {
+      loginToRegisterLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        showRegister();
+      });
+    }
+    // Register form
+    $('registerForm').addEventListener('submit', submitRegister);
+
     $('headerLogoutBtn').addEventListener('click', function () {
       if (!confirm('Cerrar sesion? Tu pedido se mantendra.')) return;
       clearSession(); showIntro();
@@ -317,15 +367,50 @@
     elFecha.min = new Date().toISOString().slice(0, 10);
   }
 
-  // ===== Login =====
+  // ===== Login (solo WhatsApp) =====
   function submitLogin(e) {
     e.preventDefault(); hideLoginError();
-    var nombre = $('l-nombre').value.trim();
     var telefono = $('l-telefono').value.trim();
-    var email = $('l-email').value.trim();
-    if (nombre.length < 2) return showLoginError('Ingresa tu nombre completo');
-    if (telefono.length < 7) return showLoginError('Ingresa un WhatsApp valido');
+    if (telefono.length < 7) return showLoginError('Ingresa un WhatsApp valido (min 7 digitos)');
     setLoginLoading(true);
+    // El endpoint /login hace upsert: si el telefono no existe, crea el usuario
+    // con telefono y nombre vacio. Si ya existe, devuelve el existente.
+    // Para que un usuario nuevo no quede sin nombre, hacemos un upsert
+    // con nombre generico si no existe, pero como aqui solo tenemos
+    // telefono, mandamos el telefono y dejamos que el backend cree.
+    fetch('/api/public/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefono: telefono, nombre: '' })
+    })
+    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+    .then(function (res) {
+      if (!res.ok || !res.json.success) throw new Error(res.json.message || 'Error');
+      saveSession(res.json.data);
+      showMenu();
+      loadMenu();
+      loadMisReservas();
+      showToast(res.json.message || 'Bienvenido', 'success');
+    })
+    .catch(function (err) { showLoginError(err.message || 'Error al iniciar sesion'); })
+    .finally(function () { setLoginLoading(false); });
+  }
+  function setLoginLoading(on) {
+    $('loginSubmitBtn').disabled = on;
+    $('loginSubmitBtn').querySelector('.submit-label').classList.toggle('hidden', on);
+    $('loginSubmitBtn').querySelector('.submit-spinner').classList.toggle('hidden', !on);
+  }
+  function showLoginError(msg) { var e = $('loginError'); e.textContent = msg; e.classList.remove('hidden'); }
+  function hideLoginError() { $('loginError').classList.add('hidden'); }
+
+  // ===== Registro (form completo) =====
+  function submitRegister(e) {
+    e.preventDefault(); hideRegisterError();
+    var nombre = $('r-nombre').value.trim();
+    var telefono = $('r-telefono').value.trim();
+    var email = $('r-email').value.trim();
+    if (nombre.length < 2) return showRegisterError('Ingresa tu nombre completo');
+    if (telefono.length < 7) return showRegisterError('Ingresa un WhatsApp valido (min 7 digitos)');
+    setRegisterLoading(true);
     fetch('/api/public/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre: nombre, telefono: telefono, email: email || undefined })
@@ -337,18 +422,18 @@
       showMenu();
       loadMenu();
       loadMisReservas();
-      showToast(res.json.message || 'Bienvenido', 'success');
+      showToast('Bienvenido, ' + (nombre.split(' ')[0]), 'success');
     })
-    .catch(function (err) { showLoginError(err.message || 'Error al crear la cuenta'); })
-    .finally(function () { setLoginLoading(false); });
+    .catch(function (err) { showRegisterError(err.message || 'Error al crear la cuenta'); })
+    .finally(function () { setRegisterLoading(false); });
   }
-  function setLoginLoading(on) {
-    $('loginSubmitBtn').disabled = on;
-    $('loginSubmitBtn').querySelector('.submit-label').classList.toggle('hidden', on);
-    $('loginSubmitBtn').querySelector('.submit-spinner').classList.toggle('hidden', !on);
+  function setRegisterLoading(on) {
+    $('registerSubmitBtn').disabled = on;
+    $('registerSubmitBtn').querySelector('.submit-label').classList.toggle('hidden', on);
+    $('registerSubmitBtn').querySelector('.submit-spinner').classList.toggle('hidden', !on);
   }
-  function showLoginError(msg) { var e = $('loginError'); e.textContent = msg; e.classList.remove('hidden'); }
-  function hideLoginError() { $('loginError').classList.add('hidden'); }
+  function showRegisterError(msg) { var e = $('registerError'); e.textContent = msg; e.classList.remove('hidden'); }
+  function hideRegisterError() { $('registerError').classList.add('hidden'); }
 
   // ===== Menu =====
   function loadMenu() {

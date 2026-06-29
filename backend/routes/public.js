@@ -136,10 +136,33 @@ router.post('/login', async (req, res) => {
     var nombre = clean(b.nombre, 150);
     var telefono = clean(b.telefono, 30);
     var email = clean(b.email, 150);
-    if (nombre.length < 2) return res.status(400).json({ success: false, message: 'Nombre invalido' });
     if (telefono.length < 7) return res.status(400).json({ success: false, message: 'Telefono invalido' });
     if (email && !isEmail(email)) return res.status(400).json({ success: false, message: 'Email invalido' });
 
+    // Si NO viene nombre (caso "Iniciar sesion" solo con telefono):
+    // buscar si el telefono ya existe y devolver el usuario tal cual.
+    if (nombre.length < 2) {
+      var { data: existing, error: exErr } = await supabase
+        .from('usuarios_publicos')
+        .select('id, nombre, telefono, email, total_visitas, ultima_visita, creado_en')
+        .eq('telefono', telefono)
+        .maybeSingle();
+      if (exErr) throw exErr;
+      if (existing) {
+        return res.json({
+          success: true,
+          data: { token: makeToken(existing.id), usuario: existing },
+          message: 'Bienvenido de vuelta, ' + ((existing.nombre || '').split(' ')[0] || 'amigo')
+        });
+      }
+      // No existe y no dio nombre: error claro
+      return res.status(404).json({
+        success: false,
+        message: 'No encontramos tu cuenta. Crea una primero con tu nombre y WhatsApp.'
+      });
+    }
+
+    // Caso completo: viene nombre -> upsert (crea o actualiza nombre)
     var { data: usuarioId, error: rpcError } = await supabase
       .rpc('upsert_usuario_publico', { p_nombre: nombre, p_telefono: telefono });
     if (rpcError) throw rpcError;
