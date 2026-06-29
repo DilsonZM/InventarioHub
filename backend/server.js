@@ -13,6 +13,7 @@ const configRoutes = require('./routes/config');
 const dishesRoutes = require('./routes/dishes');
 const mesasRoutes = require('./routes/mesas');
 const printRoutes = require('./routes/print');
+const publicRoutes = require('./routes/public');
 const { authMiddleware, requirePermission } = require('./middleware/auth');
 const supabase = require('./lib/supabase');
 const { applyBogotaDateFilter } = require('./lib/timezone');
@@ -48,6 +49,7 @@ app.use(express.static(path.join(__dirname, '../frontend'), {
 }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/public', publicRoutes);   // SIN auth: menu digital + reservas
 app.use('/api/config', configRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/products', authMiddleware, productRoutes);

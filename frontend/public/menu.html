@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="description" content="Menu digital y reservas de Corner House Restaurant">
+  <title>Corner House · Menu & Reservas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/public/css/menu.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:'#e6f5ef', 100:'#c2e6d6', 200:'#9ad7bd', 300:'#6cc2a1', 400:'#3dad85', 500:'#1a8a66', 600:'#0d6b4e', 700:'#0a5a3f', 800:'#073626', 900:'#052b1d' },
+            warm: { 50:'#fdf5ef', 100:'#fae8d9', 200:'#f5d4bd', 300:'#efbf9a', 400:'#e9aa78', 500:'#DFAC85', 600:'#c28f65' }
+          },
+          fontFamily: {
+            display: ['Fraunces', 'serif'],
+            sans: ['DM Sans', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-[#0a0a0a] text-white font-sans antialiased">
+
+  <!-- ================== HERO ================== -->
+  <header class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-overlay" aria-hidden="true"></div>
+    <div class="relative z-10 px-6 pt-12 pb-20 lg:pt-20 lg:pb-28 text-center">
+      <p class="text-[11px] tracking-[0.4em] text-brand-300/80 uppercase mb-3 animate-fade-in">Corner House</p>
+      <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-medium leading-[1.05] mb-3 animate-fade-up">Sabor que <span class="italic text-brand-300">cuenta</span></h1>
+      <p class="text-sm sm:text-base text-white/70 max-w-md mx-auto leading-relaxed animate-fade-up" style="animation-delay:.1s">Cocina honesta, ingredientes frescos y un menu que cambia con la estacion. Conoce nuestra carta y reserva tu mesa.</p>
+    </div>
+  </header>
+
+  <!-- ================== TABS CATEGORIAS (sticky) ================== -->
+  <nav id="catTabs" class="cat-tabs sticky top-0 z-20" aria-label="Categorias del menu">
+    <div class="cat-tabs-inner">
+      <div id="catTabsList" class="cat-tabs-list" role="tablist">
+        <!-- Tabs se inyectan via JS -->
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================== MENU ================== -->
+  <main id="menuContainer" class="px-4 sm:px-6 pt-4 pb-40 max-w-5xl mx-auto">
+    <!-- Loading skeleton -->
+    <div id="menuSkeleton" class="space-y-4">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+    <div id="menuContent" class="hidden space-y-10"></div>
+    <div id="menuError" class="hidden text-center py-16">
+      <div class="text-5xl mb-3">:(</div>
+      <p class="text-white/80 font-medium">No pudimos cargar el menu</p>
+      <p class="text-white/50 text-sm mt-1">Revisa tu conexion e intenta de nuevo</p>
+      <button id="retryBtn" class="mt-5 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/15 text-sm font-medium transition-colors">Reintentar</button>
+    </div>
+  </main>
+
+  <!-- ================== FAB RESERVAR ================== -->
+  <button id="openReservaFab" type="button" class="reserva-fab">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    </svg>
+    <span>Reservar una mesa</span>
+  </button>
+
+  <!-- ================== BOTTOM SHEET RESERVA ================== -->
+  <div id="reservaBackdrop" class="sheet-backdrop" aria-hidden="true"></div>
+  <div id="reservaSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="reservaTitle">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="px-5 pt-2 pb-7 sm:px-7">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h2 id="reservaTitle" class="font-display text-2xl font-semibold">Reserva tu mesa</h2>
+          <p class="text-sm text-white/60 mt-0.5">Te confirmamos por WhatsApp en minutos.</p>
+        </div>
+        <button id="closeReservaBtn" type="button" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="Cerrar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="reservaForm" class="space-y-3.5" novalidate>
+        <div class="form-row">
+          <label for="r-nombre" class="form-label">Nombre completo</label>
+          <input id="r-nombre" name="nombre" type="text" required minlength="2" maxlength="150" placeholder="Ej: Maria Garcia" class="form-input" autocomplete="name">
+        </div>
+        <div class="form-row">
+          <label for="r-telefono" class="form-label">WhatsApp</label>
+          <input id="r-telefono" name="telefono" type="tel" required minlength="7" maxlength="30" placeholder="Ej: +57 300 123 4567" class="form-input" autocomplete="tel">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="form-row">
+            <label for="r-fecha" class="form-label">Fecha</label>
+            <input id="r-fecha" name="fecha" type="date" required class="form-input">
+          </div>
+          <div class="form-row">
+            <label for="r-hora" class="form-label">Hora</label>
+            <input id="r-hora" name="hora" type="time" required class="form-input" value="19:00">
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="r-personas" class="form-label">Numero de personas</label>
+          <div class="personas-pills" role="radiogroup" aria-label="Personas">
+            <button type="button" class="persona-pill" data-personas="1">1</button>
+            <button type="button" class="persona-pill" data-personas="2">2</button>
+            <button type="button" class="persona-pill" data-personas="3">3</button>
+            <button type="button" class="persona-pill" data-personas="4">4</button>
+            <button type="button" class="persona-pill" data-personas="5">5</button>
+            <button type="button" class="persona-pill" data-personas="6">6</button>
+            <button type="button" class="persona-pill" data-personas="7">7</button>
+            <button type="button" class="persona-pill" data-personas="8">8+</button>
+          </div>
+          <input id="r-personas" name="personas" type="hidden" required>
+        </div>
+        <div class="form-row">
+          <label for="r-notas" class="form-label">Notas <span class="text-white/40 font-normal">(opcional)</span></label>
+          <textarea id="r-notas" name="notas" rows="2" maxlength="500" placeholder="Cumpleanos, alergias, preferencias..." class="form-input resize-none"></textarea>
+        </div>
+
+        <div id="reservaError" class="hidden text-sm text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2.5"></div>
+
+        <button type="submit" id="reservaSubmitBtn" class="submit-btn">
+          <span class="submit-label">Solicitar reserva</span>
+          <span class="submit-spinner hidden">
+            <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+            Enviando...
+          </span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================== TOAST DE EXITO ================== -->
+  <div id="successOverlay" class="success-overlay" role="status" aria-live="polite">
+    <div class="success-card">
+      <div class="success-check">
+        <svg viewBox="0 0 52 52" class="success-svg" aria-hidden="true">
+          <circle class="success-circle" cx="26" cy="26" r="24" fill="none"/>
+          <path class="success-tick" fill="none" d="M14 27l7 7 16-16"/>
+        </svg>
+      </div>
+      <h3 class="font-display text-2xl font-semibold mt-4">Reserva recibida</h3>
+      <p id="successMsg" class="text-white/70 text-sm mt-1.5 max-w-xs mx-auto">Te confirmamos por WhatsApp en los proximos minutos.</p>
+    </div>
+  </div>
+
+  <script src="/public/js/menu.js" defer></script>
+</body>
+</html>
