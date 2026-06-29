@@ -113,13 +113,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function animateExit(callback) {
-    // No ocultar el login shell — el Swal backdrop con blur hace el efecto vidrio ahumado.
-    // Solo ocultamos el menu hamburguesa.
+    var container = document.querySelector('.login-shell');
+    if (container) {
+      container.style.transition = 'opacity 0.25s ease-out, transform 0.25s ease-out';
+      container.style.opacity = '0';
+      container.style.transform = 'scale(0.96)';
+    }
+    // Ocultar hamburguesa / menu toggle durante la transicion
     var menuToggle = document.querySelector('button[aria-label="Alternar menú"]');
     if (menuToggle) menuToggle.style.display = 'none';
 
-    // Mostrar loading como overlay encima del login visible
-    showLoginLoading(['Bienvenido!', 'Cargando tu espacio...'], callback);
+    setTimeout(function () {
+      showLoginLoading(['Bienvenido!', 'Cargando tu espacio...'], callback);
+    }, 250);
   }
 
   function showLoginLoading(steps, callback) {
