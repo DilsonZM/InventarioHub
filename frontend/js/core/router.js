@@ -17,6 +17,7 @@ const TITLES = {
   entradas: 'Entradas',
   movimientos: 'Movimientos',
   users: 'Usuarios',
+  reservas: 'Reservas',
   config: 'Configuracion'
 };
 
@@ -30,6 +31,7 @@ const LOADERS = {
   movimientos: 'loadMovimientos',
   dishes: 'loadDishes',
   users: 'loadUsers',
+  reservas: 'loadReservas',
   config: 'loadConfig',
   pos: 'loadPOS'
 };

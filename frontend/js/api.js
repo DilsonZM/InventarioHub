@@ -107,6 +107,16 @@ const API = (() => {
       test: (host, port) => request(`/print/test?host=${encodeURIComponent(host)}&port=${port}`),
     },
 
+    reservas: {
+      list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request('/reservas' + (qs ? '?' + qs : ''));
+      },
+      updateEstado: (id, estado) =>
+        request('/reservas/' + id + '/estado', { method: 'PATCH', body: JSON.stringify({ estado }) }),
+      delete: (id) => request('/reservas/' + id, { method: 'DELETE' }),
+    },
+
     users: {
       list: (params = {}) => {
         const qs = new URLSearchParams(params).toString();

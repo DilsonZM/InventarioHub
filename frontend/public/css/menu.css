@@ -249,18 +249,18 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   justify-content: center;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  background: #dc2626;
+  background: #0d6b4e; /* brand-600 verde nativo */
   color: white;
   font-weight: 700;
   font-size: 0.95rem;
   border-radius: 1rem;
   border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 8px 20px -6px rgba(220, 38, 38, 0.45), 0 4px 8px -4px rgba(220, 38, 38, 0.30);
+  box-shadow: 0 8px 20px -6px rgba(13, 107, 78, 0.45), 0 4px 8px -4px rgba(13, 107, 78, 0.30);
   cursor: pointer;
   transition: all 0.15s ease;
   font-family: inherit;
 }
-.reservar-btn:hover { background: #b91c1c; transform: translateY(-1px); }
+.reservar-btn:hover { background: #0a5a3f; transform: translateY(-1px); }
 .reservar-btn:active { transform: translateY(0) scale(0.99); }
 
 /* ============== BOTTOM SHEET ============== */
@@ -362,7 +362,7 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 .submit-btn {
   width: 100%;
   padding: 0.95rem 1rem;
-  background: #dc2626;
+  background: #0d6b4e; /* brand-600 verde nativo */
   color: white;
   font-weight: 700;
   font-size: 0.95rem;
@@ -376,9 +376,9 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   gap: 0.5rem;
   margin-top: 0.5rem;
   font-family: inherit;
-  box-shadow: 0 8px 20px -6px rgba(220, 38, 38, 0.40);
+  box-shadow: 0 8px 20px -6px rgba(13, 107, 78, 0.40);
 }
-.submit-btn:hover { background: #b91c1c; }
+.submit-btn:hover { background: #0a5a3f; }
 .submit-btn:active { transform: scale(0.99); }
 .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 

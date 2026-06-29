@@ -14,6 +14,7 @@ const dishesRoutes = require('./routes/dishes');
 const mesasRoutes = require('./routes/mesas');
 const printRoutes = require('./routes/print');
 const publicRoutes = require('./routes/public');
+const reservasRoutes = require('./routes/reservas');
 const { authMiddleware, requirePermission } = require('./middleware/auth');
 const supabase = require('./lib/supabase');
 const { applyBogotaDateFilter } = require('./lib/timezone');
@@ -59,6 +60,7 @@ app.use('/api/reportes', authMiddleware, reportesRoutes);
 app.use('/api/dishes', authMiddleware, dishesRoutes);
 app.use('/api/mesas', authMiddleware, mesasRoutes);
 app.use('/api/print', authMiddleware, printRoutes);
+app.use('/api/reservas', authMiddleware, reservasRoutes);
 
 app.get('/api/stats', authMiddleware, async (req, res) => {
   try {
