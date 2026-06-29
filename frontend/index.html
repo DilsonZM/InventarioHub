@@ -241,8 +241,9 @@
           <!-- Chips de filtros aplicados: este div es el que updateFilterChips sobreescribe -->
           <div class="active-filter-chips flex flex-wrap items-center gap-1" data-chips="dashboard"></div>
         </div>
-        <!-- Filtros del dashboard: isla blanca visible en mobile y desktop -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
+        <!-- Filtros del dashboard: isla blanca SOLO en desktop.
+             En mobile el banner superior (icono Filtros + chips) abre el drawer. -->
+        <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
             <div class="lg:col-span-4">
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
