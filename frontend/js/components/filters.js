@@ -87,9 +87,11 @@ export function updateFilterChips(ids) {
   }
 
   chipsContainer.innerHTML = chips.map(function (chip, idx) {
-    return '<button class="filter-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-100 text-brand-800 text-xs font-medium hover:bg-brand-100 transition-colors" data-chip-idx="' + idx + '">'
-      + '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+    return '<button class="filter-chip group inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full bg-slate-100/80 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 text-[11px] font-medium border border-slate-200/80 dark:border-slate-600/60 hover:bg-slate-200 dark:hover:bg-slate-600/80 transition-colors" data-chip-idx="' + idx + '">'
       + '<span>' + escapeHtml(chip.label) + '</span>'
+      + '<span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200/60 dark:bg-slate-800/60 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 transition-colors">'
+      + '<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>'
+      + '</span>'
       + '</button>';
   }).join('');
 

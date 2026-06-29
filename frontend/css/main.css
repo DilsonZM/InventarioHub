@@ -509,8 +509,9 @@
       background: #3dad85;
     }
 
-    /* Mobile filter chips container - hide on mobile, show on desktop+ */
-    @media (max-width: 767px) {
+    /* Filter chips container: visible en mobile (<1024), oculto en desktop.
+       Los chips muestran los filtros aplicados y se pueden borrar con un click. */
+    @media (min-width: 1024px) {
       [data-chips] { display: none !important; }
       .active-filter-chips { display: none !important; }
     }
