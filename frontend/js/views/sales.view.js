@@ -51,10 +51,9 @@ async function initSales() {
     filterVendedor.addEventListener('change', function () { loadSales(); });
   }
 
-  // Banner + boton colapsar/expandir isla de filtros (solo mobile) — estado persistido en localStorage
+  // Boton colapsar/expandir isla de filtros (solo mobile) — estado persistido en localStorage
   var FILTERS_COLLAPSED_KEY = 'salesFiltersCollapsed';
   var toggleBar = document.getElementById('toggleSalesFiltersBar');
-  var toggleFiltersBtn = document.getElementById('toggleSalesFilters');
   var filtersIsland = document.getElementById('salesFiltersIsland');
   var toggleIcon = document.getElementById('toggleSalesFiltersIcon');
   function applyFiltersCollapsed(collapsed) {
@@ -65,7 +64,6 @@ async function initSales() {
       toggleBar.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
       toggleBar.title = collapsed ? 'Mostrar filtros' : 'Ocultar filtros';
     }
-    if (toggleFiltersBtn) toggleFiltersBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     try { localStorage.setItem(FILTERS_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) {}
   }
   if (toggleBar && filtersIsland) {
@@ -73,19 +71,10 @@ async function initSales() {
     var savedCollapsed = null;
     try { savedCollapsed = localStorage.getItem(FILTERS_COLLAPSED_KEY); } catch (e) {}
     applyFiltersCollapsed(savedCollapsed === '1');
-    // Click en cualquier parte del banner toggle (incluido el boton interno)
     toggleBar.addEventListener('click', function (e) {
       e.preventDefault();
       var willCollapse = !filtersIsland.classList.contains('sales-filters-collapsed');
       applyFiltersCollapsed(willCollapse);
-    });
-    // Accesibilidad: teclado (Enter / Space)
-    toggleBar.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        var willCollapse = !filtersIsland.classList.contains('sales-filters-collapsed');
-        applyFiltersCollapsed(willCollapse);
-      }
     });
   }
 

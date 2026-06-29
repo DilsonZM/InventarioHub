@@ -476,12 +476,13 @@
       <div id="view-sales" class="view-section hidden">
         <!-- Isla de filtros: en mobile tiene boton colapsar dentro (esquina sup der), en desktop siempre expandida -->
         <div id="salesFiltersIsland" class="sales-filters-island bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
-          <!-- Cabecera de la isla (mobile only): banner clickeable completo, icono centrado, badge de filtros activos -->
-          <div id="toggleSalesFiltersBar" class="md:hidden sales-filters-bar flex items-center justify-center mb-2 -mx-4 -mt-4 px-4 py-1.5 cursor-pointer" role="button" tabindex="0" aria-expanded="true" aria-controls="salesFiltersBody" title="Mostrar/ocultar filtros">
-            <button id="toggleSalesFilters" type="button" class="sales-filters-toggle inline-flex items-end justify-center w-6 h-6 pb-0.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-hidden="true" tabindex="-1">
-              <svg id="toggleSalesFiltersIcon" class="sales-filters-toggle-icon w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+          <!-- Cabecera de la isla (mobile only): boton tipo chip centrado, clickeable para colapsar/expandir -->
+          <div class="md:hidden flex justify-center -mt-2 mb-3">
+            <button id="toggleSalesFiltersBar" type="button" class="sales-filters-bar inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors cursor-pointer" aria-expanded="true" aria-controls="salesFiltersBody" title="Mostrar/ocultar filtros">
+              <span class="sales-filters-bar-label text-[11px] font-semibold uppercase tracking-wider">Filtros</span>
+              <svg id="toggleSalesFiltersIcon" class="sales-filters-toggle-icon w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+              <span id="salesFiltersBadge" class="hidden ml-0.5 px-1 rounded-full bg-brand-500 text-white text-[9px] font-bold leading-tight min-w-[14px] h-[14px] flex items-center justify-center">0</span>
             </button>
-            <span id="salesFiltersBadge" class="hidden ml-1 px-1 rounded-full bg-brand-500 text-white text-[9px] font-bold leading-tight min-w-[14px] h-[14px] flex items-center justify-center ring-2 ring-white">0</span>
           </div>
           <div id="salesFiltersBody" class="sales-filters-body flex flex-wrap sm:flex-nowrap sm:items-end gap-3">
             <div class="basis-full sm:basis-auto sm:flex-1 min-w-0 order-1">
