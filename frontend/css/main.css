@@ -534,8 +534,12 @@
       transform: translateY(100%);
     }
 
-    /* SweetAlert2 backdrop con blur para loading de auth */
-    .swal2-backdrop-show {
+    /* SweetAlert2 backdrop con blur SOLO para modales grandes (login, confirmaciones).
+       Los toasts (notificaciones pequenas como "Entregado", "Producto guardado", etc.)
+       usan el mismo backdrop, pero blurear toda la pantalla para un toast de 60px es
+       invasivo y feo en mobile. Swal marca el body con la clase .swal2-toast-shown
+       cuando se muestra un toast; usamos ese discriminador para decidir. */
+    body.swal2-shown:not(.swal2-toast-shown) .swal2-backdrop-show {
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
     }
