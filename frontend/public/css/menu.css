@@ -21,8 +21,8 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 .search-input:focus {
   outline: none;
   background: #ffffff;
-  border-color: #ef4444;
-  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.10);
+  border-color: #0d6b4e;
+  box-shadow: 0 0 0 4px rgba(13, 107, 78, 0.10);
 }
 
 /* ============== CATEGORIAS (scroll horizontal) ============== */
@@ -55,10 +55,10 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 }
 .cat-tab:hover { background: #f1f5f9; }
 .cat-tab.is-active {
-  background: #fef2f2;
-  border-color: #ef4444;
-  color: #b91c1c;
-  box-shadow: 0 4px 12px -4px rgba(239, 68, 68, 0.25);
+  background: #e6f5ef;          /* brand-50 verde claro */
+  border-color: #0d6b4e;        /* brand-600 */
+  color: #0a5a3f;               /* brand-700 */
+  box-shadow: 0 4px 12px -4px rgba(13, 107, 78, 0.25);
 }
 .cat-tab .cat-emoji {
   width: 2rem;
@@ -73,9 +73,9 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   transition: all 0.2s ease;
 }
 .cat-tab.is-active .cat-emoji {
-  background: #ef4444;
+  background: #0d6b4e;          /* brand-600 verde solido */
   transform: scale(1.05);
-  box-shadow: 0 4px 10px -2px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 4px 10px -2px rgba(13, 107, 78, 0.35);
 }
 
 /* ============== SECCIONES ============== */
@@ -131,7 +131,10 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  background:
+    radial-gradient(circle at 30% 30%, #d1fae5 0%, transparent 60%),
+    radial-gradient(circle at 70% 70%, #a7f3d0 0%, transparent 50%),
+    linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -143,8 +146,13 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
   object-fit: cover;
 }
 .plato-img-wrap .plato-emoji {
-  font-size: 4.5rem;
-  filter: drop-shadow(0 4px 8px rgba(15,23,42,0.10));
+  font-size: 5rem;
+  line-height: 1;
+  filter: drop-shadow(0 6px 12px rgba(15,23,42,0.15));
+  transition: transform 0.3s ease;
+}
+.plato-card:hover .plato-emoji {
+  transform: scale(1.08) rotate(-3deg);
 }
 .plato-badge {
   position: absolute;
@@ -324,8 +332,8 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 .form-input:focus {
   outline: none;
   background: #ffffff;
-  border-color: #ef4444;
-  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.10);
+  border-color: #0d6b4e;
+  box-shadow: 0 0 0 4px rgba(13, 107, 78, 0.10);
 }
 .form-input[type="date"], .form-input[type="time"] {
   color-scheme: light;
@@ -353,10 +361,10 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 }
 .persona-pill:hover { background: #f1f5f9; }
 .persona-pill.is-active {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: #0d6b4e;
+  border-color: #0d6b4e;
   color: white;
-  box-shadow: 0 4px 10px -2px rgba(239, 68, 68, 0.30);
+  box-shadow: 0 4px 10px -2px rgba(13, 107, 78, 0.30);
 }
 
 .submit-btn {
