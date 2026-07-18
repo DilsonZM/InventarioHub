@@ -62,7 +62,7 @@ router.get('/movimientos', async (req, res) => {
       unidad: m.productos?.unidad_medida || '',
       cantidad: m.cantidad,
       cantidad_entrada: m.tipo === 'entrada' ? m.cantidad : 0,
-      cantidad_salida: m.tipo === 'salida' ? m.cantidad : 0,
+      cantidad_salida: (m.tipo === 'salida' || m.tipo === 'merma') ? m.cantidad : 0,
       cantidad_stock: m.stock_nuevo,
       stock_anterior: m.stock_anterior,
       motivo: m.motivo,

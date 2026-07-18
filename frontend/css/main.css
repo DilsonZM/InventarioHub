@@ -1222,6 +1222,14 @@
   margin-top: 0;
   pointer-events: none;
 }
+/* En desktop (>=768px) nunca colapsar: el toggle es md:hidden y no hay forma de expandir */
+@media (min-width: 768px) {
+  #salesFiltersIsland.sales-filters-collapsed .sales-filters-body {
+    max-height: none;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .sales-filters-island,
   .sales-filters-bar,

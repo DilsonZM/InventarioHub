@@ -48,29 +48,39 @@ async function loadMovimientos() {
     }
 
     tbody.innerHTML = movs.map(function (m) {
-      var tipoBadge = m.movimiento === 'entrada' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 movimiento-badge">Entrada</span>'
-        : m.movimiento === 'salida' ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 movimiento-badge">Salida</span>'
-        : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 movimiento-badge">Ajuste</span>';
+      var tipoBadge;
+      if (m.movimiento === 'entrada') tipoBadge = '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 movimiento-badge">Entrada</span>';
+      else if (m.movimiento === 'salida') tipoBadge = '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 movimiento-badge">Salida</span>';
+      else if (m.movimiento === 'merma') tipoBadge = '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 movimiento-badge">Merma</span>';
+      else tipoBadge = '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 movimiento-badge">Ajuste</span>';
       var unidad = m.unidad || '';
+      var motivoHtml = m.motivo ? '<p class="text-xs text-slate-400 mt-0.5">' + escapeHtml(m.motivo) + '</p>' : '';
       return '<tr class="hover:bg-slate-50 transition-colors">'
         + '<td class="px-6 py-3 text-sm text-slate-600">' + formatDate(m.fecha) + '</td>'
-        + '<td class="px-6 py-3">' + tipoBadge + '</td>'
+        + '<td class="px-6 py-3">' + tipoBadge + motivoHtml + '</td>'
         + '<td class="px-6 py-3 text-sm text-slate-700">' + escapeHtml(m.producto) + '</td>'
         + '<td class="px-6 py-3 text-sm font-mono text-center text-slate-500">' + escapeHtml(m.codigo) + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center text-brand-600 font-medium">' + (m.cantidad_entrada ? m.cantidad_entrada + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center text-red-600 font-medium">' + (m.cantidad_salida ? m.cantidad_salida + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
-        + '<td class="px-6 py-3 text-sm text-center font-semibold">' + (m.cantidad_stock != null ? m.cantidad_stock + ' <span class=\"text-xs text-slate-400\">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center text-brand-600 font-medium">' + (m.cantidad_entrada ? m.cantidad_entrada + ' <span class="text-xs text-slate-400">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center text-red-600 font-medium">' + (m.cantidad_salida ? m.cantidad_salida + ' <span class="text-xs text-slate-400">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
+        + '<td class="px-6 py-3 text-sm text-center font-semibold">' + (m.cantidad_stock != null ? m.cantidad_stock + ' <span class="text-xs text-slate-400">' + escapeHtml(unidad) + '</span>' : '-') + '</td>'
         + '<td class="px-6 py-3 text-sm text-slate-600"><div class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(m.usuario_nombre || '') + '</div></td>'
         + '</tr>';
     }).join('');
 
     cards.innerHTML = movs.map(function (m) {
       var unidad = m.unidad || '';
+      var tipoLabel;
+      if (m.movimiento === 'entrada') tipoLabel = '<span class="text-green-600 text-sm font-bold">+ ' + m.cantidad_entrada + ' ' + escapeHtml(unidad) + '</span>';
+      else if (m.movimiento === 'salida') tipoLabel = '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + ' ' + escapeHtml(unidad) + '</span>';
+      else if (m.movimiento === 'merma') tipoLabel = '<span class="text-amber-600 text-sm font-bold">Merma -' + (m.cantidad_salida || m.cantidad || '') + ' ' + escapeHtml(unidad) + '</span>';
+      else tipoLabel = '<span class="text-slate-600 text-sm font-bold">Ajuste</span>';
+      var motivoCard = m.motivo ? '<p class="text-xs text-amber-600 italic">' + escapeHtml(m.motivo) + '</p>' : '';
       return '<div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">'
         + '<div class="flex justify-between"><span class="text-xs text-slate-500">' + formatDate(m.fecha) + '</span>'
-        + (m.movimiento === 'entrada' ? '<span class="text-green-600 text-sm font-bold">+ ' + m.cantidad_entrada + ' ' + escapeHtml(unidad) + '</span>' : m.movimiento === 'salida' ? '<span class="text-red-600 text-sm font-bold">- ' + m.cantidad_salida + ' ' + escapeHtml(unidad) + '</span>' : '<span class="text-amber-600 text-sm font-bold">Ajuste</span>')
+        + tipoLabel
         + '</div>'
         + '<p class="text-sm font-medium">' + escapeHtml(m.producto) + '</p>'
+        + motivoCard
         + '<div class="flex justify-between text-xs text-slate-500"><span>' + escapeHtml(m.codigo) + '</span><span>Stock: ' + (m.cantidad_stock != null ? m.cantidad_stock + ' ' + escapeHtml(unidad) : '-') + '</span></div>'
         + '<div class="flex items-center gap-1.5 text-xs text-slate-500"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' + escapeHtml(m.usuario_nombre || '') + '</div>'
         + '</div>';

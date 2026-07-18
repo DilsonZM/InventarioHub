@@ -386,7 +386,11 @@ function initPOSFinanzas() {
     var el = document.getElementById(id);
     if (el && !el._finanzasWired) {
       el._finanzasWired = true;
-      el.addEventListener('input', updatePOSTotalFinal);
+      el.addEventListener('input', function () {
+        // Marcar que el usuario edito manualmente la propina
+        if (id === 'posPropina') el._userEdited = true;
+        updatePOSTotalFinal();
+      });
     }
   });
   updatePOSTotalFinal();
@@ -396,14 +400,24 @@ function getPOSFinanzas() {
   var dom = parseFloat((document.getElementById('posCostoDomicilio') || {}).value) || 0;
   var prop = parseFloat((document.getElementById('posPropina') || {}).value) || 0;
   var bono = parseFloat((document.getElementById('posBonoDescuento') || {}).value) || 0;
-  var forma = (document.getElementById('posFormaPago') || {}).value || null;
-  return { costoDomicilio: dom, propina: prop, bonoDescuento: bono, formaPago: forma };
+  return { costoDomicilio: dom, propina: prop, bonoDescuento: bono };
 }
 
 function updatePOSTotalFinal() {
-  var fin = getPOSFinanzas();
   var subtotal = 0;
   state.posItems.forEach(function (item) { subtotal += (item.price || 0) * item.qty; });
+
+  // Auto-calcular propina al 10% del subtotal (el usuario puede editarla)
+  var propinaEl = document.getElementById('posPropina');
+  if (propinaEl && subtotal > 0) {
+    var autoPropina = Math.round(subtotal * 0.10);
+    // Solo auto-rellenar si el campo esta vacio o si el usuario no lo ha editado manualmente
+    if (!propinaEl._userEdited) {
+      propinaEl.value = autoPropina;
+    }
+  }
+
+  var fin = getPOSFinanzas();
   var total = subtotal + fin.costoDomicilio - fin.bonoDescuento + fin.propina;
   var row = document.getElementById('posTotalFinal');
   var val = document.getElementById('posTotalFinalValue');
@@ -421,7 +435,7 @@ function updatePOSTotalFinal() {
 function resetPOSFinanzas() {
   ['posCostoDomicilio', 'posPropina', 'posBonoDescuento'].forEach(function (id) {
     var el = document.getElementById(id);
-    if (el) el.value = '';
+    if (el) { el.value = ''; el._userEdited = false; }
   });
   var fp = document.getElementById('posFormaPago');
   if (fp) fp.value = '';
@@ -514,8 +528,8 @@ async function submitPOSOrder() {
     items: items.length > 0 ? items : undefined,
     costoDomicilio: fin.costoDomicilio,
     propina: fin.propina,
-    bonoDescuento: fin.bonoDescuento,
-    formaPago: fin.formaPago
+    bonoDescuento: fin.bonoDescuento
+    // formaPago NO se envia: se captura al final, al editar el pedido
   };
 
   // Loading overlay con animacion energetica.
@@ -975,12 +989,16 @@ function buildPrintDocument(opts) {
   if (kind === 'kitchen') {
     // ============ COMANDA DE COCINA ============
     html += '<div class="center bold" style="font-size:16px;margin-bottom:4px">COMANDA</div>';
-    html += '<div class="center" style="font-size:11px;margin-bottom:4px">' + escapeHtml(sale.paymentMethod || 'cocina') + '</div>';
+    var destinoLabel = sale.paymentMethod || 'cocina';
+    if (destinoLabel === 'domicilio') destinoLabel = '🛵 DOMICILIO';
+    else if (destinoLabel === 'recogido') destinoLabel = '🏠 PARA RECOGER';
+    else if (sale.mesaNombre) destinoLabel = sale.mesaNombre;
+    html += '<div class="center" style="font-size:11px;margin-bottom:4px">' + escapeHtml(destinoLabel) + '</div>';
     html += '<div class="sep-double"></div>';
     html += '<div class="row bold"><span>Pedido:</span><span>' + escapeHtml(sale.numero_venta || '') + '</span></div>';
     html += '<div class="row"><span>Fecha:</span><span>' + escapeHtml(fechaStr) + '</span></div>';
-    if (sale.mesa_nombre) {
-      html += '<div class="row bold"><span>Mesa:</span><span>' + escapeHtml(sale.mesa_nombre) + '</span></div>';
+    if (sale.mesaNombre) {
+      html += '<div class="row bold"><span>Mesa:</span><span>' + escapeHtml(sale.mesaNombre) + '</span></div>';
     }
     html += '<div class="sep-double"></div>';
     items.forEach(function (it) {
@@ -991,15 +1009,18 @@ function buildPrintDocument(opts) {
         + '<span class="kitchen-qty">' + qty + 'x</span>'
         + '<span class="item-name">' + escapeHtml(it.productName) + '</span>' + platoTag;
       if (it.observacion) html += '<div class="item-meta" style="font-weight:700">Obs: ' + escapeHtml(it.observacion) + '</div>';
-      if (it.ingredientesConsumidos && it.ingredientesConsumidos.length > 0) {
-        html += '<div class="item-meta" style="font-size:10px;color:#444">'
-          + it.ingredientesConsumidos.map(function (ing) {
-            return escapeHtml(ing.nombre) + ' (' + ing.cantidad + ' ' + (ing.unidad || '') + ')';
-          }).join(', ')
-          + '</div>';
-      }
       html += '</div>';
     });
+    // Ingredientes consumidos (del nivel sale, no del item)
+    if (sale.ingredientesConsumidos && sale.ingredientesConsumidos.length > 0) {
+      html += '<div class="sep"></div>';
+      html += '<div class="item-meta" style="font-size:10px;font-weight:700">Ingredientes:</div>';
+      sale.ingredientesConsumidos.forEach(function (ing) {
+        html += '<div class="item-meta" style="font-size:10px">'
+          + escapeHtml(ing.nombre) + ' (' + ing.cantidad + ' ' + (ing.unidad || '') + ') - ' + escapeHtml(ing.por || '')
+          + '</div>';
+      });
+    }
     html += '<div class="sep-double"></div>';
     html += '<div class="center meta">Impreso: ' + escapeHtml(new Date().toLocaleString('es-CO')) + '</div>';
   } else {
@@ -1019,10 +1040,14 @@ function buildPrintDocument(opts) {
     html += '<table>';
     html += '<tr><td>Pedido:</td><td class="bold">' + escapeHtml(sale.numero_venta || '') + '</td></tr>';
     html += '<tr><td>Fecha:</td><td>' + escapeHtml(fechaStr) + '</td></tr>';
-    html += '<tr><td>Cocina:</td><td>' + escapeHtml(sale.paymentMethod || '') + '</td></tr>';
-    if (sale.mesa_nombre) html += '<tr><td>Mesa:</td><td>' + escapeHtml(sale.mesa_nombre) + '</td></tr>';
-    html += '<tr><td>Cliente:</td><td>' + escapeHtml(sale.cliente_nombre || 'Consumidor final') + '</td></tr>';
-    html += '<tr><td>Cajero:</td><td>' + escapeHtml(sale.usuario_nombre || '') + '</td></tr>';
+    var destino = sale.paymentMethod || '';
+    if (destino === 'domicilio') destino = '🛵 Domicilio';
+    else if (destino === 'recogido') destino = '🏠 Recoger';
+    else if (sale.mesaNombre) destino = sale.mesaNombre;
+    html += '<tr><td>Destino:</td><td>' + escapeHtml(destino) + '</td></tr>';
+    if (sale.mesaNombre) html += '<tr><td>Mesa:</td><td>' + escapeHtml(sale.mesaNombre) + '</td></tr>';
+    html += '<tr><td>Cliente:</td><td>' + escapeHtml(sale.clienteNombre || 'Consumidor final') + '</td></tr>';
+    html += '<tr><td>Atendido por:</td><td>' + escapeHtml(sale.usuario_nombre || sale.username || '') + '</td></tr>';
     html += '</table>';
 
     html += '<div class="sep-double"></div>';
@@ -1044,26 +1069,37 @@ function buildPrintDocument(opts) {
       html += '<td style="text-align:right">' + window.Utils.formatCurrency(unitPrice) + '</td>';
       html += '<td style="text-align:right">' + window.Utils.formatCurrency(sub) + '</td>';
       html += '</tr>';
+      // Observacion del item
+      if (it.observacion) {
+        html += '<tr><td colspan="4" style="font-size:10px;font-style:italic;padding-left:8px">  Obs: ' + escapeHtml(it.observacion) + '</td></tr>';
+      }
     });
     html += '</tbody></table>';
 
+    // Desglose financiero
+    var costoDom = parseFloat(sale.costoDomicilio) || 0;
+    var bonoDesc = parseFloat(sale.bonoDescuento) || 0;
+    var propinaReal = parseFloat(sale.propina) || 0;
+    var totalFinal = parseFloat(sale.total) || subtotal;
+
     html += '<div class="sep"></div>';
     html += '<div class="row"><span>Subtotal:</span><span class="bold">' + window.Utils.formatCurrency(subtotal) + '</span></div>';
-    var tip = Math.round(subtotal * 0.1 * 100) / 100;
-    var totalConPropina = subtotal + tip;
-    html += '<div class="row meta"><span>Propina Voluntaria (10%):</span><span>' + window.Utils.formatCurrency(tip) + '</span></div>';
+    if (costoDom > 0) {
+      html += '<div class="row"><span>🛵 Domicilio:</span><span>' + window.Utils.formatCurrency(costoDom) + '</span></div>';
+    }
+    if (bonoDesc > 0) {
+      html += '<div class="row"><span>🎁 Bono/Descuento:</span><span>-' + window.Utils.formatCurrency(bonoDesc) + '</span></div>';
+    }
+    if (propinaReal > 0) {
+      html += '<div class="row"><span>💰 Propina:</span><span>' + window.Utils.formatCurrency(propinaReal) + '</span></div>';
+    }
     html += '<div class="sep-double"></div>';
-    html += '<div class="row total"><span>TOTAL (Sin propina):</span><span>' + window.Utils.formatCurrency(subtotal) + '</span></div>';
-    html += '<div class="row total"><span>TOTAL (Con propina):</span><span>' + window.Utils.formatCurrency(totalConPropina) + '</span></div>';
+    html += '<div class="row total"><span>TOTAL:</span><span>' + window.Utils.formatCurrency(totalFinal) + '</span></div>';
     html += '<div class="sep-double"></div>';
 
-    // Texto legal: propina voluntaria
-    html += '<div class="center" style="font-size:10px;font-style:italic;margin:6px 4px;color:#222">';
-    html += '* La propina es voluntaria y sugerida. Usted decide el valor a pagar. *';
-    html += '</div>';
-    html += '<div class="sep"></div>';
-
-    html += '<div class="center meta" style="margin-top:8px">Forma de pago: ' + escapeHtml(sale.paymentMethod || 'efectivo') + '</div>';
+    // Forma de pago real
+    var formaPagoLabel = sale.formaPago || 'Sin definir';
+    html += '<div class="center meta" style="margin-top:8px">Forma de pago: ' + escapeHtml(formaPagoLabel) + '</div>';
     html += '<div class="center meta">Resolucion DIAN No. 18760000000001</div>';
     html += '<div class="center meta">Fecha: 2026-01-01  Vigencia: 24 meses</div>';
     html += '<div class="center meta">Prefijo: CH  Rango: 1 - 999999</div>';

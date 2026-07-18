@@ -781,6 +781,62 @@ router.put('/:id/tip', requirePermission('puede_editar_salidas'), async (req, re
   }
 });
 
+// PUT /api/sales/:id/payment - editar forma_pago, propina y bono_descuento juntos
+// Usado al cerrar la venta (el cliente decide como paga despues de hacer el pedido)
+router.put('/:id/payment', requirePermission('puede_editar_salidas'), async (req, res) => {
+  try {
+    var formaPago = req.body.formaPago || null;
+    var propina = parseFloat(req.body.propina);
+    var bono = parseFloat(req.body.bonoDescuento);
+
+    if (isNaN(propina) || propina < 0) propina = null; // no cambiar
+    if (isNaN(bono) || bono < 0) bono = null; // no cambiar
+
+    var { data: venta, error: getError } = await supabase
+      .from('ventas')
+      .select('id, subtotal, costo_domicilio, bono_descuento, propina, forma_pago')
+      .eq('id', req.params.id)
+      .single();
+    if (getError || !venta) {
+      return res.status(404).json({ success: false, message: 'Venta no encontrada' });
+    }
+
+    var subtotal = parseFloat(venta.subtotal) || 0;
+    var domicilio = parseFloat(venta.costo_domicilio) || 0;
+    var finalPropina = propina !== null ? propina : parseFloat(venta.propina) || 0;
+    var finalBono = bono !== null ? bono : parseFloat(venta.bono_descuento) || 0;
+    var finalFormaPago = formaPago || venta.forma_pago || null;
+    var nuevoTotal = subtotal + domicilio - finalBono + finalPropina;
+
+    var { data: updated, error: updateError } = await supabase
+      .from('ventas')
+      .update({
+        forma_pago: finalFormaPago,
+        propina: finalPropina,
+        bono_descuento: finalBono,
+        total: nuevoTotal
+      })
+      .eq('id', req.params.id)
+      .select('id, forma_pago, propina, bono_descuento, total')
+      .single();
+    if (updateError) throw updateError;
+
+    res.json({
+      success: true,
+      data: {
+        formaPago: updated.forma_pago,
+        propina: updated.propina,
+        bonoDescuento: updated.bono_descuento,
+        total: updated.total
+      },
+      message: 'Pago actualizado'
+    });
+  } catch (err) {
+    console.error('PUT payment error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
 // POST /api/sales/comanda - crear comanda (pedido inicial, estado pendiente)
 // Descuenta stock pero no factura (estado = 'pendiente', se factura despues)
 router.post('/comanda', requirePermission('puede_crear_salidas'), async (req, res) => {

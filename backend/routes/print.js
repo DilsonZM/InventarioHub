@@ -86,8 +86,9 @@ function buildTicketCommands(sale, kind) {
   var mesaLabel = sale.mesaNombre || sale.mesa_nombre || '';
   if (mesaLabel) push('Mesa: ' + mesaLabel + '\n');
   if (kind !== 'kitchen') {
-    push('Cliente: ' + (sale.cliente_nombre || 'Consumidor final') + '\n');
-    if (sale.usuario_nombre) push('Cajero: ' + sale.usuario_nombre + '\n');
+    push('Cliente: ' + (sale.clienteNombre || sale.cliente_nombre || 'Consumidor final') + '\n');
+    var cajero = sale.usuario_nombre || sale.username || '';
+    if (cajero) push('Atendido: ' + cajero + '\n');
   }
   push('-'.repeat(LINE_WIDTH) + '\n');
 
@@ -109,21 +110,26 @@ function buildTicketCommands(sale, kind) {
       : padLine(fullName, formatCurrency(sub), LINE_WIDTH);
     // Si el nombre es largo, lo partimos en 2 lineas
     if (kind === 'kitchen') {
-      // Comanda: nombre grande, ingredientes en linea aparte
+      // Comanda: nombre grande, observacion en linea aparte
       pushBytes('\x1B\x45\x01'); // bold on
       push(line + '\n');
       pushBytes('\x1B\x45\x00');
-      if (it.nota) push('   Nota: ' + it.nota + '\n');
-      if (it.ingredientesConsumidos && it.ingredientesConsumidos.length > 0) {
-        it.ingredientesConsumidos.forEach((ing) => {
-          push('   - ' + ing.nombre + ' ' + ing.cantidad + ' ' + (ing.unidad || '') + '\n');
-        });
-      }
+      if (it.observacion) push('   Obs: ' + it.observacion + '\n');
     } else {
       const lines = splitLongItem(fullName, qty, formatCurrency(unitPrice), LINE_WIDTH);
       lines.forEach((l) => push(l + '\n'));
+      if (it.observacion) push('  Obs: ' + it.observacion + '\n');
     }
   });
+
+  // Ingredientes consumidos (comanda, del nivel sale)
+  if (kind === 'kitchen' && sale.ingredientesConsumidos && sale.ingredientesConsumidos.length > 0) {
+    push('- '.repeat(LINE_WIDTH / 2) + '\n');
+    push('Ingredientes:\n');
+    sale.ingredientesConsumidos.forEach((ing) => {
+      push('  ' + ing.nombre + ' ' + ing.cantidad + ' ' + (ing.unidad || '') + '\n');
+    });
+  }
 
   // 5. Totales
   push('-'.repeat(LINE_WIDTH) + '\n');
@@ -133,19 +139,24 @@ function buildTicketCommands(sale, kind) {
     push(padLine('TOTAL', formatCurrency(subtotal), LINE_WIDTH) + '\n');
     pushBytes('\x1B\x45\x00');
   } else {
-    // Factura: subtotal, propina, totales
+    // Factura: desglose financiero real
+    var costoDom = parseFloat(sale.costoDomicilio || sale.costo_domicilio) || 0;
+    var bonoDesc = parseFloat(sale.bonoDescuento || sale.bono_descuento) || 0;
+    var propinaReal = parseFloat(sale.propina) || 0;
+    var totalFinal = parseFloat(sale.total) || subtotal;
+
     push(padLine('Subtotal:', formatCurrency(subtotal), LINE_WIDTH) + '\n');
-    const tip = Math.round(subtotal * 0.1);
-    push(padLine('Propina Vol. (10%):', formatCurrency(tip), LINE_WIDTH) + '\n');
+    if (costoDom > 0) push(padLine('Domicilio:', formatCurrency(costoDom), LINE_WIDTH) + '\n');
+    if (bonoDesc > 0) push(padLine('Bono/Desc:', '-' + formatCurrency(bonoDesc), LINE_WIDTH) + '\n');
+    if (propinaReal > 0) push(padLine('Propina:', formatCurrency(propinaReal), LINE_WIDTH) + '\n');
     push('='.repeat(LINE_WIDTH) + '\n');
-    push(padLine('TOTAL (Sin propina):', formatCurrency(subtotal), LINE_WIDTH) + '\n');
-    push(padLine('TOTAL (Con propina):', formatCurrency(subtotal + tip), LINE_WIDTH) + '\n');
+    pushBytes('\x1B\x45\x01');
+    push(padLine('TOTAL:', formatCurrency(totalFinal), LINE_WIDTH) + '\n');
+    pushBytes('\x1B\x45\x00');
     push('='.repeat(LINE_WIDTH) + '\n');
     push('\n');
-    push('* La propina es voluntaria y sugerida. *\n');
-    push('* Usted decide el valor a pagar.      *\n');
-    push('\n');
-    push('Forma de pago: ' + (sale.paymentMethod || 'efectivo') + '\n');
+    var formaPagoReal = sale.formaPago || sale.forma_pago || 'Sin definir';
+    push('Forma de pago: ' + formaPagoReal + '\n');
     push('Res. DIAN 18760000000001\n');
     push('Prefijo CH  Rango 1-999999\n');
   }

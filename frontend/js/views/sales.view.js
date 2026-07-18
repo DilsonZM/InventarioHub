@@ -53,6 +53,16 @@ async function initSales() {
   } catch (e) { /* noop */ }
 
   initFilters('sales');
+
+  // Wire payment modal inputs to recalculate total
+  ['payPropina', 'payBono'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el && !el._payWired) {
+      el._payWired = true;
+      el.addEventListener('input', updatePaymentTotal);
+    }
+  });
+
   var saleForm = $('#saleForm');
   if (saleForm) {
     saleForm.addEventListener('input', markSaleDirty);
@@ -80,6 +90,8 @@ async function initSales() {
   var toggleIcon = document.getElementById('toggleSalesFiltersIcon');
   function applyFiltersCollapsed(collapsed) {
     if (!filtersIsland) return;
+    // En desktop (>=768px) nunca colapsar: el toggle es md:hidden y no hay forma de expandir
+    if (window.innerWidth >= 768) collapsed = false;
     filtersIsland.classList.toggle('sales-filters-collapsed', collapsed);
     if (toggleIcon) toggleIcon.style.transform = collapsed ? 'rotate(180deg)' : 'rotate(0deg)';
     if (toggleBar) {
@@ -830,14 +842,14 @@ window.viewSale = async function (id) {
       finHtml += '</div>';
     }
 
-    // Boton editar propina (visible para quien tenga permiso de editar)
+    // Boton ajustar pago (forma_pago + propina + bono) - visible para quien tenga permiso
     var tipBtnHtml = '';
     if (can('puedeEditarSalidas')) {
       tipBtnHtml = '<div class="px-4 py-2 border-t border-slate-100">'
-        + '<button onclick="window.editSaleTip(\'' + sale.id + '\', ' + (sale.propina || 0) + ')" '
+        + '<button onclick="window.openPaymentModal(\'' + sale.id + '\')" '
         + 'class="w-full text-xs text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg py-2 transition-colors flex items-center justify-center gap-1.5">'
-        + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
-        + (sale.propina > 0 ? 'Editar propina (' + formatCurrency(sale.propina) + ')' : 'Agregar propina')
+        + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>'
+        + 'Ajustar pago' + (sale.formaPago ? ' (' + sale.formaPago + ')' : '')
         + '</button>'
         + '</div>';
     }
@@ -850,27 +862,73 @@ window.viewSale = async function (id) {
   }
 };
 
-// editSaleTip: abre un prompt para editar la propina de una venta
-window.editSaleTip = async function (id, currentTip) {
-  var input = prompt('Propina actual: ' + formatCurrency(currentTip) + '\nNueva propina (0 para quitar):', currentTip);
-  if (input === null) return;
-  var newTip = parseFloat(input);
-  if (isNaN(newTip) || newTip < 0) {
-    showToast('Valor invalido', 'error');
-    return;
-  }
+// ============================================
+// Modal "Ajustar pago" (forma_pago + propina + bono)
+// ============================================
+window.openPaymentModal = async function (id) {
   try {
-    var res = await API.sales.updateTip(id, newTip);
+    var res = await API.sales.get(id);
+    var sale = res.data;
+    // Guardar referencia para el submit
+    state._paymentSaleId = id;
+    state._paymentSale = sale;
+
+    // Rellenar campos
+    var formaEl = document.getElementById('payFormaPago');
+    var propEl = document.getElementById('payPropina');
+    var bonoEl = document.getElementById('payBono');
+    var subEl = document.getElementById('paySubtotal');
+    var domEl = document.getElementById('payDomicilio');
+    var totalEl = document.getElementById('payTotal');
+
+    if (formaEl) formaEl.value = sale.formaPago || '';
+    if (propEl) propEl.value = sale.propina || '';
+    if (bonoEl) bonoEl.value = sale.bonoDescuento || '';
+    if (subEl) subEl.textContent = formatCurrency(sale.subtotal || 0);
+    if (domEl) domEl.textContent = formatCurrency(sale.costoDomicilio || 0);
+
+    updatePaymentTotal();
+    openModal('paymentModal');
+  } catch (err) {
+    showToast('Error al cargar venta: ' + (err.message || ''), 'error');
+  }
+};
+
+function updatePaymentTotal() {
+  var sale = state._paymentSale;
+  if (!sale) return;
+  var prop = parseFloat((document.getElementById('payPropina') || {}).value) || 0;
+  var bono = parseFloat((document.getElementById('payBono') || {}).value) || 0;
+  var total = (sale.subtotal || 0) + (sale.costoDomicilio || 0) - bono + prop;
+  var totalEl = document.getElementById('payTotal');
+  if (totalEl) totalEl.textContent = formatCurrency(total);
+}
+
+window.submitPaymentModal = async function () {
+  var id = state._paymentSaleId;
+  if (!id) return;
+
+  var formaPago = (document.getElementById('payFormaPago') || {}).value || null;
+  var propina = parseFloat((document.getElementById('payPropina') || {}).value) || 0;
+  var bono = parseFloat((document.getElementById('payBono') || {}).value) || 0;
+
+  var btn = document.getElementById('paySubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  try {
+    var res = await API.sales.updatePayment(id, { formaPago: formaPago, propina: propina, bonoDescuento: bono });
     if (res.success) {
-      showToast('Propina actualizada: ' + formatCurrency(res.data.propina), 'success');
-      // Recargar el modal con los datos actualizados
-      viewSale(id);
-      loadSales();
+      showToast('Pago actualizado: ' + formatCurrency(res.data.total), 'success');
+      closeModal('paymentModal');
+      viewSale(id); // Recargar detalle
+      loadSales();  // Recargar tabla
     } else {
       showToast(res.message || 'Error al actualizar', 'error');
     }
   } catch (err) {
     showToast('Error: ' + (err.message || ''), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
   }
 };
 

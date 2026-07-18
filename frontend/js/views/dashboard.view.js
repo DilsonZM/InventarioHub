@@ -1,5 +1,4 @@
 import { $, escapeHtml } from '../core/dom.js';
-import { renderCategoryChart } from '../components/chart.js';
 import { updateClearBtn, applyQuickPeriod, openMobileFiltersModal } from '../components/filters.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency, formatDate, formatDateShort } from '../utils.js';
@@ -241,8 +240,7 @@ async function loadDashboard() {
       }).join('');
     }
 
-    console.log('[Dashboard] Renderizando grafico de salidas...');
-    renderCategoryChart(movsRes.data || [], productsRes.data);
+    console.log('[Dashboard] Cargando datos...');
     loadTopDishes();
     loadVentasMargen('dia');
     console.log('[Dashboard] Dashboard cargado correctamente');
@@ -470,5 +468,4 @@ if (typeof window !== "undefined") {
   if (typeof loadDashboard === "function") window.loadDashboard = loadDashboard;
   if (typeof loadTopDishes === "function") window.loadTopDishes = loadTopDishes;
   if (typeof populateProductFilter === "function") window.populateProductFilter = populateProductFilter;
-  if (typeof renderCategoryChart === "function") window.renderCategoryChart = renderCategoryChart;
 }
