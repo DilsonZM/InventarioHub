@@ -23,6 +23,14 @@ async function initInventory() {
   $('#filterStatus').addEventListener('change', function () { loadProducts(); });
   $('#addProductBtn').addEventListener('click', function () { openProductModal(); });
 
+  // Merma
+  var mermaBtn = $('#addMermaBtn');
+  if (mermaBtn) mermaBtn.addEventListener('click', function () { openMermaModal(); });
+  var mermaSubmit = $('#mermaSubmitBtn');
+  if (mermaSubmit) mermaSubmit.addEventListener('click', function () { submitMerma(); });
+  var mermaProduct = $('#mermaProduct');
+  if (mermaProduct) mermaProduct.addEventListener('change', updateMermaStockInfo);
+
   // Dirty tracking para el modal de producto
   var form = document.getElementById('productForm');
   if (form) {
@@ -308,6 +316,82 @@ if (typeof document !== 'undefined') {
 }
 
 
+// ============================================
+// Merma (perdida operativa)
+// ============================================
+
+async function openMermaModal() {
+  // Cargar productos activos con stock
+  try {
+    var res = await API.products.list();
+    var productos = (res.data || []).filter(function (p) { return p.stock > 0; });
+    var sel = $('#mermaProduct');
+    if (sel) {
+      sel.innerHTML = '<option value="">Seleccionar producto...</option>'
+        + productos.map(function (p) {
+          return '<option value="' + p.id + '" data-stock="' + p.stock + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
+            + escapeHtml(p.name) + ' (stock: ' + p.stock + ' ' + escapeHtml(p.unidad || 'unidad') + ')'
+            + '</option>';
+        }).join('');
+    }
+    // Limpiar campos
+    var cant = $('#mermaCantidad');
+    var motivo = $('#mermaMotivo');
+    var info = $('#mermaStockInfo');
+    if (cant) cant.value = '';
+    if (motivo) motivo.value = '';
+    if (info) info.textContent = '';
+    openModal('mermaModal');
+  } catch (err) {
+    showToast('Error al cargar productos: ' + (err.message || ''), 'error');
+  }
+}
+
+function updateMermaStockInfo() {
+  var sel = $('#mermaProduct');
+  var info = $('#mermaStockInfo');
+  if (!sel || !info) return;
+  var opt = sel.options[sel.selectedIndex];
+  if (opt && opt.dataset.stock) {
+    info.textContent = 'Stock actual: ' + opt.dataset.stock + ' ' + (opt.dataset.unidad || 'unidad');
+  } else {
+    info.textContent = '';
+  }
+}
+
+async function submitMerma() {
+  var productId = ($('#mermaProduct') || {}).value;
+  var cantidad = parseFloat(($('#mermaCantidad') || {}).value);
+  var motivo = (($('#mermaMotivo') || {}).value || '').trim();
+
+  if (!productId) {
+    showToast('Selecciona un producto', 'warning');
+    return;
+  }
+  if (!cantidad || cantidad <= 0) {
+    showToast('Ingresa una cantidad valida', 'warning');
+    return;
+  }
+
+  var btn = $('#mermaSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Registrando...'; }
+
+  try {
+    var res = await API.products.merma({ productId: productId, cantidad: cantidad, motivo: motivo || undefined });
+    if (res.success) {
+      showToast(res.message || 'Merma registrada', 'success');
+      closeModal('mermaModal');
+      loadProducts(); // Recargar tabla con stock actualizado
+    } else {
+      showToast(res.message || 'Error al registrar merma', 'error');
+    }
+  } catch (err) {
+    showToast('Error: ' + (err.message || ''), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Registrar Merma'; }
+  }
+}
+
 // Compatibilidad con codigo heredado (window.*)
 if (typeof window !== "undefined") {
   if (typeof initInventory === "function") window.initInventory = initInventory;
@@ -319,5 +403,7 @@ if (typeof window !== "undefined") {
   if (typeof saveProduct === "function") window.saveProduct = saveProduct;
   if (typeof updateUnidadesByCategory === "function") window.updateUnidadesByCategory = updateUnidadesByCategory;
   if (typeof loadTopDishes === "function") window.loadTopDishes = loadTopDishes;
+  if (typeof openMermaModal === "function") window.openMermaModal = openMermaModal;
+  if (typeof submitMerma === "function") window.submitMerma = submitMerma;
   if (typeof populateCategoryFilters === "function") window.populateCategoryFilters = populateCategoryFilters;
 }

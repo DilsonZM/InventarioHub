@@ -143,6 +143,7 @@ const API = (() => {
         request(`/products/${id}`, { method: 'DELETE' }),
       categories: () => request('/products/categories/list'),
       suppliers: () => request('/products/suppliers/list'),
+      merma: (data) => request('/products/merma', { method: 'POST', body: JSON.stringify(data) }),
     },
 
     sales: {

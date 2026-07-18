@@ -448,7 +448,13 @@
             <option value="stock_bajo">Stock bajo</option>
             <option value="agotado">Agotado</option>
           </select>
-          <button id="addProductBtn" class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 text-white text-sm font-semibold rounded-xl shadow-sm touch-target basis-full sm:basis-auto sm:shrink-0 order-4">
+          <button id="addMermaBtn" class="inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl shadow-sm touch-target basis-full sm:basis-auto sm:shrink-0 order-4 border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 0 0 1.74-2.97L13.74 4.03a2 2 0 0 0-3.48 0L3.33 16.03A2 2 0 0 0 5.07 19z"/>
+            </svg>
+            <span>Merma</span>
+          </button>
+          <button id="addProductBtn" class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 text-white text-sm font-semibold rounded-xl shadow-sm touch-target basis-full sm:basis-auto sm:shrink-0 order-5">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -945,6 +951,49 @@
             </div>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Registrar Merma -->
+  <div id="mermaModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4 py-8">
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" data-close-modal></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto z-10 animate-scale-in overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-100">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 0 0 1.74-2.97L13.74 4.03a2 2 0 0 0-3.48 0L3.33 16.03A2 2 0 0 0 5.07 19z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-slate-800">Registrar Merma</h3>
+              <p class="text-xs text-slate-500">Perdida operativa (producto danado, vencido, etc.)</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Producto</label>
+            <select id="mermaProduct" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+              <option value="">Cargando productos...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Cantidad</label>
+            <input type="number" id="mermaCantidad" min="0.01" step="0.01" placeholder="0" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+            <p id="mermaStockInfo" class="text-xs text-slate-400 mt-1"></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Motivo</label>
+            <input type="text" id="mermaMotivo" placeholder="Ej: Producto vencido, se derramo, etc." class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-100 flex gap-2">
+          <button class="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors" data-close-modal>Cancelar</button>
+          <button id="mermaSubmitBtn" class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors">Registrar Merma</button>
+        </div>
       </div>
     </div>
   </div>
