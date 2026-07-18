@@ -1348,6 +1348,49 @@
             <span class="text-sm font-semibold text-slate-700">Total</span>
             <span class="text-lg font-bold text-slate-900" id="posTotal">$0</span>
           </div>
+          <!-- Campos financieros (colapsables) -->
+          <details id="posFinanzas" class="pos-finanzas group">
+            <summary class="flex items-center justify-between cursor-pointer text-xs text-slate-500 hover:text-slate-700 transition-colors py-1 select-none">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Domicilio, propina y pago
+              </span>
+              <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="pt-2 space-y-2">
+              <div id="posDomicilioRow" class="hidden">
+                <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Costo domicilio</label>
+                <input type="number" id="posCostoDomicilio" min="0" step="500" placeholder="0" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Propina</label>
+                  <input type="number" id="posPropina" min="0" step="500" placeholder="0" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Bono / Descuento</label>
+                  <input type="number" id="posBonoDescuento" min="0" step="500" placeholder="0" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Forma de pago</label>
+                <select id="posFormaPago" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                  <option value="">Seleccionar...</option>
+                  <option value="efectivo">Efectivo</option>
+                  <option value="tarjeta">Tarjeta</option>
+                  <option value="transferencia">Transferencia</option>
+                  <option value="nequi">Nequi</option>
+                  <option value="daviplata">Daviplata</option>
+                </select>
+              </div>
+              <div id="posTotalFinal" class="hidden pt-1 border-t border-slate-200">
+                <div class="flex items-center justify-between text-xs text-slate-500">
+                  <span>Total final</span>
+                  <span id="posTotalFinalValue" class="font-bold text-slate-800">$0</span>
+                </div>
+              </div>
+            </div>
+          </details>
           <button id="posRegisterBtn" class="w-full btn-success px-4 py-3 text-white font-semibold rounded-xl shadow-sm touch-target flex items-center justify-center gap-2" disabled>
             <span id="posRegisterText">Agrega productos</span>
           </button>

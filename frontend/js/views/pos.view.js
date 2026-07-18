@@ -89,13 +89,13 @@ async function loadPOS() {
           var base = allProducts.find(function (p) { return p.id === (it.productId); });
           var dish = allDishes.find(function (d) { return d.id === (it.platoId); });
           if (it.platoId && dish) {
-            return { id: dish.id, type: 'dish', name: dish.nombre || it.productName, price: dish.precio_venta || it.unitPrice, qty: it.quantity, platoId: dish.id };
+            return { id: dish.id, type: 'dish', name: dish.nombre || it.productName, price: dish.precio_venta || it.unitPrice, qty: it.quantity, platoId: dish.id, observacion: it.observacion || null };
           }
           if (it.productId && base) {
-            return { id: base.id, type: 'product', name: base.name || it.productName, qty: it.quantity, unidad: base.unidad || 'unidad' };
+            return { id: base.id, type: 'product', name: base.name || it.productName, qty: it.quantity, unidad: base.unidad || 'unidad', observacion: it.observacion || null };
           }
           // Fallback: producto o plato que ya no existe activo
-          return { id: it.productId || it.platoId || it.id, type: it.platoId ? 'dish' : 'product', name: it.productName, qty: it.quantity, price: it.unitPrice, platoId: it.platoId };
+          return { id: it.productId || it.platoId || it.id, type: it.platoId ? 'dish' : 'product', name: it.productName, qty: it.quantity, price: it.unitPrice, platoId: it.platoId, observacion: it.observacion || null };
         });
         state._editingSale = sale;
         if (sale.mesaId) {
@@ -116,6 +116,16 @@ async function loadPOS() {
         var btnText = $('#posRegisterText');
         if (btn) btn.disabled = false;
         if (btnText) btnText.textContent = 'Actualizar Pedido';
+
+        // Cargar campos financieros del pedido original
+        var domEl = document.getElementById('posCostoDomicilio');
+        var propEl = document.getElementById('posPropina');
+        var bonoEl = document.getElementById('posBonoDescuento');
+        var formaEl = document.getElementById('posFormaPago');
+        if (domEl && sale.costoDomicilio) domEl.value = sale.costoDomicilio;
+        if (propEl && sale.propina) propEl.value = sale.propina;
+        if (bonoEl && sale.bonoDescuento) bonoEl.value = sale.bonoDescuento;
+        if (formaEl && sale.formaPago) formaEl.value = sale.formaPago;
       }
     } catch (e) { console.error('[POS] Error loading sale for edit:', e); }
     state.editingPOSOrderId = null;
@@ -125,6 +135,9 @@ async function loadPOS() {
 
   // Configurar modo (mesa/domicilio/recoger)
   initPOSMode();
+
+  // Configurar campos financieros (domicilio, propina, bono, forma_pago)
+  initPOSFinanzas();
 
   // Re-marcar como seleccionadas las cards que ya estan en el pedido
   // (para que el check verde reaparezca al volver al POS).
@@ -273,9 +286,12 @@ function renderPOSOrder() {
   state.posItems.forEach(function (item, idx) {
     var sub = item.price * item.qty;
     total += sub;
+    var obsIcon = item.observacion
+      ? '<span class="text-amber-500 ml-1" title="' + escapeHtml(item.observacion) + '">📝</span>'
+      : '';
     html += '<div class="flex items-center gap-2 py-2 border-b border-slate-100">'
       + '<div class="flex-1 min-w-0">'
-      + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
+      + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.name) + obsIcon + '</p>'
       + '<p class="text-xs text-slate-500">' + Utils.formatCurrency(item.price) + ' c/u</p>'
       + '</div>'
       + '<div class="flex items-center gap-1">'
@@ -283,6 +299,12 @@ function renderPOSOrder() {
       + '<span class="w-7 text-center text-sm font-semibold">' + item.qty + '</span>'
       + '<button class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm" onclick="window.updatePOSQty(' + idx + ', 1)">+</button>'
       + '</div>'
+      + '<button class="pos-note-btn p-1.5 text-slate-300 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors" onclick="window.editPOSObservacion(' + idx + ')" title="Observacion" aria-label="Observacion">'
+      + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>'
+      + '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>'
+      + '</svg>'
+      + '</button>'
       + '<button class="pos-remove-item-btn p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" onclick="window.removePOSItem(' + idx + ')" title="Quitar del pedido" aria-label="Quitar del pedido">'
       + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
       + '<polyline points="3 6 5 6 21 6"></polyline>'
@@ -297,6 +319,9 @@ function renderPOSOrder() {
   container.innerHTML = html;
   $('#posTotal').textContent = Utils.formatCurrency(total);
   if (btn) { btn.disabled = false; if (btnText) btnText.textContent = 'Registrar Pedido'; }
+
+  // Actualizar total final con campos financieros
+  updatePOSTotalFinal();
 
   // Persistir el pedido actual para que sobreviva a navegaciones.
   persistPOSOrder();
@@ -344,6 +369,63 @@ function updatePOSModeBadge() {
   if (!el) return;
   var labels = { mesa: 'Mesa', domicilio: '🛵 Domicilio', recogido: '🏠 Recoger' };
   el.textContent = labels[state.posMode || 'mesa'] || 'Mesa';
+  // Mostrar/ocultar campo costo domicilio segun modo
+  var domRow = $('#posDomicilioRow');
+  if (domRow) {
+    if (state.posMode === 'domicilio') domRow.classList.remove('hidden');
+    else domRow.classList.add('hidden');
+  }
+}
+
+// ============================================
+// Campos financieros del POS
+// ============================================
+function initPOSFinanzas() {
+  var inputs = ['posCostoDomicilio', 'posPropina', 'posBonoDescuento'];
+  inputs.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el && !el._finanzasWired) {
+      el._finanzasWired = true;
+      el.addEventListener('input', updatePOSTotalFinal);
+    }
+  });
+  updatePOSTotalFinal();
+}
+
+function getPOSFinanzas() {
+  var dom = parseFloat((document.getElementById('posCostoDomicilio') || {}).value) || 0;
+  var prop = parseFloat((document.getElementById('posPropina') || {}).value) || 0;
+  var bono = parseFloat((document.getElementById('posBonoDescuento') || {}).value) || 0;
+  var forma = (document.getElementById('posFormaPago') || {}).value || null;
+  return { costoDomicilio: dom, propina: prop, bonoDescuento: bono, formaPago: forma };
+}
+
+function updatePOSTotalFinal() {
+  var fin = getPOSFinanzas();
+  var subtotal = 0;
+  state.posItems.forEach(function (item) { subtotal += (item.price || 0) * item.qty; });
+  var total = subtotal + fin.costoDomicilio - fin.bonoDescuento + fin.propina;
+  var row = document.getElementById('posTotalFinal');
+  var val = document.getElementById('posTotalFinalValue');
+  var hasExtras = fin.costoDomicilio > 0 || fin.propina > 0 || fin.bonoDescuento > 0;
+  if (row && val) {
+    if (hasExtras && state.posItems.length > 0) {
+      row.classList.remove('hidden');
+      val.textContent = Utils.formatCurrency(total);
+    } else {
+      row.classList.add('hidden');
+    }
+  }
+}
+
+function resetPOSFinanzas() {
+  ['posCostoDomicilio', 'posPropina', 'posBonoDescuento'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  var fp = document.getElementById('posFormaPago');
+  if (fp) fp.value = '';
+  updatePOSTotalFinal();
 }
 
 function applyPOSFilter(filter) {
@@ -411,22 +493,29 @@ async function submitPOSOrder() {
       platos.push({
         plato_id: item.platoId,
         cantidad: item.qty,
-        precioUnitario: item.price
+        precioUnitario: item.price,
+        observacion: item.observacion || null
       });
     } else {
       items.push({
         productId: item.id,
-        quantity: item.qty
+        quantity: item.qty,
+        observacion: item.observacion || null
       });
     }
   });
 
+  var fin = getPOSFinanzas();
   var mesaId = $('#posMesa').value || null;
   var payload = {
     paymentMethod: mode === 'mesa' ? 'cocina' : mode,
     mesa_id: mode === 'mesa' ? mesaId : null,
     platos: platos.length > 0 ? platos : undefined,
-    items: items.length > 0 ? items : undefined
+    items: items.length > 0 ? items : undefined,
+    costoDomicilio: fin.costoDomicilio,
+    propina: fin.propina,
+    bonoDescuento: fin.bonoDescuento,
+    formaPago: fin.formaPago
   };
 
   // Loading overlay con animacion energetica.
@@ -478,6 +567,7 @@ async function submitPOSOrder() {
       // Limpiar pedido persistido al registrar con exito.
       try { localStorage.removeItem(POS_ORDER_KEY); } catch (e) { /* noop */ }
       state._lastTicketSale = res.data;
+      resetPOSFinanzas();
       renderPOSOrder();
       renderTicketFromData(res.data, false);
 
@@ -707,6 +797,19 @@ window.updatePOSQty = function (idx, delta) {
   renderPOSOrder();
 }
 
+// editPOSObservacion: abre un prompt para añadir/editar la observacion
+// de un item del pedido (ej. "sin cebolla", "termino medio", etc.)
+window.editPOSObservacion = function (idx) {
+  var item = state.posItems[idx];
+  if (!item) return;
+  var current = item.observacion || '';
+  var obs = prompt('Observacion para "' + item.name + '":', current);
+  if (obs === null) return; // cancelado
+  item.observacion = obs.trim() || null;
+  renderPOSOrder();
+  persistPOSOrder();
+}
+
 window.openPOS = function () {
   location.hash = '#pos';
 }
@@ -887,7 +990,7 @@ function buildPrintDocument(opts) {
       html += '<div class="kitchen-item">'
         + '<span class="kitchen-qty">' + qty + 'x</span>'
         + '<span class="item-name">' + escapeHtml(it.productName) + '</span>' + platoTag;
-      if (it.nota) html += '<div class="item-meta">Nota: ' + escapeHtml(it.nota) + '</div>';
+      if (it.observacion) html += '<div class="item-meta" style="font-weight:700">Obs: ' + escapeHtml(it.observacion) + '</div>';
       if (it.ingredientesConsumidos && it.ingredientesConsumidos.length > 0) {
         html += '<div class="item-meta" style="font-size:10px;color:#444">'
           + it.ingredientesConsumidos.map(function (ing) {

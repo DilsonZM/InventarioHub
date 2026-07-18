@@ -739,7 +739,7 @@ window.viewSale = async function (id) {
   try {
     var res = await API.sales.get(id);
     var sale = res.data;
-    var total = sale.items.reduce(function (sum, i) { return sum + (i.subtotal || 0); }, 0);
+    var total = sale.total || sale.items.reduce(function (sum, i) { return sum + (i.subtotal || 0); }, 0);
 
     var detailEl = $('#detailSaleId');
     if (detailEl) detailEl.textContent = '#' + sale.id.slice(-6);
@@ -761,10 +761,14 @@ window.viewSale = async function (id) {
       var badge = item.esPlato
         ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-brand-100 text-brand-800 text-[10px] font-medium ml-1">Plato</span>'
         : '';
+      var obsHtml = item.observacion
+        ? '<p class="text-xs text-amber-600 italic mt-0.5">📝 ' + escapeHtml(item.observacion) + '</p>'
+        : '';
       return '<div class="flex items-center justify-between px-4 py-3">'
         + '<div class="flex-1 min-w-w-0">'
         + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.productName) + ' x' + item.quantity + badge + '</p>'
         + '<p class="text-xs text-slate-500">' + formatCurrency(item.unitPrice || 0) + ' c/u · ' + formatCurrency(item.subtotal || 0) + '</p>'
+        + obsHtml
         + '</div>'
         + '<p class="text-sm font-semibold text-slate-800 ml-4">' + formatCurrency(item.subtotal || 0) + '</p>'
         + '</div>';
@@ -784,11 +788,89 @@ window.viewSale = async function (id) {
         + '</div>';
     }
 
+    // Seccion financiera: domicilio, propina, bono, forma de pago
+    var finHtml = '';
+    var hasFin = (sale.costoDomicilio > 0) || (sale.propina > 0) || (sale.bonoDescuento > 0) || sale.formaPago;
+    if (hasFin) {
+      finHtml = '<div class="border-t border-slate-100 px-4 py-3 bg-slate-50/50">'
+        + '<p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Detalle financiero</p>';
+      if (sale.costoDomicilio > 0) {
+        finHtml += '<div class="flex items-center justify-between text-xs py-0.5">'
+          + '<span class="text-slate-600">🛵 Costo domicilio</span>'
+          + '<span class="font-medium text-slate-800">' + formatCurrency(sale.costoDomicilio) + '</span>'
+          + '</div>';
+      }
+      if (sale.bonoDescuento > 0) {
+        finHtml += '<div class="flex items-center justify-between text-xs py-0.5">'
+          + '<span class="text-slate-600">🎁 Bono / Descuento</span>'
+          + '<span class="font-medium text-rose-600">-' + formatCurrency(sale.bonoDescuento) + '</span>'
+          + '</div>';
+      }
+      if (sale.propina > 0) {
+        finHtml += '<div class="flex items-center justify-between text-xs py-0.5">'
+          + '<span class="text-slate-600">💰 Propina</span>'
+          + '<span class="font-medium text-emerald-600">' + formatCurrency(sale.propina) + '</span>'
+          + '</div>';
+      }
+      if (sale.formaPago) {
+        finHtml += '<div class="flex items-center justify-between text-xs py-0.5">'
+          + '<span class="text-slate-600">Forma de pago</span>'
+          + '<span class="font-medium text-slate-800 capitalize">' + escapeHtml(sale.formaPago) + '</span>'
+          + '</div>';
+      }
+      // Subtotal + total desglose
+      finHtml += '<div class="flex items-center justify-between text-xs py-0.5 mt-1 pt-1 border-t border-slate-200">'
+        + '<span class="text-slate-500">Subtotal platos</span>'
+        + '<span class="text-slate-600">' + formatCurrency(sale.subtotal || 0) + '</span>'
+        + '</div>';
+      finHtml += '<div class="flex items-center justify-between text-xs py-0.5">'
+        + '<span class="font-semibold text-slate-700">Total final</span>'
+        + '<span class="font-bold text-slate-900">' + formatCurrency(sale.total || 0) + '</span>'
+        + '</div>';
+      finHtml += '</div>';
+    }
+
+    // Boton editar propina (visible para quien tenga permiso de editar)
+    var tipBtnHtml = '';
+    if (can('puedeEditarSalidas')) {
+      tipBtnHtml = '<div class="px-4 py-2 border-t border-slate-100">'
+        + '<button onclick="window.editSaleTip(\'' + sale.id + '\', ' + (sale.propina || 0) + ')" '
+        + 'class="w-full text-xs text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg py-2 transition-colors flex items-center justify-center gap-1.5">'
+        + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+        + (sale.propina > 0 ? 'Editar propina (' + formatCurrency(sale.propina) + ')' : 'Agregar propina')
+        + '</button>'
+        + '</div>';
+    }
+
     var itemsEl = $('#detailSaleItems');
-    if (itemsEl) itemsEl.innerHTML = itemsHtml + ingsHtml;
+    if (itemsEl) itemsEl.innerHTML = itemsHtml + ingsHtml + finHtml + tipBtnHtml;
     openModal('saleDetailModal');
   } catch (err) {
     showToast('Error al cargar salida: ' + (err.message || ''), 'error');
+  }
+};
+
+// editSaleTip: abre un prompt para editar la propina de una venta
+window.editSaleTip = async function (id, currentTip) {
+  var input = prompt('Propina actual: ' + formatCurrency(currentTip) + '\nNueva propina (0 para quitar):', currentTip);
+  if (input === null) return;
+  var newTip = parseFloat(input);
+  if (isNaN(newTip) || newTip < 0) {
+    showToast('Valor invalido', 'error');
+    return;
+  }
+  try {
+    var res = await API.sales.updateTip(id, newTip);
+    if (res.success) {
+      showToast('Propina actualizada: ' + formatCurrency(res.data.propina), 'success');
+      // Recargar el modal con los datos actualizados
+      viewSale(id);
+      loadSales();
+    } else {
+      showToast(res.message || 'Error al actualizar', 'error');
+    }
+  } catch (err) {
+    showToast('Error: ' + (err.message || ''), 'error');
   }
 };
 
