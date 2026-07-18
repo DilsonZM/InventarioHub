@@ -54,6 +54,10 @@ router.get('/', async (req, res) => {
       estadoCocina: sale.estado_cocina || 'pendiente',
       mesaId: sale.mesa_id || null,
       mesaNombre: sale.mesas?.nombre || null,
+      costoDomicilio: parseFloat(sale.costo_domicilio) || 0,
+      propina: parseFloat(sale.propina) || 0,
+      bonoDescuento: parseFloat(sale.bono_descuento) || 0,
+      formaPago: sale.forma_pago || null,
       userId: sale.usuario_id,
       username: sale.perfiles?.username || 'Desconocido',
       usuario_nombre: sale.perfiles?.nombre_completo || sale.perfiles?.username || 'Desconocido',
@@ -68,6 +72,7 @@ router.get('/', async (req, res) => {
         cantidadPresentacion: item.cantidad_presentacion,
         unidadPresentacion: item.unidad_presentacion,
         factorConversion: item.factor_conversion,
+        observacion: item.observacion || null,
         platoId: item.plato_id || null,
         esPlato: item.es_plato || false
       }))
@@ -133,6 +138,10 @@ router.get('/:id', async (req, res) => {
       estadoCocina: data.estado_cocina || 'pendiente',
       mesaId: data.mesa_id || null,
       mesaNombre: data.mesas?.nombre || null,
+      costoDomicilio: parseFloat(data.costo_domicilio) || 0,
+      propina: parseFloat(data.propina) || 0,
+      bonoDescuento: parseFloat(data.bono_descuento) || 0,
+      formaPago: data.forma_pago || null,
       userId: data.usuario_id,
       username: data.perfiles?.username || 'Desconocido',
       clienteNombre: data.cliente_nombre,
@@ -146,6 +155,7 @@ router.get('/:id', async (req, res) => {
         cantidadPresentacion: item.cantidad_presentacion,
         unidadPresentacion: item.unidad_presentacion,
         factorConversion: item.factor_conversion,
+        observacion: item.observacion || null,
         platoId: item.plato_id || null,
         esPlato: item.es_plato || false
       })),
@@ -330,7 +340,8 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
           precio_unitario: precio2,
           subtotal: subDish,
           plato_id: pd2.plato_id,
-          es_plato: true
+          es_plato: true,
+          observacion: pd2.observacion || null
         });
       }
     }
@@ -360,7 +371,8 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
           subtotal: sub,
           cantidad_presentacion: item.cantidadPresentacion || null,
           unidad_presentacion: item.unidadPresentacion || null,
-          factor_conversion: item.factorConversion || 1
+          factor_conversion: item.factorConversion || 1,
+          observacion: item.observacion || null
         });
       }
     }
@@ -368,9 +380,12 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
     var { error: detallesError } = await supabase.from('venta_detalles').insert(detallesNuevos);
     if (detallesError) throw detallesError;
 
-    // === 8. Actualizar cabecera ===
-    var impuesto = subtotal * 0.19;
-    var total = subtotal * 1.19;
+    // === 8. Actualizar cabecera (IVA incluido: no cobrar adicional) ===
+    var costoDomicilio = parseFloat(req.body.costoDomicilio) || parseFloat(original.costo_domicilio) || 0;
+    var propina = parseFloat(req.body.propina) || parseFloat(original.propina) || 0;
+    var bonoDescuento = parseFloat(req.body.bonoDescuento) || parseFloat(original.bono_descuento) || 0;
+    var impuesto = Math.round(subtotal * 19 / 119 * 100) / 100;
+    var total = subtotal + costoDomicilio - bonoDescuento + propina;
     var { data: updated, error: updateError } = await supabase
       .from('ventas')
       .update({
@@ -378,7 +393,11 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
         mesa_id: mesa_id || null,
         subtotal: subtotal,
         impuesto: impuesto,
-        total: total
+        total: total,
+        costo_domicilio: costoDomicilio,
+        propina: propina,
+        bono_descuento: bonoDescuento,
+        forma_pago: req.body.formaPago || original.forma_pago || null
       })
       .eq('id', req.params.id)
       .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
@@ -446,7 +465,7 @@ router.delete('/:id', requirePermission('puede_eliminar_salidas'), async (req, r
 
 router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
   try {
-    const { items, platos, paymentMethod, clienteNombre, mesa_id } = req.body;
+    const { items, platos, paymentMethod, clienteNombre, mesa_id, costoDomicilio, propina, bonoDescuento, formaPago } = req.body;
 
     if (platos && Array.isArray(platos) && platos.length > 0) {
       await handleDishSale(req, res);
@@ -473,11 +492,18 @@ router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
         cantidad: item.quantity,
         cantidad_presentacion: item.cantidadPresentacion || null,
         unidad_presentacion: item.unidadPresentacion || null,
-        factor_conversion: item.factorConversion || 1
+        factor_conversion: item.factorConversion || 1,
+        observacion: item.observacion || null
       })),
       p_metodo_pago: paymentMethod,
       p_usuario_id: req.user.id || null,
-      p_cliente_nombre: clienteNombre || null
+      p_cliente_nombre: clienteNombre || null,
+      p_costo_domicilio: parseFloat(costoDomicilio) || 0,
+      p_propina: parseFloat(propina) || 0,
+      p_bono_descuento: parseFloat(bonoDescuento) || 0,
+      p_forma_pago: formaPago || null,
+      p_mesa_id: mesa_id || null,
+      p_estado_cocina: 'pendiente'
     });
 
     if (error) throw error;
@@ -518,6 +544,10 @@ function mapSaleResponse(sale) {
     subtotal: sale.subtotal, impuesto: sale.impuesto,
     paymentMethod: sale.metodo_pago, estado: sale.estado,
     estadoCocina: sale.estado_cocina || 'pendiente',
+    costoDomicilio: parseFloat(sale.costo_domicilio) || 0,
+    propina: parseFloat(sale.propina) || 0,
+    bonoDescuento: parseFloat(sale.bono_descuento) || 0,
+    formaPago: sale.forma_pago || null,
     userId: sale.usuario_id,
     username: sale.perfiles ? sale.perfiles.username : 'Desconocido',
     usuario_nombre: sale.perfiles ? (sale.perfiles.nombre_completo || sale.perfiles.username) : 'Desconocido',
@@ -532,6 +562,7 @@ function mapSaleResponse(sale) {
         cantidadPresentacion: item.cantidad_presentacion,
         unidadPresentacion: item.unidad_presentacion,
         factorConversion: item.factor_conversion,
+        observacion: item.observacion || null,
         platoId: item.plato_id || null, esPlato: item.es_plato || false
       };
     })
@@ -590,11 +621,19 @@ async function handleDishSale(req, res) {
     }
 
     var numVenta = 'P-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    var costoDomicilio = parseFloat(req.body.costoDomicilio) || 0;
+    var propina = parseFloat(req.body.propina) || 0;
+    var bonoDescuento = parseFloat(req.body.bonoDescuento) || 0;
+    var impuestoVenta = Math.round(totalVenta * 19 / 119 * 100) / 100;
+    var totalFinal = totalVenta + costoDomicilio - bonoDescuento + propina;
     var { data: venta, error: ventaErr } = await supabase.from('ventas').insert({
       numero_venta: numVenta, metodo_pago: paymentMethod, usuario_id: req.user ? req.user.id : null,
       cliente_nombre: clienteNombre || null, estado: saleEstado,
       mesa_id: req.body.mesa_id || null,
-      subtotal: totalVenta, impuesto: totalVenta * 0.19, total: totalVenta * 1.19
+      subtotal: totalVenta, impuesto: impuestoVenta, total: totalFinal,
+      costo_domicilio: costoDomicilio, propina: propina, bono_descuento: bonoDescuento,
+      forma_pago: req.body.formaPago || null,
+      estado_cocina: req.body.estadoCocina || 'pendiente'
     }).select().single();
     if (ventaErr) throw ventaErr;
 
@@ -608,7 +647,8 @@ async function handleDishSale(req, res) {
       await supabase.from('venta_detalles').insert({
         venta_id: venta.id, producto_id: null, producto_nombre: pi2.nombre,
         cantidad: cant2, precio_unitario: precio2, subtotal: precio2 * cant2,
-        plato_id: pd2.plato_id, es_plato: true
+        plato_id: pd2.plato_id, es_plato: true,
+        observacion: pd2.observacion || null
       });
     }
 
@@ -627,12 +667,14 @@ async function handleDishSale(req, res) {
         await supabase.from('venta_detalles').insert({
           venta_id: venta.id, producto_id: it.productId, producto_nombre: prod.nombre,
           cantidad: itemQty, precio_unitario: prod.precio_venta, subtotal: itemSub,
-          es_plato: false
+          es_plato: false, observacion: it.observacion || null
         });
       }
-      // Actualizar total de la venta
+      // Actualizar total de la venta (IVA incluido: no cobrar adicional)
+      var impFinal = Math.round(totalVenta * 19 / 119 * 100) / 100;
+      var totFinal = totalVenta + costoDomicilio - bonoDescuento + propina;
       await supabase.from('ventas').update({
-        subtotal: totalVenta, impuesto: totalVenta * 0.19, total: totalVenta * 1.19
+        subtotal: totalVenta, impuesto: impFinal, total: totFinal
       }).eq('id', venta.id);
     }
 
@@ -699,6 +741,106 @@ router.patch('/:id/estado-cocina', requirePermission('puede_crear_salidas'), asy
   } catch (err) {
     console.error('PATCH estado-cocina error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
+// PUT /api/sales/:id/tip - editar propina (permitido siempre, incluso si estado='completada')
+router.put('/:id/tip', requirePermission('puede_editar_salidas'), async (req, res) => {
+  try {
+    var propina = parseFloat(req.body.propina);
+    if (isNaN(propina) || propina < 0) {
+      return res.status(400).json({ success: false, message: 'Propina invalida. Debe ser un numero >= 0' });
+    }
+
+    var { data: venta, error: getError } = await supabase
+      .from('ventas')
+      .select('id, subtotal, costo_domicilio, bono_descuento, propina')
+      .eq('id', req.params.id)
+      .single();
+    if (getError || !venta) {
+      return res.status(404).json({ success: false, message: 'Venta no encontrada' });
+    }
+
+    var subtotal = parseFloat(venta.subtotal) || 0;
+    var domicilio = parseFloat(venta.costo_domicilio) || 0;
+    var bono = parseFloat(venta.bono_descuento) || 0;
+    var nuevoTotal = subtotal + domicilio - bono + propina;
+
+    var { data: updated, error: updateError } = await supabase
+      .from('ventas')
+      .update({ propina: propina, total: nuevoTotal })
+      .eq('id', req.params.id)
+      .select('id, propina, total')
+      .single();
+    if (updateError) throw updateError;
+
+    res.json({ success: true, data: { propina: updated.propina, total: updated.total }, message: 'Propina actualizada' });
+  } catch (err) {
+    console.error('PUT tip error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
+// POST /api/sales/comanda - crear comanda (pedido inicial, estado pendiente)
+// Descuenta stock pero no factura (estado = 'pendiente', se factura despues)
+router.post('/comanda', requirePermission('puede_crear_salidas'), async (req, res) => {
+  try {
+    // Reusar la logica de POST / pero forzando estado='pendiente'
+    req.body.estado = 'pendiente';
+    req.body.estadoCocina = 'pendiente';
+
+    // Si hay platos, usar handleDishSale (que ya maneja estado='pendiente' sin descontar stock)
+    if (req.body.platos && Array.isArray(req.body.platos) && req.body.platos.length > 0) {
+      await handleDishSale(req, res);
+      return;
+    }
+
+    // Si solo hay items directos, usar procesar_venta con estado pendiente
+    const { items, paymentMethod, clienteNombre, mesa_id, costoDomicilio, propina, bonoDescuento, formaPago } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'La comanda debe contener al menos un producto o plato' });
+    }
+
+    if (!paymentMethod) {
+      return res.status(400).json({ success: false, message: 'Metodo de pago requerido' });
+    }
+
+    const { data: saleId, error } = await supabase.rpc('procesar_venta', {
+      p_items: items.map(item => ({
+        producto_id: item.productId,
+        cantidad: item.quantity,
+        cantidad_presentacion: item.cantidadPresentacion || null,
+        unidad_presentacion: item.unidadPresentacion || null,
+        factor_conversion: item.factorConversion || 1,
+        observacion: item.observacion || null
+      })),
+      p_metodo_pago: paymentMethod,
+      p_usuario_id: req.user.id || null,
+      p_cliente_nombre: clienteNombre || null,
+      p_costo_domicilio: parseFloat(costoDomicilio) || 0,
+      p_propina: parseFloat(propina) || 0,
+      p_bono_descuento: parseFloat(bonoDescuento) || 0,
+      p_forma_pago: formaPago || null,
+      p_mesa_id: mesa_id || null,
+      p_estado_cocina: 'pendiente'
+    });
+
+    if (error) throw error;
+
+    // Marcar como pendiente (comanda, no facturada)
+    await supabase.from('ventas').update({ estado: 'pendiente' }).eq('id', saleId);
+
+    const { data: sale } = await supabase
+      .from('ventas')
+      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
+      .eq('id', saleId)
+      .single();
+
+    res.status(201).json({ success: true, data: mapSaleResponse(sale), message: 'Comanda registrada (pendiente)' });
+  } catch (err) {
+    console.error('POST comanda error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Error del servidor' });
   }
 });
 

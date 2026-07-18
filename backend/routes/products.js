@@ -117,6 +117,59 @@ router.get('/low-stock', async (req, res) => {
   }
 });
 
+// POST /api/products/merma - registrar merma (perdida operativa, descuenta stock)
+// NOTA: debe ir ANTES de GET /:id para que Express no lo confunda con un id
+router.post('/merma', requirePermission('puede_crear_salidas'), async (req, res) => {
+  try {
+    const { productId, cantidad, motivo } = req.body;
+
+    if (!productId || !cantidad || parseFloat(cantidad) <= 0) {
+      return res.status(400).json({ success: false, message: 'productId y cantidad (> 0) son requeridos' });
+    }
+
+    const { data: producto, error: prodError } = await supabase
+      .from('productos')
+      .select('id, nombre, stock_actual')
+      .eq('id', productId)
+      .single();
+    if (prodError || !producto) {
+      return res.status(404).json({ success: false, message: 'Producto no encontrado' });
+    }
+
+    if (parseFloat(producto.stock_actual) < parseFloat(cantidad)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stock insuficiente para merma. Disponible: ' + parseFloat(producto.stock_actual)
+      });
+    }
+
+    const { data: movId, error: movError } = await supabase.rpc('registrar_movimiento', {
+      p_producto_id: productId,
+      p_tipo: 'merma',
+      p_cantidad: parseFloat(cantidad),
+      p_motivo: motivo || 'Merma registrada',
+      p_usuario_id: req.user ? req.user.id : null
+    });
+
+    if (movError) throw movError;
+
+    const { data: updated } = await supabase
+      .from('productos')
+      .select('id, nombre, stock_actual')
+      .eq('id', productId)
+      .single();
+
+    res.status(201).json({
+      success: true,
+      data: { movimientoId: movId, producto: updated },
+      message: 'Merma registrada: ' + producto.nombre + ' (-' + cantidad + ')'
+    });
+  } catch (err) {
+    console.error('Merma error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Error del servidor' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
