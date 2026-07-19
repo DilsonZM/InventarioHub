@@ -54,6 +54,9 @@ async function initSales() {
 
   initFilters('sales');
 
+  // Restaurar filtros persistidos (sobreescribe default 'today' si habia algo guardado)
+  restoreSalesFilters();
+
   // Wire payment modal inputs to recalculate total
   ['payPropina', 'payBono'].forEach(function (id) {
     var el = document.getElementById(id);
@@ -169,6 +172,9 @@ async function initSales() {
 }
 
 async function loadSales() {
+  // Persistir filtros actuales
+  saveSalesFilters();
+
   var params = {};
   var from = $('#filterDateFrom').value;
   var to = $('#filterDateTo').value;
@@ -963,7 +969,23 @@ window.printTicketFromDetail = async function (id) {
 window.printPaymentSale = function () {
   var sale = state._paymentSale;
   if (!sale) { showToast('Sin datos del pedido', 'error'); return; }
-  window.printTicket(sale);
+
+  // Tomar los valores actuales del formulario (no los cargados al abrir)
+  var formaPago = (document.getElementById('payFormaPago') || {}).value || null;
+  var propina = parseFloat((document.getElementById('payPropina') || {}).value) || 0;
+  var bono = parseFloat((document.getElementById('payBono') || {}).value) || 0;
+  var subtotal = sale.subtotal || 0;
+  var domicilio = sale.costoDomicilio || 0;
+  var total = subtotal + domicilio - bono + propina;
+
+  // Clonar la venta con los valores del form
+  var saleClone = JSON.parse(JSON.stringify(sale));
+  saleClone.formaPago = formaPago;
+  saleClone.propina = propina;
+  saleClone.bonoDescuento = bono;
+  saleClone.total = total;
+
+  window.printTicket(saleClone);
 };
 
 window.deleteSale = function (id) {
@@ -1029,6 +1051,60 @@ window.advanceOrderState = async function (id) {
 };
 
 
+
+// ============================================
+// Persistencia de filtros (localStorage)
+// ============================================
+var SALES_FILTERS_KEY = 'salesFiltersState';
+
+function saveSalesFilters() {
+  try {
+    var state = {
+      dateFrom: $('#filterDateFrom').value || '',
+      dateTo: $('#filterDateTo').value || '',
+      period: $('#filterQuickPeriod').value || '',
+      mesa: $('#filterMesa').value || '',
+      numVenta: ($('#filterNumVenta') ? $('#filterNumVenta').value : '') || '',
+      vendedor: ($('#filterVendedor') ? $('#filterVendedor').value : '') || ''
+    };
+    localStorage.setItem(SALES_FILTERS_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+function restoreSalesFilters() {
+  try {
+    var saved = localStorage.getItem(SALES_FILTERS_KEY);
+    if (!saved) return;
+    var f = JSON.parse(saved);
+
+    // Solo restaurar si hay algo guardado (no vacio)
+    var hasFilters = f.dateFrom || f.dateTo || f.period || f.mesa || f.numVenta || f.vendedor;
+    if (!hasFilters) return;
+
+    if (f.dateFrom && $('#filterDateFrom')) $('#filterDateFrom').value = f.dateFrom;
+    if (f.dateTo && $('#filterDateTo')) $('#filterDateTo').value = f.dateTo;
+    if (f.period && $('#filterQuickPeriod')) {
+      $('#filterQuickPeriod').value = f.period;
+      // Si hay periodo, limpiar fechas manuales (como hace initFilters)
+      if ($('#filterDateFrom')) $('#filterDateFrom').value = '';
+      if ($('#filterDateTo')) $('#filterDateTo').value = '';
+    }
+    if (f.mesa && $('#filterMesa')) $('#filterMesa').value = f.mesa;
+    if (f.numVenta && $('#filterNumVenta')) $('#filterNumVenta').value = f.numVenta;
+    if (f.vendedor && $('#filterVendedor')) $('#filterVendedor').value = f.vendedor;
+
+    // Actualizar boton Limpiar
+    var ids = {
+      view: 'sales',
+      dateFrom: '#filterDateFrom',
+      dateTo: '#filterDateTo',
+      period: '#filterQuickPeriod',
+      product: '#filterMesa',
+      clear: '#clearFiltersBtn'
+    };
+    updateClearBtn(ids);
+  } catch (e) {}
+}
 
 // Compatibilidad con codigo heredado (window.*)
 if (typeof window !== "undefined") {
