@@ -20,7 +20,27 @@ async function initInventory() {
 
   $('#searchProducts').addEventListener('input', debounce(function () { loadProducts(); }, 300));
   $('#filterCategory').addEventListener('change', function () { loadProducts(); });
-  $('#filterStatus').addEventListener('change', function () { loadProducts(); });
+
+  // Pills de filtro multiple de estado
+  document.querySelectorAll('.status-pill').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      var status = pill.dataset.status;
+      var active = pill.classList.toggle('status-pill--active');
+      if (active) {
+        pill.classList.add('border-brand-300', 'bg-brand-50', 'text-brand-700');
+        pill.classList.remove('border-slate-200', 'bg-white', 'text-slate-500');
+      } else {
+        pill.classList.remove('border-brand-300', 'bg-brand-50', 'text-brand-700');
+        pill.classList.add('border-slate-200', 'bg-white', 'text-slate-500');
+      }
+      // Actualizar hidden input con valores seleccionados
+      var sel = [];
+      document.querySelectorAll('.status-pill--active').forEach(function (p) { sel.push(p.dataset.status); });
+      $('#filterStatus').value = sel.join(',');
+      loadProducts();
+    });
+  });
+
   $('#addProductBtn').addEventListener('click', function () { openProductModal(); });
 
   // Merma
@@ -73,14 +93,19 @@ async function loadProducts() {
   try {
     var res = await API.products.list(params);
     var data = res.data;
-    // Filtrado por estado (cliente)
+    // Filtrado por estado (cliente) — soporta multiples valores separados por coma
     if (statusFilter) {
-      data = data.filter(function (p) {
-        if (statusFilter === 'agotado') return p.stock <= 0;
-        if (statusFilter === 'stock_bajo') return p.stock > 0 && p.stock <= p.minStock;
-        if (statusFilter === 'disponible') return p.stock > p.minStock;
-        return true;
-      });
+      var statuses = statusFilter.split(',').filter(Boolean);
+      if (statuses.length > 0) {
+        data = data.filter(function (p) {
+          return statuses.some(function (s) {
+            if (s === 'agotado') return p.stock <= 0;
+            if (s === 'stock_bajo') return p.stock > 0 && p.stock <= p.minStock;
+            if (s === 'disponible') return p.stock > p.minStock;
+            return true;
+          });
+        });
+      }
     }
     state.products = data;
     renderProductsTable();
@@ -342,10 +367,19 @@ function exportInventoryCSV() {
   var swalMuted = isDark ? '#64748b' : '#94a3b8';
   var swalBoldColor = isDark ? '#f1f5f9' : '#0f172a';
 
+  var statusFilter = $('#filterStatus').value;
+  var filterLabel = '';
+  if (statusFilter) {
+    var labels = statusFilter.split(',').map(function (s) {
+      return s.replace(/_/g, ' ').replace(/\b\w/g, function (l) { return l.toUpperCase(); });
+    }).join(' + ');
+    filterLabel = '<br><span style="color:#d97706;font-size:12px">Filtro: ' + labels + '</span>';
+  }
+
   Swal.fire({
     title: 'Exportar reporte',
     html: '<p style="color:' + swalSubColor + '">Se generará un reporte de <b style="color:' + swalBoldColor + '">' + products.length + ' productos</b>.'
-      + (($('#filterStatus').value) ? '<br><span style="color:#d97706;font-size:12px">Filtro activo: ' + $('#filterStatus').value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + '</span>' : '')
+      + filterLabel
       + '</p>'
       + '<p style="color:' + swalMuted + ';font-size:12px;margin-top:6px">Se abrirá en una ventana para imprimir o guardar como PDF.</p>',
     icon: 'question',
