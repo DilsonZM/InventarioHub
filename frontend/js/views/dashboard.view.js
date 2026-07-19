@@ -458,16 +458,18 @@ function exportLowStockCSV() {
     return;
   }
   Swal.fire({
-    title: '¿Generar reporte?',
-    html: '<p class="text-sm text-slate-600">Se generará un reporte de <b class="text-slate-800">' + products.length + ' productos</b> con stock bajo.</p>'
-      + '<p class="text-xs text-slate-400 mt-2">Se abrirá en una ventana para imprimir o guardar como PDF.</p>',
+    title: 'Exportar reporte',
+    html: '<p style="color:#475569">Se generará un reporte de <b style="color:#0f172a">' + products.length + ' productos</b> con stock bajo.</p>'
+      + '<p style="color:#94a3b8;font-size:12px;margin-top:6px">Se abrirá en una ventana para imprimir o guardar como PDF.</p>',
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: 'Generar PDF',
+    confirmButtonText: 'Exportar',
     cancelButtonText: 'Cancelar',
     confirmButtonColor: '#073626',
     cancelButtonColor: '#94a3b8',
-    customClass: { popup: 'rounded-2xl', confirmButton: 'rounded-xl', cancelButton: 'rounded-xl' }
+    background: '#ffffff',
+    color: '#0f172a',
+    customClass: { popup: 'rounded-2xl', title: 'swal-title-fix', htmlContainer: 'swal-html-fix', confirmButton: 'rounded-xl', cancelButton: 'rounded-xl' }
   }).then(function (result) {
     if (result.isConfirmed) Utils.printStockReport(products, 'Productos con Stock Bajo');
   });

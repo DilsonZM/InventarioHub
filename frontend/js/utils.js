@@ -167,8 +167,9 @@ export function printStockReport(products, title) {
 
   products.forEach(p => {
     if (p.stock <= 0) criticalCount++;
-    totalNeeded += (p.minStock || 0) - (p.stock || 0);
+    totalNeeded += Math.max(0, (p.minStock || 0) - (p.stock || 0));
   });
+  totalNeeded = Math.round(totalNeeded * 10) / 10;
 
   const html = `<!DOCTYPE html>
 <html lang="es">

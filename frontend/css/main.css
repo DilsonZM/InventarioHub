@@ -1324,3 +1324,11 @@
 .sales-kpi-slate.is-active {
   box-shadow: 0 0 0 2px #94a3b8, 0 12px 28px -8px rgba(148, 163, 184, 0.30) !important;
 }
+
+/* SweetAlert2: forzar colores claros siempre (evita texto invisible en dark mode) */
+.swal2-popup {
+  color: #0f172a !important;
+  background: #fff !important;
+}
+.swal2-title { color: #0f172a !important; }
+.swal2-html-container { color: #475569 !important; }
