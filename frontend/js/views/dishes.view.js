@@ -222,8 +222,8 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
     + '<div class="ing-dropdown hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto"></div>'
     + '</div>'
     + '<div class="w-24 shrink-0">'
-    + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
-    + '<input type="number" class="ing-qty w-full px-2 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + (cantidadPreset || '') + '">'
+    + '<label class="ing-qty-label block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
+    + '<input type="number" class="ing-qty w-full px-2 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + (tc.rendimiento ? '' : (cantidadPreset || '')) + '"' + (tc.rendimiento ? ' style="display:none"' : '') + '>'
     + '</div>'
     + '<div class="w-28 shrink-0">'
     + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Unidad</label>'
@@ -248,7 +248,7 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
     + '<input type="number" class="ing-tc-rendimiento w-16 px-2 py-1 border border-amber-200 rounded-lg text-[11px] text-center bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="1" step="1" value="' + (tc.rendimiento || 10) + '" placeholder="Porc.">'
     + '<span class="text-[11px] text-slate-400 self-center">porciones =</span>'
     + '<input type="number" class="ing-tc-cantidad w-18 px-2 py-1 border border-amber-200 rounded-lg text-[11px] text-center bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="0.001" step="0.001" value="' + (tc.cantidad_tanda || tc.cantidad || '') + '" placeholder="Cant.">'
-    + '<span class="text-[11px] text-slate-400 self-center">por tanda</span>'
+    + '<span class="ing-tc-unit text-[11px] text-slate-400 self-center">por tanda</span>'
     + '</div>'
     + '</div>'
     + '</div>'
@@ -339,6 +339,9 @@ function bindIngredientEvents() {
                   return '<option value="' + p.value + '"' + (p.factor === 1 ? ' selected' : '') + '>' + escapeHtml(p.label) + '</option>';
                 }).join('');
               }
+              // Mostrar unidad base en el label de "por tanda"
+              var tcUnitLabel = row.querySelector('.ing-tc-unit');
+              if (tcUnitLabel) tcUnitLabel.textContent = 'por tanda (' + escapeHtml(unidad) + ')';
             });
           });
         }
@@ -361,12 +364,19 @@ function bindIngredientEvents() {
       tcCheck.addEventListener('change', function () {
         var fields = row.querySelector('.ing-tc-fields');
         var badge = row.querySelector('.ing-tc-badge');
+        var qtyInput = row.querySelector('.ing-qty');
+        var qtyLabel = row.querySelector('.ing-qty-label');
         if (this.checked) {
           if (fields) fields.classList.remove('hidden');
           if (badge) badge.classList.remove('hidden');
+          // Ocultar label/input de cantidad normal (no aplica)
+          if (qtyInput) { qtyInput.style.display = 'none'; qtyInput.dataset.savedQty = qtyInput.value; qtyInput.value = ''; }
+          if (qtyLabel) qtyLabel.textContent = 'N/A';
         } else {
           if (fields) fields.classList.add('hidden');
           if (badge) badge.classList.add('hidden');
+          if (qtyInput) { qtyInput.style.display = ''; if (qtyInput.dataset.savedQty) qtyInput.value = qtyInput.dataset.savedQty; }
+          if (qtyLabel) qtyLabel.textContent = 'Cantidad';
         }
       });
     }
@@ -418,7 +428,7 @@ function renderIngredientList(ingredientes) {
       + '<input type="number" class="ing-tc-rendimiento w-16 px-2 py-1 border border-amber-200 rounded-lg text-[11px] text-center bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="1" step="1" value="' + (isTipoC ? (ing.rendimiento_por_tanda || 10) : 10) + '" placeholder="Porc.">'
       + '<span class="text-[11px] text-slate-400 self-center">porciones =</span>'
       + '<input type="number" class="ing-tc-cantidad w-18 px-2 py-1 border border-amber-200 rounded-lg text-[11px] text-center bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="0.001" step="0.001" value="' + (isTipoC ? (ing.cantidad_tanda || ing.cantidad) : ing.cantidad) + '" placeholder="Cant.">'
-      + '<span class="text-[11px] text-slate-400 self-center">por tanda</span>'
+      + '<span class="ing-tc-unit text-[11px] text-slate-400 self-center">por tanda</span>'
       + '</div>'
       + '</div>'
       + '</div>'
