@@ -335,21 +335,28 @@ function exportInventoryCSV() {
     Utils.printStockReport(products, 'Inventario');
     return;
   }
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var swalBg = isDark ? '#1e293b' : '#ffffff';
+  var swalColor = isDark ? '#e2e8f0' : '#0f172a';
+  var swalSubColor = isDark ? '#94a3b8' : '#475569';
+  var swalMuted = isDark ? '#64748b' : '#94a3b8';
+  var swalBoldColor = isDark ? '#f1f5f9' : '#0f172a';
+
   Swal.fire({
     title: 'Exportar reporte',
-    html: '<p style="color:#475569">Se generará un reporte de <b style="color:#0f172a">' + products.length + ' productos</b>.'
+    html: '<p style="color:' + swalSubColor + '">Se generará un reporte de <b style="color:' + swalBoldColor + '">' + products.length + ' productos</b>.'
       + (($('#filterStatus').value) ? '<br><span style="color:#d97706;font-size:12px">Filtro activo: ' + $('#filterStatus').value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + '</span>' : '')
       + '</p>'
-      + '<p style="color:#94a3b8;font-size:12px;margin-top:6px">Se abrirá en una ventana para imprimir o guardar como PDF.</p>',
+      + '<p style="color:' + swalMuted + ';font-size:12px;margin-top:6px">Se abrirá en una ventana para imprimir o guardar como PDF.</p>',
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'Exportar',
     cancelButtonText: 'Cancelar',
     confirmButtonColor: '#073626',
-    cancelButtonColor: '#94a3b8',
-    background: '#ffffff',
-    color: '#0f172a',
-    customClass: { popup: 'rounded-2xl', title: 'swal-title-fix', htmlContainer: 'swal-html-fix', confirmButton: 'rounded-xl', cancelButton: 'rounded-xl' }
+    cancelButtonColor: isDark ? '#475569' : '#94a3b8',
+    background: swalBg,
+    color: swalColor,
+    customClass: { popup: 'rounded-2xl', confirmButton: 'rounded-xl', cancelButton: 'rounded-xl' }
   }).then(function (result) {
     if (result.isConfirmed) Utils.printStockReport(products, 'Inventario');
   });
