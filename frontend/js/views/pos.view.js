@@ -1077,6 +1077,13 @@ function buildPrintDocument(opts) {
     });
 
     html += '<div class="sep"></div>';
+
+    // Desglose financiero
+    var costoDom = parseFloat(sale.costoDomicilio) || 0;
+    var bonoDesc = parseFloat(sale.bonoDescuento) || 0;
+    var propinaReal = parseFloat(sale.propina) || 0;
+    var totalFinal = parseFloat(sale.total) || subtotal;
+
     html += '<div class="row"><span>Subtotal:</span><span class="bold">' + window.Utils.formatCurrency(subtotal) + '</span></div>';
     if (costoDom > 0) {
       html += '<div class="row"><span>🛵 Domicilio:</span><span>' + window.Utils.formatCurrency(costoDom) + '</span></div>';
