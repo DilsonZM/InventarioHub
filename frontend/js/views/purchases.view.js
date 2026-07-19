@@ -55,6 +55,14 @@ function initCompras() {
     valorEl.addEventListener('input', updateCompraTotal);
   }
 
+  // Wire buscador de productos
+  var searchEl = document.getElementById('compraSearchProducto');
+  if (searchEl) {
+    searchEl.addEventListener('input', function () {
+      filterCompraProductos(searchEl.value);
+    });
+  }
+
   // Dirty tracking
   var compraForm = $('#compraForm');
   if (compraForm) {
@@ -182,6 +190,13 @@ async function openCompraModal() {
       }).join('');
   } catch (e) {}
 
+  // Limpiar buscador de productos
+  var searchInput = document.getElementById('compraSearchProducto');
+  if (searchInput) searchInput.value = '';
+
+  // Guardar lista completa para el buscador
+  state._compraProducts = all;
+
   $('#compraUnidadPresentacion').innerHTML = '<option value="">Misma unidad base</option>';
 
   openModal('compraModal');
@@ -221,6 +236,42 @@ function updateCompraTotal() {
   var cant = (parseFloat($('#compraCantidad').value) || 0) * factor;
   var val = parseFloat($('#compraValor').value) || 0;
   $('#compraTotal').textContent = formatCurrency(cant * val);
+}
+
+function filterCompraProductos(query) {
+  var all = state._compraProducts || [];
+  var q = (query || '').toLowerCase().trim();
+  var sel = document.getElementById('compraProducto');
+  if (!sel) return;
+
+  var currentVal = sel.value;
+
+  if (!q) {
+    // Mostrar todos
+    sel.innerHTML = '<option value="">Seleccionar producto</option>'
+      + all.map(function (p) {
+        return '<option value="' + p.id + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
+          + escapeHtml(p.name) + ' (' + escapeHtml(p.sku) + ' - ' + escapeHtml(p.unidad || 'unidad') + ')'
+          + '</option>';
+      }).join('');
+  } else {
+    var filtered = all.filter(function (p) {
+      return p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
+    });
+    sel.innerHTML = '<option value="">Seleccionar producto</option>'
+      + filtered.map(function (p) {
+        return '<option value="' + p.id + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
+          + escapeHtml(p.name) + ' (' + escapeHtml(p.sku) + ' - ' + escapeHtml(p.unidad || 'unidad') + ')'
+          + '</option>';
+      }).join('');
+    // Si no hay resultados y habia uno seleccionado, mantenerlo
+    if (filtered.length === 0 && currentVal) {
+      sel.innerHTML += '<option value="' + currentVal + '" data-unidad="unidad" selected>(seleccionado)</option>';
+    }
+  }
+
+  // Restaurar seleccion anterior si existe
+  if (currentVal) sel.value = currentVal;
 }
 
 
