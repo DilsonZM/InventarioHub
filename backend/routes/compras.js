@@ -129,6 +129,42 @@ router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => 
   }
 });
 
+// GET /api/compras/:id - obtener una entrada por ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('compras')
+      .select('*, productos(nombre, sku, unidad_medida), perfiles(username, nombre_completo)')
+      .eq('id', req.params.id)
+      .single();
+    if (error || !data) {
+      return res.status(404).json({ success: false, message: 'Entrada no encontrada' });
+    }
+    const compra = {
+      id: data.id,
+      fecha_compra: data.fecha_compra,
+      producto_id: data.producto_id,
+      producto_nombre: data.productos?.nombre || '',
+      producto_sku: data.productos?.sku || '',
+      producto_unidad: data.productos?.unidad_medida || 'unidad',
+      cantidad: data.cantidad,
+      cantidad_presentacion: data.cantidad_presentacion,
+      unidad_presentacion: data.unidad_presentacion,
+      factor_conversion: data.factor_conversion || 1,
+      valor_unitario: data.valor_unitario,
+      valor_total: data.valor_total,
+      proveedor_id: data.proveedor_id,
+      usuario_nombre: data.perfiles?.nombre_completo || data.perfiles?.username || '',
+      notas: data.notas,
+      creado_en: data.creado_en
+    };
+    res.json({ success: true, data: compra });
+  } catch (err) {
+    console.error('GET compra error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
 // PUT /api/compras/:id - editar entrada con recalculo de stock
 router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) => {
   try {

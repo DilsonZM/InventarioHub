@@ -207,35 +207,41 @@ async function openCompraModal() {
 }
 
 function updateCompraConversionPreview() {
-  var sel = $('#compraProducto');
-  var presSel = $('#compraUnidadPresentacion');
+  var prodId = $('#compraProducto').value;
+  var presSel = document.getElementById('compraUnidadPresentacion');
+  if (!presSel || !prodId) { hideConvPreview(); return; }
+
   var pOpt = presSel.options[presSel.selectedIndex];
-  var preview = $('#compraConversionPreview');
-  var text = $('#compraConversionText');
+  if (!pOpt || !pOpt.value) { hideConvPreview(); return; }
 
-  if (!sel.value || !pOpt || !pOpt.value) {
-    preview.classList.add('hidden');
-    return;
-  }
-
-  var opt = sel.options[sel.selectedIndex];
   var qty = parseFloat($('#compraCantidad').value) || 0;
   var factor = parseFloat(pOpt.dataset.factor) || 1;
-  var baseQty = qty * factor;
-  var baseLabel = opt.dataset.unidad || 'unidad';
+  if (factor === 1) { hideConvPreview(); return; }
 
-  if (factor === 1) {
-    preview.classList.add('hidden');
-    return;
-  }
+  var baseQty = qty * factor;
+  var baseLabel = getCompraProductoUnidad(prodId) || 'unidad';
+  var preview = $('#compraConversionPreview');
+  var text = $('#compraConversionText');
+  if (!preview || !text) return;
 
   text.textContent = qty + ' ' + pOpt.textContent.split(' (')[0].toLowerCase() + ' = ' + baseQty.toFixed(2) + ' ' + baseLabel;
   preview.classList.remove('hidden');
 }
 
+function hideConvPreview() {
+  var preview = $('#compraConversionPreview');
+  if (preview) preview.classList.add('hidden');
+}
+
+function getCompraProductoUnidad(prodId) {
+  var all = state._compraProducts || [];
+  var prod = all.find(function (p) { return p.id === prodId; });
+  return prod ? (prod.unidad || 'unidad') : 'unidad';
+}
+
 function updateCompraTotal() {
-  var presSel = $('#compraUnidadPresentacion');
-  var pOpt = presSel.options[presSel.selectedIndex];
+  var presSel = document.getElementById('compraUnidadPresentacion');
+  var pOpt = presSel && presSel.options ? presSel.options[presSel.selectedIndex] : null;
   var factor = pOpt && pOpt.value ? (parseFloat(pOpt.dataset.factor) || 1) : 1;
   var cant = (parseFloat($('#compraCantidad').value) || 0) * factor;
   var val = parseFloat($('#compraValor').value) || 0;
