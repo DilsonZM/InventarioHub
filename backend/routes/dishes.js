@@ -232,7 +232,7 @@ router.post('/', requirePermission('puede_crear_productos'), async (req, res) =>
             cantidad_tanda: ing.rendimiento_por_tanda > 1 ? (parseFloat(ing.cantidad_tanda) || ing.cantidad) : null
           };
         })
-        .filter(function (ing) { return ing.cantidad > 0; });
+        .filter(function (ing) { return ing.cantidad > 0 || ing.rendimiento_por_tanda > 1; });
 
       if (ingsToInsert.length > 0) {
         const { error: ingError } = await supabase.from('plato_ingredientes').insert(ingsToInsert);
@@ -289,7 +289,7 @@ router.put('/:id', requirePermission('puede_editar_productos'), async (req, res)
             cantidad_tanda: ing.rendimiento_por_tanda > 1 ? (parseFloat(ing.cantidad_tanda) || ing.cantidad) : null
           };
         })
-        .filter(function (ing) { return ing.cantidad > 0; });
+        .filter(function (ing) { return ing.cantidad > 0 || ing.rendimiento_por_tanda > 1; });
 
       if (ingsToInsert.length > 0) {
         const { error: ingError } = await supabase.from('plato_ingredientes').insert(ingsToInsert);
