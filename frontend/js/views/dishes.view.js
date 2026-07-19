@@ -169,6 +169,7 @@ async function openDishModal(dishId) {
           document.querySelectorAll('#dishIngredients .dish-ingredient-row').forEach(function (row) {
             var hidden = row.querySelector('.ing-product');
             var unitSel = row.querySelector('.ing-unit');
+            var tcUnit = row.querySelector('.ing-tc-unit');
             if (hidden && hidden.value && unitSel) {
               var prod = (window._dishProducts || []).find(function (p) { return p.id === hidden.value; });
               if (prod) {
@@ -176,6 +177,7 @@ async function openDishModal(dishId) {
                 unitSel.innerHTML = pres.map(function (p) {
                   return '<option value="' + p.value + '"' + (p.factor === 1 ? ' selected' : '') + '>' + escapeHtml(p.label) + '</option>';
                 }).join('');
+                if (tcUnit) tcUnit.textContent = 'por tanda (' + escapeHtml(prod.unidad || 'unidad') + ')';
               }
             }
           });
@@ -298,6 +300,16 @@ function bindIngredientEvents() {
     var hiddenInput = row.querySelector('.ing-product');
     var dropdown = row.querySelector('.ing-dropdown');
     var unitSelect = row.querySelector('.ing-unit');
+    var tcUnitLabel = row.querySelector('.ing-tc-unit');
+
+    if (unitSelect && !unitSelect._unitSyncBound) {
+      unitSelect._unitSyncBound = true;
+      unitSelect.addEventListener('change', function () {
+        var sel = unitSelect.options[unitSelect.selectedIndex];
+        var label = sel ? sel.textContent : 'por tanda';
+        if (tcUnitLabel) tcUnitLabel.textContent = 'por tanda (' + label + ')';
+      });
+    }
 
     if (searchInput && dropdown && !searchInput._searchBound) {
       searchInput._searchBound = true;
@@ -403,8 +415,8 @@ function renderIngredientList(ingredientes) {
       + '<div class="ing-dropdown hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto"></div>'
       + '</div>'
       + '<div class="w-24 shrink-0">'
-      + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
-      + '<input type="number" class="ing-qty w-full px-2 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + ing.cantidad + '">'
+      + '<label class="ing-qty-label block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">' + (isTipoC ? 'N/A' : 'Cantidad') + '</label>'
+      + '<input type="number" class="ing-qty w-full px-2 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + (isTipoC ? '' : ing.cantidad) + '"' + (isTipoC ? ' style="display:none"' : '') + '>'
       + '</div>'
       + '<div class="w-28 shrink-0">'
       + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Unidad</label>'
@@ -489,17 +501,22 @@ async function saveDish(e) {
     var tcRendimiento = row.querySelector('.ing-tc-rendimiento');
     var tcCantidad = row.querySelector('.ing-tc-cantidad');
 
-    if (hiddenInput && hiddenInput.value && qtyInput && parseFloat(qtyInput.value) > 0) {
+    var isTipoC = tcCheck && tcCheck.checked;
+    var hasProduct = hiddenInput && hiddenInput.value;
+    var hasQty = qtyInput && parseFloat(qtyInput.value) > 0;
+    var hasTipoCFull = isTipoC && tcRendimiento && tcCantidad && parseFloat(tcCantidad.value) > 0;
+
+    if (hasProduct && (hasQty || hasTipoCFull)) {
       var ing = {
         producto_id: hiddenInput.value,
-        cantidad: parseFloat(qtyInput.value),
+        cantidad: hasQty ? parseFloat(qtyInput.value) : (parseFloat(tcCantidad.value) || 1),
         unidad: (unitInput ? unitInput.value : '').trim() || 'g',
         rendimiento_por_tanda: 1
       };
       // Tipo C
-      if (tcCheck && tcCheck.checked) {
-        ing.rendimiento_por_tanda = parseInt(tcRendimiento ? tcRendimiento.value : 10) || 10;
-        ing.cantidad_tanda = parseFloat(tcCantidad ? tcCantidad.value : ing.cantidad) || ing.cantidad;
+      if (isTipoC) {
+        ing.rendimiento_por_tanda = parseInt(tcRendimiento.value) || 10;
+        ing.cantidad_tanda = parseFloat(tcCantidad.value) || ing.cantidad;
       }
       ingredients.push(ing);
     }
