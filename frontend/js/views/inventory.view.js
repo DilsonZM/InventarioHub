@@ -21,25 +21,33 @@ async function initInventory() {
   $('#searchProducts').addEventListener('input', debounce(function () { loadProducts(); }, 300));
   $('#filterCategory').addEventListener('change', function () { loadProducts(); });
 
-  // Pills de filtro multiple de estado
-  document.querySelectorAll('.status-pill').forEach(function (pill) {
-    pill.addEventListener('click', function () {
-      var status = pill.dataset.status;
-      var active = pill.classList.toggle('status-pill--active');
-      if (active) {
-        pill.classList.add('border-brand-300', 'bg-brand-50', 'text-brand-700');
-        pill.classList.remove('border-slate-200', 'bg-white', 'text-slate-500');
-      } else {
-        pill.classList.remove('border-brand-300', 'bg-brand-50', 'text-brand-700');
-        pill.classList.add('border-slate-200', 'bg-white', 'text-slate-500');
-      }
-      // Actualizar hidden input con valores seleccionados
-      var sel = [];
-      document.querySelectorAll('.status-pill--active').forEach(function (p) { sel.push(p.dataset.status); });
-      $('#filterStatus').value = sel.join(',');
-      loadProducts();
+  // Dropdown de filtro multiple de estado
+  var trigger = document.getElementById('filterStatusTrigger');
+  var menu = document.getElementById('filterStatusMenu');
+  var label = document.getElementById('filterStatusLabel');
+  var checkboxes = document.querySelectorAll('.status-checkbox');
+
+  if (trigger && menu) {
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      menu.classList.toggle('hidden');
     });
-  });
+    document.addEventListener('click', function (e) {
+      if (!menu.contains(e.target) && e.target !== trigger) menu.classList.add('hidden');
+    });
+    checkboxes.forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var sel = [];
+        checkboxes.forEach(function (c) { if (c.checked) sel.push(c.value); });
+        $('#filterStatus').value = sel.join(',');
+        // Actualizar label del trigger
+        if (sel.length === 0) label.textContent = 'Estado';
+        else if (sel.length === 1) label.textContent = sel[0].replace(/_/g, ' ').replace(/\b\w/g, function (l) { return l.toUpperCase(); });
+        else label.textContent = sel.length + ' filtros';
+        loadProducts();
+      });
+    });
+  }
 
   $('#addProductBtn').addEventListener('click', function () { openProductModal(); });
 
