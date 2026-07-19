@@ -11,6 +11,50 @@ import { store } from '../core/store.js';
 function initCompras() {
   $('#newCompraBtn').addEventListener('click', function () { openCompraModal(); });
   initFilters('entradas');
+
+  // Wire product selector to update presentation units
+  var prodSel = document.getElementById('compraProducto');
+  if (prodSel) {
+    prodSel.addEventListener('change', function () {
+      var opt = prodSel.options[prodSel.selectedIndex];
+      var unidad = opt ? (opt.dataset.unidad || 'unidad') : 'unidad';
+      var pres = window.getPresentaciones ? window.getPresentaciones(unidad) : [{ value: '', label: 'Misma unidad base', factor: 1 }];
+      var presSel = document.getElementById('compraUnidadPresentacion');
+      if (presSel) {
+        presSel.innerHTML = '<option value="">Misma unidad base</option>'
+          + pres.map(function (p) {
+            return '<option value="' + p.value + '" data-factor="' + p.factor + '">' + escapeHtml(p.label) + '</option>';
+          }).join('');
+      }
+      updateCompraConversionPreview();
+      updateCompraTotal();
+    });
+  }
+
+  // Wire presentation unit change
+  var presSel2 = document.getElementById('compraUnidadPresentacion');
+  if (presSel2) {
+    presSel2.addEventListener('change', function () {
+      updateCompraConversionPreview();
+      updateCompraTotal();
+    });
+  }
+
+  // Wire cantidad change
+  var cantEl = document.getElementById('compraCantidad');
+  if (cantEl) {
+    cantEl.addEventListener('input', function () {
+      updateCompraConversionPreview();
+      updateCompraTotal();
+    });
+  }
+
+  // Wire valor unitario change
+  var valorEl = document.getElementById('compraValor');
+  if (valorEl) {
+    valorEl.addEventListener('input', updateCompraTotal);
+  }
+
   // Dirty tracking
   var compraForm = $('#compraForm');
   if (compraForm) {
