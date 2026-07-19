@@ -26,6 +26,11 @@ async function initInventory() {
   // Merma
   var mermaBtn = $('#addMermaBtn');
   if (mermaBtn) mermaBtn.addEventListener('click', function () { openMermaModal(); });
+
+  // Export CSV
+  var exportBtn = $('#exportInventoryBtn');
+  if (exportBtn) exportBtn.addEventListener('click', exportInventoryCSV);
+
   var mermaSubmit = $('#mermaSubmitBtn');
   if (mermaSubmit) mermaSubmit.addEventListener('click', function () { submitMerma(); });
   var mermaProduct = $('#mermaProduct');
@@ -315,6 +320,30 @@ if (typeof document !== 'undefined') {
   if (productForm) productForm.addEventListener('submit', saveProduct);
 }
 
+
+// ============================================
+// Export CSV
+// ============================================
+
+function exportInventoryCSV() {
+  var products = state.products;
+  if (!products || products.length === 0) {
+    showToast('No hay productos para exportar', 'warning');
+    return;
+  }
+  var rows = products.map(function (p) {
+    return {
+      'Nombre': p.name,
+      'SKU': p.sku,
+      'Categoria': p.category,
+      'Stock Actual': p.stock,
+      'Stock Mínimo': p.minStock,
+      'Unidad': p.unidad || 'unidad'
+    };
+  });
+  var ok = Utils.exportToCSV(rows, 'inventario-' + Utils.todayInAppTZ() + '.csv');
+  if (ok) showToast(rows.length + ' productos exportados', 'success');
+}
 
 // ============================================
 // Merma (perdida operativa)

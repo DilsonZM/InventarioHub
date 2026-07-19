@@ -39,6 +39,10 @@ function initDashboard() {
 
   initVentasGroupButtons();
 
+  // Export CSV de Stock Bajo
+  var exportBtn = document.getElementById('exportLowStockBtn');
+  if (exportBtn) exportBtn.addEventListener('click', exportLowStockCSV);
+
   // Cargar opciones de productos
   populateProductFilter('#filterProductDash').then(updateClearBtn.bind(null, ids));
   updateClearBtn(ids);
@@ -153,6 +157,7 @@ async function loadDashboard() {
     console.log('[Dashboard] Stats actualizadas en UI');
 
     var lowStockProducts = productsRes.data.filter(function (p) { return p.stock <= p.minStock; }).sort(function (a, b) { return (a.stock / a.minStock) - (b.stock / b.minStock); });
+    store.state._lowStockProducts = lowStockProducts;
     var lowStockList = $('#lowStockList');
     console.log('[Dashboard] Productos con stock bajo:', lowStockProducts.length);
 
@@ -440,6 +445,25 @@ function animateKPI(kpiId, targetValue, isCurrency) {
   }
 
   requestAnimationFrame(step);
+}
+
+function exportLowStockCSV() {
+  var products = store.state._lowStockProducts;
+  if (!products || products.length === 0) {
+    showToast('No hay productos con stock bajo para exportar', 'warning');
+    return;
+  }
+  var rows = products.map(function (p) {
+    return {
+      'Nombre': p.name,
+      'SKU': p.sku,
+      'Stock Actual': p.stock,
+      'Stock Mínimo': p.minStock,
+      'Unidad': p.unidad || 'unidad'
+    };
+  });
+  var ok = Utils.exportToCSV(rows, 'stock-bajo-' + Utils.todayInAppTZ() + '.csv');
+  if (ok) showToast(rows.length + ' productos exportados', 'success');
 }
 
 function initVentasGroupButtons() {

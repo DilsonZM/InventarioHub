@@ -135,6 +135,28 @@ export function todayInAppTZ() {
   return formatter.format(now); // en-CA da formato YYYY-MM-DD
 }
 
+export function exportToCSV(rows, filename) {
+  if (!rows || rows.length === 0) return false;
+  const headers = Object.keys(rows[0]);
+  const escapeCSV = (v) => {
+    const s = String(v ?? '').replace(/"/g, '""');
+    return /[",\n\r]/.test(s) ? '"' + s + '"' : s;
+  };
+  const csv = headers.map(escapeCSV).join(',') + '\n'
+    + rows.map(r => headers.map(h => escapeCSV(r[h])).join(',')).join('\n');
+
+  const bom = '\uFEFF'; // BOM para Excel en español
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'export.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  return true;
+}
+
 window.Utils = {
   APP_TIMEZONE,
   formatCurrency,
@@ -148,4 +170,5 @@ window.Utils = {
   debounce,
   throttle,
   escapeHtml,
+  exportToCSV,
 };
