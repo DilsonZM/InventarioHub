@@ -12,22 +12,31 @@ function initCompras() {
   $('#newCompraBtn').addEventListener('click', function () { openCompraModal(); });
   initFilters('entradas');
 
-  // Wire product selector to update presentation units
-  var prodSel = document.getElementById('compraProducto');
-  if (prodSel) {
-    prodSel.addEventListener('change', function () {
-      var opt = prodSel.options[prodSel.selectedIndex];
-      var unidad = opt ? (opt.dataset.unidad || 'unidad') : 'unidad';
-      var pres = window.getPresentaciones ? window.getPresentaciones(unidad) : [{ value: '', label: 'Misma unidad base', factor: 1 }];
-      var presSel = document.getElementById('compraUnidadPresentacion');
-      if (presSel) {
-        presSel.innerHTML = '<option value="">Misma unidad base</option>'
-          + pres.map(function (p) {
-            return '<option value="' + p.value + '" data-factor="' + p.factor + '">' + escapeHtml(p.label) + '</option>';
-          }).join('');
+  // Buscador autocomplete de productos
+  var searchEl = document.getElementById('compraSearchProducto');
+  var dropdown = document.getElementById('compraProductoDropdown');
+  if (searchEl && dropdown) {
+    searchEl.addEventListener('input', function () {
+      filterCompraProductos(searchEl.value);
+    });
+    searchEl.addEventListener('focus', function () {
+      if ((state._compraProducts || []).length > 0) filterCompraProductos(searchEl.value);
+    });
+    // Cerrar dropdown al click fuera
+    document.addEventListener('click', function (e) {
+      if (!searchEl.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
       }
-      updateCompraConversionPreview();
-      updateCompraTotal();
+    });
+    // Seleccionar con teclado: Enter sobre input con un solo resultado
+    searchEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var visible = dropdown.querySelectorAll('.compra-result:not(.hidden)');
+        if (visible.length === 1) {
+          e.preventDefault();
+          visible[0].click();
+        }
+      }
     });
   }
 
@@ -182,20 +191,15 @@ async function openCompraModal() {
   try {
     var res = await API.products.list();
     var all = res.data || [];
-    $('#compraProducto').innerHTML = '<option value="">Seleccionar producto</option>' +
-      all.map(function (p) {
-        return '<option value="' + p.id + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
-          + escapeHtml(p.name) + ' (' + escapeHtml(p.sku) + ' - ' + escapeHtml(p.unidad || 'unidad') + ')'
-          + '</option>';
-      }).join('');
+    state._compraProducts = all;
   } catch (e) {}
 
-  // Limpiar buscador de productos
+  // Limpiar buscador de productos y seleccion previa
   var searchInput = document.getElementById('compraSearchProducto');
+  var labelEl = document.getElementById('compraProductoLabel');
   if (searchInput) searchInput.value = '';
-
-  // Guardar lista completa para el buscador
-  state._compraProducts = all;
+  if (labelEl) labelEl.classList.add('hidden');
+  $('#compraProducto').value = '';
 
   $('#compraUnidadPresentacion').innerHTML = '<option value="">Misma unidad base</option>';
 
@@ -241,37 +245,80 @@ function updateCompraTotal() {
 function filterCompraProductos(query) {
   var all = state._compraProducts || [];
   var q = (query || '').toLowerCase().trim();
-  var sel = document.getElementById('compraProducto');
-  if (!sel) return;
+  var dropdown = document.getElementById('compraProductoDropdown');
+  if (!dropdown) return;
 
-  var currentVal = sel.value;
-
-  if (!q) {
-    // Mostrar todos
-    sel.innerHTML = '<option value="">Seleccionar producto</option>'
-      + all.map(function (p) {
-        return '<option value="' + p.id + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
-          + escapeHtml(p.name) + ' (' + escapeHtml(p.sku) + ' - ' + escapeHtml(p.unidad || 'unidad') + ')'
-          + '</option>';
-      }).join('');
-  } else {
-    var filtered = all.filter(function (p) {
+  var items = all;
+  if (q) {
+    items = all.filter(function (p) {
       return p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
     });
-    sel.innerHTML = '<option value="">Seleccionar producto</option>'
-      + filtered.map(function (p) {
-        return '<option value="' + p.id + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
-          + escapeHtml(p.name) + ' (' + escapeHtml(p.sku) + ' - ' + escapeHtml(p.unidad || 'unidad') + ')'
-          + '</option>';
-      }).join('');
-    // Si no hay resultados y habia uno seleccionado, mantenerlo
-    if (filtered.length === 0 && currentVal) {
-      sel.innerHTML += '<option value="' + currentVal + '" data-unidad="unidad" selected>(seleccionado)</option>';
-    }
   }
 
-  // Restaurar seleccion anterior si existe
-  if (currentVal) sel.value = currentVal;
+  if (items.length === 0) {
+    if (q) {
+      dropdown.innerHTML = '<div class="px-3 py-3 text-sm text-slate-400 text-center">Sin resultados</div>';
+    } else {
+      dropdown.innerHTML = '<div class="px-3 py-3 text-sm text-slate-400 text-center">Escribe para buscar productos</div>';
+    }
+  } else {
+    dropdown.innerHTML = items.map(function (p) {
+      var selected = $('#compraProducto').value === p.id;
+      return '<div class="compra-result flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 ' + (selected ? 'bg-brand-50' : '') + '"'
+        + ' data-id="' + p.id + '"'
+        + ' data-unidad="' + escapeHtml(p.unidad || 'unidad') + '"'
+        + ' data-name="' + escapeHtml(p.name) + '"'
+        + ' data-sku="' + escapeHtml(p.sku || '') + '">'
+        + '<div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-xs font-bold text-slate-400">' + (p.icono || '📦') + '</div>'
+        + '<div class="flex-1 min-w-0">'
+        + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(p.name) + '</p>'
+        + '<p class="text-xs text-slate-400 truncate">' + escapeHtml(p.sku || '') + ' · ' + escapeHtml(p.unidad || 'unidad') + '</p>'
+        + '</div>'
+        + (selected ? '<svg class="w-4 h-4 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : '')
+        + '</div>';
+    }).join('');
+
+    // Click handler en cada resultado
+    dropdown.querySelectorAll('.compra-result').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id = el.dataset.id;
+        var name = el.dataset.name;
+        var sku = el.dataset.sku;
+        var unidad = el.dataset.unidad;
+        selectCompraProducto(id, name, sku, unidad);
+      });
+    });
+  }
+
+  dropdown.classList.remove('hidden');
+}
+
+function selectCompraProducto(id, name, sku, unidad) {
+  $('#compraProducto').value = id;
+  var searchEl = document.getElementById('compraSearchProducto');
+  var labelEl = document.getElementById('compraProductoLabel');
+  var dropdown = document.getElementById('compraProductoDropdown');
+
+  // Mostrar producto seleccionado
+  if (searchEl) searchEl.value = name + ' · ' + sku;
+  if (labelEl) {
+    labelEl.textContent = name + ' (' + sku + ' · ' + escapeHtml(unidad) + ')';
+    labelEl.classList.remove('hidden');
+  }
+  dropdown.classList.add('hidden');
+
+  // Poblar unidades de presentacion
+  var pres = window.getPresentaciones ? window.getPresentaciones(unidad) : [{ value: '', label: 'Misma unidad base', factor: 1 }];
+  var presSel = document.getElementById('compraUnidadPresentacion');
+  if (presSel) {
+    presSel.innerHTML = '<option value="">Misma unidad base</option>'
+      + pres.map(function (p) {
+        return '<option value="' + p.value + '" data-factor="' + p.factor + '">' + escapeHtml(p.label) + '</option>';
+      }).join('');
+  }
+  updateCompraConversionPreview();
+  updateCompraTotal();
 }
 
 
@@ -288,10 +335,22 @@ window.editCompra = async function (id) {
     state.editingCompraId = id;
     var titleEl = document.querySelector('#compraModal h3');
     if (titleEl) titleEl.textContent = 'Editar Entrada';
-    // Setear valores
+
+    // Buscar producto en cache para obtener unidad y nombre
+    var prod = (state._compraProducts || []).find(function (p) { return p.id === compra.producto_id; });
+    var unidad = prod ? (prod.unidad || 'unidad') : 'unidad';
+    var prodName = prod ? prod.name : '';
+    var prodSku = prod ? (prod.sku || '') : '';
+
     $('#compraProducto').value = compra.producto_id;
-    var opt = $('#compraProducto').options[$('#compraProducto').selectedIndex];
-    var unidad = opt ? (opt.dataset.unidad || 'unidad') : 'unidad';
+    var searchEl = document.getElementById('compraSearchProducto');
+    var labelEl = document.getElementById('compraProductoLabel');
+    if (searchEl && prodName) searchEl.value = prodName + ' · ' + prodSku;
+    if (labelEl && prodName) {
+      labelEl.textContent = prodName + ' (' + prodSku + ' · ' + escapeHtml(unidad) + ')';
+      labelEl.classList.remove('hidden');
+    }
+
     var pres = window.getPresentaciones(unidad);
     $('#compraUnidadPresentacion').innerHTML = pres.map(function (p) {
       return '<option value="' + p.value + '" data-factor="' + p.factor + '">' + escapeHtml(p.label) + '</option>';
