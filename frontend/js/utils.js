@@ -162,14 +162,11 @@ export function printStockReport(products, title) {
 
   const fecha = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' });
   const lines = [];
-  let totalNeeded = 0;
   let criticalCount = 0;
 
   products.forEach(p => {
     if (p.stock <= 0) criticalCount++;
-    totalNeeded += Math.max(0, (p.minStock || 0) - (p.stock || 0));
   });
-  totalNeeded = Math.round(totalNeeded * 10) / 10;
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -230,7 +227,6 @@ export function printStockReport(products, title) {
   <div class="summary">
     <div class="summary-box"><div class="val">${products.length}</div><div class="lab">Productos</div></div>
     <div class="summary-box"><div class="val">${criticalCount}</div><div class="lab">Agotados</div></div>
-    <div class="summary-box"><div class="val" style="color:#dc2626">${totalNeeded}</div><div class="lab">Faltante Total</div></div>
   </div>
 
   <div class="title-bar">
