@@ -329,7 +329,10 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
         var precio2 = parseFloat(pd2.precioUnitario) || 0;
         var { data: pi2 } = await supabase.from('platos').select('nombre, precio_venta').eq('id', pd2.plato_id).single();
         if (!pi2) continue;
-        if (!precio2) precio2 = parseFloat(pi2.precio_venta);
+        if (!precio2) {
+          var { data: efPrecio } = await supabase.rpc('precio_efectivo_plato', { p_plato_id: pd2.plato_id });
+          precio2 = parseFloat(efPrecio) || parseFloat(pi2.precio_venta);
+        }
         var subDish = precio2 * cant2;
         subtotal += subDish;
         detallesNuevos.push({
@@ -616,7 +619,11 @@ async function handleDishSale(req, res) {
       var pd = platos[m];
       var cant = Math.max(1, parseInt(pd.cantidad) || 1);
       var precio = parseFloat(pd.precioUnitario) || 0;
-      if (!precio) { var { data: pi } = await supabase.from('platos').select('precio_venta').eq('id', pd.plato_id).single(); precio = pi ? parseFloat(pi.precio_venta) : 0; }
+      if (!precio) {
+        var { data: efPrecio } = await supabase.rpc('precio_efectivo_plato', { p_plato_id: pd.plato_id });
+        precio = parseFloat(efPrecio) || 0;
+        if (!precio) { var { data: pi } = await supabase.from('platos').select('precio_venta').eq('id', pd.plato_id).single(); precio = pi ? parseFloat(pi.precio_venta) : 0; }
+      }
       totalVenta += precio * cant;
     }
 
@@ -643,7 +650,11 @@ async function handleDishSale(req, res) {
       var precio2 = parseFloat(pd2.precioUnitario) || 0;
       var { data: pi2 } = await supabase.from('platos').select('nombre, precio_venta').eq('id', pd2.plato_id).single();
       if (!pi2) continue;
-      if (!precio2) precio2 = parseFloat(pi2.precio_venta);
+      if (!precio2) {
+        // Usar precio_efectivo (con descuento si aplica)
+        var { data: efPrecio } = await supabase.rpc('precio_efectivo_plato', { p_plato_id: pd2.plato_id });
+        precio2 = parseFloat(efPrecio) || parseFloat(pi2.precio_venta);
+      }
       await supabase.from('venta_detalles').insert({
         venta_id: venta.id, producto_id: null, producto_nombre: pi2.nombre,
         cantidad: cant2, precio_unitario: precio2, subtotal: precio2 * cant2,

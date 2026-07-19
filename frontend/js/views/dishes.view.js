@@ -45,6 +45,12 @@ function initDishes() {
       }
     });
   }
+
+  // Wire discount inputs to show effective price
+  ['dishDescuentoPct', 'dishDescuentoDesde', 'dishDescuentoHasta'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateDishDescuentoInfo);
+  });
 }
 
 async function loadDishes() {
@@ -125,6 +131,10 @@ async function openDishModal(dishId) {
   $('#dishDescription').value = '';
   $('#dishType').value = '';
   $('#dishPrice').value = '0';
+  $('#dishDescuentoPct').value = '';
+  $('#dishDescuentoDesde').value = '';
+  $('#dishDescuentoHasta').value = '';
+  $('#dishDescuentoInfo').classList.add('hidden');
   $('#dishIngredients').innerHTML = '<p id="noIngredientsMsg" class="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl">Sin ingredientes. Agregá productos del inventario para armar la receta.</p>';
   $('#dishFormError').classList.add('hidden');
 
@@ -145,6 +155,13 @@ async function openDishModal(dishId) {
       $('#dishDescription').value = d.descripcion || '';
       $('#dishType').value = d.tipo || '';
       $('#dishPrice').value = d.precio_venta || 0;
+      if (d.descuento_pct > 0) {
+        $('#dishDescuentoPct').value = d.descuento_pct;
+        $('#dishDescuentoDesde').value = d.descuento_desde || '';
+        $('#dishDescuentoHasta').value = d.descuento_hasta || '';
+        updateDishDescuentoInfo();
+        $('#dishDiscountDetails').setAttribute('open', '');
+      }
       if (d.ingredientes && d.ingredientes.length > 0) {
         renderIngredientList(d.ingredientes);
       }
@@ -348,12 +365,16 @@ async function saveDish(e) {
     }
   });
 
+  var descuentoPct = parseFloat(($('#dishDescuentoPct').value)) || 0;
   var payload = {
     nombre: nombre,
     descripcion: ($('#dishDescription').value || '').trim(),
     tipo: tipo,
     precio_venta: precio,
-    ingredientes: ingredients
+    ingredientes: ingredients,
+    descuento_pct: descuentoPct,
+    descuento_desde: descuentoPct > 0 ? ($('#dishDescuentoDesde').value || null) : null,
+    descuento_hasta: descuentoPct > 0 ? ($('#dishDescuentoHasta').value || null) : null
   };
 
   try {
@@ -417,11 +438,22 @@ function renderDishRow(d, isActive) {
     ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Con stock</span>'
     : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Sin stock</span>';
 
+  var precioHtml;
+  var tieneDesc = d.descuento_pct > 0;
+  if (tieneDesc) {
+    var efectivo = d.precio_efectivo || d.precio_venta;
+    precioHtml = '<div class="text-right"><span class="text-xs text-slate-400 line-through">' + Utils.formatCurrency(d.precio_venta) + '</span>'
+      + '<br><span class="text-sm font-semibold text-amber-600">' + Utils.formatCurrency(efectivo)
+      + '</span> <span class="text-[10px] font-bold text-amber-600 bg-amber-100 px-1 py-0.5 rounded">-' + d.descuento_pct + '%</span></div>';
+  } else {
+    precioHtml = '<span class="text-sm font-semibold text-slate-800">' + Utils.formatCurrency(d.precio_venta) + '</span>';
+  }
+
   return '<tr class="hover:bg-slate-50 transition-colors">'
     + '<td class="px-6 py-3"><span class="text-sm font-semibold text-slate-800">' + escapeHtml(d.nombre) + '</span>' + ingsHtml + '</td>'
     + '<td class="px-6 py-3">' + badge + '</td>'
     + '<td class="px-6 py-3 text-center"><span class="text-sm text-slate-600">' + (d.num_ingredientes || 0) + '</span></td>'
-    + '<td class="px-6 py-3 text-right"><span class="text-sm font-semibold text-slate-800">' + Utils.formatCurrency(d.precio_venta) + '</span></td>'
+    + '<td class="px-6 py-3 text-right">' + precioHtml + '</td>'
     + '<td class="px-6 py-3 text-right"><span class="text-sm ' + ((d.costo || 0) > 0 ? 'text-slate-600' : 'text-slate-400') + '">' + ((d.costo || 0) > 0 ? Utils.formatCurrency(d.costo) : '—') + '</span></td>'
     + '<td class="px-6 py-3 text-center">' + (isActive ? stockBadge : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Archivado</span>') + '</td>'
     + '<td class="px-6 py-3 text-right"><div class="flex items-center justify-end gap-1">' + actions + '</div></td>'
@@ -508,6 +540,30 @@ window.deleteDish = function (dishId, dishName) {
   });
 }
 
+// ============================================
+// Descuento temporal en platos
+// ============================================
+function updateDishDescuentoInfo() {
+  var pct = parseFloat(($('#dishDescuentoPct').value)) || 0;
+  var desde = $('#dishDescuentoDesde').value;
+  var hasta = $('#dishDescuentoHasta').value;
+  var info = $('#dishDescuentoInfo');
+  var precio = parseFloat($('#dishPrice').value) || 0;
+
+  if (!info) return;
+  if (pct <= 0 || pct > 100) {
+    info.classList.add('hidden');
+    return;
+  }
+
+  var efectivo = Math.round(precio * (1 - pct / 100));
+  var msg = 'Precio con descuento: $' + efectivo.toLocaleString('es-CO');
+  var hoy = new Date().toISOString().slice(0, 10);
+  if (desde && desde > hoy) msg += ' (desde ' + desde + ')';
+  if (hasta && hasta < hoy) msg += ' (vencio ' + hasta + ')';
+  info.textContent = msg;
+  info.classList.remove('hidden');
+}
 
 
 // Compatibilidad con codigo heredado (window.*)

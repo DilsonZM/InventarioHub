@@ -47,6 +47,17 @@ router.get('/', async (req, res) => {
     var platoIds = (data || []).map(function (p) { return p.id; });
     var costosPorPlato = {};
     var ingredientesPorPlato = {};
+    var preciosEfectivos = {};
+
+    // Obtener precio efectivo con descuento para cada plato
+    if (platoIds.length > 0) {
+      for (var pi = 0; pi < platoIds.length; pi++) {
+        var pid = platoIds[pi];
+        var { data: efectivo } = await supabase.rpc('precio_efectivo_plato', { p_plato_id: pid });
+        preciosEfectivos[pid] = parseFloat(efectivo) || 0;
+      }
+    }
+
     if (platoIds.length > 0) {
       var { data: costos } = await supabase
         .from('plato_ingredientes')
@@ -111,6 +122,10 @@ router.get('/', async (req, res) => {
         descripcion: p.descripcion,
         tipo: p.tipo,
         precio_venta: parseFloat(p.precio_venta),
+        precio_efectivo: preciosEfectivos[p.id] || parseFloat(p.precio_venta),
+        descuento_pct: parseFloat(p.descuento_pct) || 0,
+        descuento_desde: p.descuento_desde || null,
+        descuento_hasta: p.descuento_hasta || null,
         costo: Math.round((costosPorPlato[p.id] || 0) * 100) / 100,
         ingredientes: ings,
         disponible: disp,
@@ -226,7 +241,7 @@ router.post('/', requirePermission('puede_crear_productos'), async (req, res) =>
 // Actualizar plato (admin)
 router.put('/:id', requirePermission('puede_editar_productos'), async (req, res) => {
   try {
-    const { nombre, descripcion, tipo, precio_venta, activo, ingredientes } = req.body;
+    const { nombre, descripcion, tipo, precio_venta, activo, ingredientes, descuento_pct, descuento_desde, descuento_hasta } = req.body;
 
     const updateData = {};
     if (nombre !== undefined) updateData.nombre = nombre.trim();
@@ -237,6 +252,9 @@ router.put('/:id', requirePermission('puede_editar_productos'), async (req, res)
     }
     if (precio_venta !== undefined) updateData.precio_venta = parseFloat(precio_venta);
     if (activo !== undefined) updateData.activo = activo;
+    if (descuento_pct !== undefined) updateData.descuento_pct = parseFloat(descuento_pct) || 0;
+    if (descuento_desde !== undefined) updateData.descuento_desde = descuento_desde || null;
+    if (descuento_hasta !== undefined) updateData.descuento_hasta = descuento_hasta || null;
 
     if (Object.keys(updateData).length > 0) {
       const { error } = await supabase.from('platos').update(updateData).eq('id', req.params.id);

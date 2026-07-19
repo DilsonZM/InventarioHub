@@ -160,12 +160,16 @@ function renderPOSCategories(dishes, products) {
   // Fusionar platos, bebidas y productos en un solo array
   var allItems = [];
   dishes.forEach(function (d) {
+    var efectivo = d.precio_efectivo || d.precio_venta || 0;
+    var tieneDescuento = d.descuento_pct > 0 && d.precio_efectivo && d.precio_efectivo !== d.precio_venta;
     allItems.push({
       id: d.id,
       name: d.nombre,
-      price: d.precio_venta || 0,
+      price: efectivo,
+      originalPrice: tieneDescuento ? (d.precio_venta || 0) : null,
+      descuentoPct: tieneDescuento ? d.descuento_pct : null,
       icon: d.icono || (d.tipo === 'bebida' ? '🥤' : '🍽️'),
-      type: d.tipo, // 'plato' o 'bebida'
+      type: d.tipo,
       source: 'dish',
       desc: d.descripcion || ''
     });
@@ -225,7 +229,10 @@ function renderPOSGrid(items) {
       + '<div class="p-3">'
       + '<p class="pos-card-name text-sm font-bold text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
       + desc
-      + '<p class="pos-card-price text-md font-bold text-brand-600 mt-2">' + Utils.formatCurrency(item.price) + '</p>'
+      + (item.originalPrice
+        ? '<p class="mt-2"><span class="text-xs text-slate-400 line-through">' + Utils.formatCurrency(item.originalPrice) + '</span> <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 ml-1 align-top">-' + item.descuentoPct + '%</span></p>'
+          + '<p class="pos-card-price text-md font-bold text-amber-600">' + Utils.formatCurrency(item.price) + '</p>'
+        : '<p class="pos-card-price text-md font-bold text-brand-600 mt-2">' + Utils.formatCurrency(item.price) + '</p>')
       + '</div>'
       + '</div>';
   });
