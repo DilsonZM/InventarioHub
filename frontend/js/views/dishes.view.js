@@ -453,11 +453,12 @@ function renderIngredientList(ingredientes) {
     container.appendChild(row.firstElementChild);
   });
   bindIngredientEvents();
-  // Pre-seleccionar unidad guardada
+  // Pre-seleccionar unidad guardada y sincronizar label TC
   ingredientes.forEach(function (ing, idx) {
     var row = document.getElementById('ingredientRow_' + idx);
     if (row && ing.unidad) {
       var unitSel = row.querySelector('.ing-unit');
+      var tcUnitLabel = row.querySelector('.ing-tc-unit');
       if (unitSel) {
         setTimeout(function () {
           for (var o = 0; o < unitSel.options.length; o++) {
@@ -466,7 +467,12 @@ function renderIngredientList(ingredientes) {
               break;
             }
           }
-        }, 50);
+          // Sincronizar label TC con la unidad de presentacion seleccionada
+          if (tcUnitLabel) {
+            var sel = unitSel.options[unitSel.selectedIndex];
+            if (sel && sel.textContent) tcUnitLabel.textContent = 'por tanda (' + sel.textContent + ')';
+          }
+        }, 100);
       }
     }
   });
@@ -581,11 +587,26 @@ function renderDishRow(d, isActive) {
 
   var ingsHtml = '';
   if (d.ingredientes && d.ingredientes.length > 0) {
-    ingsHtml = '<div class="text-[11px] text-slate-400 mt-0.5 space-y-0.5">'
-      + d.ingredientes.map(function (ing) {
-        return '<div>· ' + escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad + (ing.costo > 0 ? ' <span class="text-slate-500">' + Utils.formatCurrency(ing.costo) + '</span>' : '') + '</div>';
-      }).join('')
-      + '</div>';
+    var normales = d.ingredientes.filter(function (ing) { return !(ing.rendimiento_por_tanda && ing.rendimiento_por_tanda > 1); });
+    var tipoC = d.ingredientes.filter(function (ing) { return ing.rendimiento_por_tanda && ing.rendimiento_por_tanda > 1; });
+
+    ingsHtml = '<div class="text-[11px] text-slate-400 mt-0.5 space-y-0.5">';
+    // Ingredientes normales
+    normales.forEach(function (ing) {
+      ingsHtml += '<div>· ' + escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad + (ing.costo > 0 ? ' <span class="text-slate-500">' + Utils.formatCurrency(ing.costo) + '</span>' : '') + '</div>';
+    });
+    // Tipo C separados
+    if (tipoC.length > 0) {
+      ingsHtml += '<div class="border-t border-slate-200/50 pt-1 mt-1"><span class="text-amber-600 font-medium">Insumos x tanda:</span></div>';
+      tipoC.forEach(function (ing) {
+        var costoPorPorcion = (ing.cantidad_tanda && ing.rendimiento_por_tanda) ? Math.round((ing.costo || 0) / (ing.cantidad * ing.rendimiento_por_tanda || 1) * 100) / 100 : 0;
+        ingsHtml += '<div>· ' + escapeHtml(ing.nombre) + ' ' + (ing.cantidad_tanda || '?') + ing.unidad
+          + ' <span class="text-amber-600 font-medium">c/' + ing.rendimiento_por_tanda + ' porc</span>'
+          + (costoPorPorcion > 0 ? ' <span class="text-slate-500">~' + Utils.formatCurrency(costoPorPorcion) + '/porc</span>' : '')
+          + '</div>';
+      });
+    }
+    ingsHtml += '</div>';
   }
 
   var actions;
