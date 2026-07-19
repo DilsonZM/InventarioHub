@@ -1057,37 +1057,24 @@ function buildPrintDocument(opts) {
     html += '<tr><td>Atendido por:</td><td>' + escapeHtml(sale.usuario_nombre || sale.username || '') + '</td></tr>';
     html += '</table>';
 
-    html += '<div class="sep-double"></div>';
+    html += '<div class="sep-double" style="margin-bottom:8px"></div>';
 
-    html += '<table>';
-    html += '<thead><tr><th>Descripcion</th><th>Cant</th><th>Vlr Unit</th><th>Total</th></tr></thead><tbody>';
     var subtotal = 0;
     items.forEach(function (it) {
       var qty = it.cantidadPresentacion && it.factorConversion !== 1 ? it.cantidadPresentacion : it.quantity;
-      var unit = it.unidadPresentacion || '';
       var unitPrice = it.unitPrice || 0;
       var sub = it.subtotal != null ? it.subtotal : (unitPrice * (it.quantity || 0));
       subtotal += sub;
       var nameLine = escapeHtml(it.productName) + (it.esPlato ? ' *' : '');
-      if (unit) nameLine += ' <span class="item-meta">(' + escapeHtml(unit) + ')</span>';
-      html += '<tr>';
-      html += '<td>' + nameLine + '</td>';
-      html += '<td style="text-align:right">' + qty + '</td>';
-      html += '<td style="text-align:right">' + window.Utils.formatCurrency(unitPrice) + '</td>';
-      html += '<td style="text-align:right">' + window.Utils.formatCurrency(sub) + '</td>';
-      html += '</tr>';
+      html += '<div class="item" style="margin-bottom:6px">';
+      html += '<div class="row"><span class="item-name">' + nameLine + '</span><span class="bold">' + window.Utils.formatCurrency(sub) + '</span></div>';
+      html += '<div class="item-meta">x' + qty + ' &middot; ' + window.Utils.formatCurrency(unitPrice) + ' c/u</div>';
       // Observacion del item
       if (it.observacion) {
-        html += '<tr><td colspan="4" style="font-size:10px;font-style:italic;padding-left:8px">  Obs: ' + escapeHtml(it.observacion) + '</td></tr>';
+        html += '<div class="item-meta" style="font-style:italic">  Obs: ' + escapeHtml(it.observacion) + '</div>';
       }
+      html += '</div>';
     });
-    html += '</tbody></table>';
-
-    // Desglose financiero
-    var costoDom = parseFloat(sale.costoDomicilio) || 0;
-    var bonoDesc = parseFloat(sale.bonoDescuento) || 0;
-    var propinaReal = parseFloat(sale.propina) || 0;
-    var totalFinal = parseFloat(sale.total) || subtotal;
 
     html += '<div class="sep"></div>';
     html += '<div class="row"><span>Subtotal:</span><span class="bold">' + window.Utils.formatCurrency(subtotal) + '</span></div>';
