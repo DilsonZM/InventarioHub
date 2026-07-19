@@ -164,6 +164,34 @@ async function openDishModal(dishId) {
       }
       if (d.ingredientes && d.ingredientes.length > 0) {
         renderIngredientList(d.ingredientes);
+        // Poblar unidades para cada ingrediente que ya tiene producto
+        setTimeout(function () {
+          document.querySelectorAll('#dishIngredients .dish-ingredient-row').forEach(function (row) {
+            var hidden = row.querySelector('.ing-product');
+            var unitSel = row.querySelector('.ing-unit');
+            if (hidden && hidden.value && unitSel) {
+              var prod = (window._dishProducts || []).find(function (p) { return p.id === hidden.value; });
+              if (prod) {
+                var pres = window.getPresentaciones ? window.getPresentaciones(prod.unidad || '') : [{ value: '', label: '--', factor: 1 }];
+                unitSel.innerHTML = pres.map(function (p) {
+                  return '<option value="' + p.value + '"' + (p.factor === 1 ? ' selected' : '') + '>' + escapeHtml(p.label) + '</option>';
+                }).join('');
+              }
+            }
+          });
+          // Seleccionar unidad guardada
+          d.ingredientes.forEach(function (ing, idx) {
+            var row = document.getElementById('ingredientRow_' + idx);
+            if (row && ing.unidad) {
+              var unitSel = row.querySelector('.ing-unit');
+              if (unitSel) {
+                for (var o = 0; o < unitSel.options.length; o++) {
+                  if (unitSel.options[o].value === ing.unidad) { unitSel.value = ing.unidad; break; }
+                }
+              }
+            }
+          });
+        }, 100);
       }
     } catch (e) {
       showToast('Error al cargar plato', 'error');
@@ -184,20 +212,18 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
   var tc = tipoCData || {};
 
   var html = '<div class="dish-ingredient-row bg-slate-50 border border-slate-100 rounded-xl">'
-    + '<div class="flex items-end gap-3 p-3">'
-    + '<div class="flex-1 min-w-0">'
+    + '<div class="p-3 space-y-2">'
+    // Row 1: Producto (autocomplete) + Cantidad + Unidad + Remove
+    + '<div class="flex items-end gap-3">'
+    + '<div class="flex-1 min-w-0 relative">'
     + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Producto</label>'
-    + '<select class="ing-product w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">'
-    + '<option value="">Seleccionar producto</option>'
-    + (window._dishProducts || []).map(function (p) {
-      var stockInfo = ' (' + (p.stock || 0) + ' ' + (p.unidad || 'unid') + ')';
-      return '<option value="' + p.id + '" data-unidad="' + (p.unidad || '') + '"' + (productoIdPreset === p.id ? ' selected' : '') + '>' + escapeHtml(p.name) + stockInfo + '</option>';
-    }).join('')
-    + '</select>'
+    + '<input type="text" class="ing-search w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="Buscar producto..." autocomplete="off" value="' + (tc.prodName || '') + '">'
+    + '<input type="hidden" class="ing-product" value="' + (productoIdPreset || '') + '" data-unidad-preset="' + (unidadPreset || '') + '">'
+    + '<div class="ing-dropdown hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto"></div>'
     + '</div>'
     + '<div class="w-24 shrink-0">'
     + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
-    + '<input type="number" class="ing-qty w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + (cantidadPreset || '') + '">'
+    + '<input type="number" class="ing-qty w-full px-2 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + (cantidadPreset || '') + '">'
     + '</div>'
     + '<div class="w-28 shrink-0">'
     + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Unidad</label>'
@@ -211,21 +237,18 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
     + '</button>'
     + '</div>'
     + '</div>'
-    // Tipo C toggle
-    + '<div class="px-3 pb-2 border-t border-slate-100/50">'
-    + '<label class="ing-tc-toggle flex items-center gap-2 py-1.5 cursor-pointer select-none">'
+    // Row 2: Tipo C toggle (siempre visible)
+    + '<div class="flex items-center border-t border-slate-200/60 pt-2">'
+    + '<label class="ing-tc-toggle flex items-center gap-2 cursor-pointer select-none">'
     + '<input type="checkbox" class="ing-tc-check rounded border-slate-300 text-amber-600 focus:ring-amber-500" ' + (tc.rendimiento ? 'checked' : '') + '>'
-    + '<span class="text-[11px] font-medium text-slate-500">Rinde por tanda</span>'
-    + '<span class="ing-tc-badge ' + (tc.rendimiento ? '' : 'hidden') + ' text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">Tipo C</span>'
+    + '<span class="text-[11px] font-medium text-slate-600">Rinde por tanda (Tipo C)</span>'
+    + '<span class="ing-tc-badge ' + (tc.rendimiento ? '' : 'hidden') + ' text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">Activo</span>'
     + '</label>'
-    + '<div class="ing-tc-fields ' + (tc.rendimiento ? '' : 'hidden') + ' flex gap-2 mt-1">'
-    + '<div class="flex-1">'
-    + '<label class="block text-[10px] text-slate-400 mb-0.5">Porciones x tanda</label>'
-    + '<input type="number" class="ing-tc-rendimiento w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="1" step="1" value="' + (tc.rendimiento || 10) + '">'
-    + '</div>'
-    + '<div class="flex-1">'
-    + '<label class="block text-[10px] text-slate-400 mb-0.5">Cantidad x tanda</label>'
-    + '<input type="number" class="ing-tc-cantidad w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="0.001" step="0.001" value="' + (tc.cantidad_tanda || tc.cantidad || '') + '">'
+    + '<div class="ing-tc-fields ' + (tc.rendimiento ? '' : 'hidden') + ' flex gap-2 ml-4">'
+    + '<input type="number" class="ing-tc-rendimiento w-16 px-2 py-1 border border-amber-200 rounded-lg text-[11px] text-center bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="1" step="1" value="' + (tc.rendimiento || 10) + '" placeholder="Porc.">'
+    + '<span class="text-[11px] text-slate-400 self-center">porciones =</span>'
+    + '<input type="number" class="ing-tc-cantidad w-18 px-2 py-1 border border-amber-200 rounded-lg text-[11px] text-center bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="0.001" step="0.001" value="' + (tc.cantidad_tanda || tc.cantidad || '') + '" placeholder="Cant.">'
+    + '<span class="text-[11px] text-slate-400 self-center">por tanda</span>'
     + '</div>'
     + '</div>'
     + '</div>'
@@ -257,6 +280,7 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
 function bindIngredientEvents() {
   var rows = document.querySelectorAll('#dishIngredients .dish-ingredient-row');
   rows.forEach(function (row) {
+    // Remove button
     var removeBtn = row.querySelector('.ing-remove');
     if (removeBtn && !removeBtn._bound) {
       removeBtn._bound = true;
@@ -269,23 +293,65 @@ function bindIngredientEvents() {
       });
     }
 
-    // Producto → llenar unidades
-    var prodSelect = row.querySelector('.ing-product');
+    // Autocomplete search
+    var searchInput = row.querySelector('.ing-search');
+    var hiddenInput = row.querySelector('.ing-product');
+    var dropdown = row.querySelector('.ing-dropdown');
     var unitSelect = row.querySelector('.ing-unit');
-    if (prodSelect && unitSelect && !prodSelect._unitBound) {
-      prodSelect._unitBound = true;
-      prodSelect.addEventListener('change', function () {
-        var opt = this.options[this.selectedIndex];
-        var unidad = opt ? opt.getAttribute('data-unidad') || '' : '';
-        var pres = window.getPresentaciones(unidad);
-        unitSelect.innerHTML = pres.map(function (p) {
-          return '<option value="' + p.value + '"' + (p.factor === 1 ? ' selected' : '') + '>' + escapeHtml(p.label) + '</option>';
-        }).join('');
+
+    if (searchInput && dropdown && !searchInput._searchBound) {
+      searchInput._searchBound = true;
+
+      searchInput.addEventListener('input', function () {
+        var q = (this.value || '').toLowerCase().trim();
+        var prods = window._dishProducts || [];
+        var items = q ? prods.filter(function (p) {
+          return p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
+        }) : prods.slice(0, 20);
+
+        if (items.length === 0) {
+          dropdown.innerHTML = '<div class="px-3 py-2 text-xs text-slate-400 text-center">Sin resultados</div>';
+        } else {
+          dropdown.innerHTML = items.map(function (p) {
+            var sel = hiddenInput.value === p.id;
+            return '<div class="ing-result flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 ' + (sel ? 'bg-brand-50' : '') + '"'
+              + ' data-id="' + p.id + '"'
+              + ' data-name="' + escapeHtml(p.name) + '"'
+              + ' data-sku="' + escapeHtml(p.sku || '') + '"'
+              + ' data-unidad="' + (p.unidad || '') + '">'
+              + '<span class="text-xs">' + escapeHtml(p.name) + '</span>'
+              + '<span class="text-[10px] text-slate-400 ml-auto">' + escapeHtml(p.sku || '') + ' · ' + (p.stock || 0) + ' ' + escapeHtml(p.unidad || 'unid') + '</span>'
+              + '</div>';
+          }).join('');
+
+          dropdown.querySelectorAll('.ing-result').forEach(function (el) {
+            el.addEventListener('click', function (e) {
+              e.stopPropagation();
+              hiddenInput.value = el.dataset.id;
+              searchInput.value = el.dataset.name + ' · ' + el.dataset.sku;
+              dropdown.classList.add('hidden');
+
+              // Poblar unidades
+              var unidad = el.dataset.unidad || '';
+              var pres = window.getPresentaciones ? window.getPresentaciones(unidad) : [{ value: '', label: '--', factor: 1 }];
+              if (unitSelect) {
+                unitSelect.innerHTML = pres.map(function (p) {
+                  return '<option value="' + p.value + '"' + (p.factor === 1 ? ' selected' : '') + '>' + escapeHtml(p.label) + '</option>';
+                }).join('');
+              }
+            });
+          });
+        }
+        dropdown.classList.remove('hidden');
       });
-      // Disparar cambio inicial si ya hay producto seleccionado
-      if (prodSelect.value) {
-        prodSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+
+      searchInput.addEventListener('focus', function () {
+        if (!searchInput.value) searchInput.dispatchEvent(new Event('input'));
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!row.contains(e.target)) dropdown.classList.add('hidden');
+      });
     }
 
     // Tipo C toggle
@@ -313,22 +379,22 @@ function renderIngredientList(ingredientes) {
   ingredientes.forEach(function (ing, i) {
     var row = document.createElement('div');
     var isTipoC = ing.rendimiento_por_tanda > 1;
+    var prod = (window._dishProducts || []).find(function (p) { return p.id === ing.producto_id; });
+    var prodName = prod ? (prod.name + ' · ' + (prod.sku || '')) : (ing.producto_nombre || '');
+    var prodUnidad = prod ? (prod.unidad || '') : '';
 
     row.innerHTML = '<div class="dish-ingredient-row bg-slate-50 border border-slate-100 rounded-xl" id="ingredientRow_' + i + '">'
-      + '<div class="flex items-end gap-3 p-3">'
-      + '<div class="flex-1 min-w-0">'
+      + '<div class="p-3 space-y-2">'
+      + '<div class="flex items-end gap-3">'
+      + '<div class="flex-1 min-w-0 relative">'
       + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Producto</label>'
-      + '<select class="ing-product w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">'
-      + '<option value="">Seleccionar producto</option>'
-      + (window._dishProducts || []).map(function (pr) {
-        var info = ' (' + (pr.stock || 0) + ' ' + (pr.unidad || 'unid') + ')';
-        return '<option value="' + pr.id + '" data-unidad="' + (pr.unidad || '') + '"' + (ing.producto_id === pr.id ? ' selected' : '') + '>' + escapeHtml(pr.name) + info + '</option>';
-      }).join('')
-      + '</select>'
+      + '<input type="text" class="ing-search w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="Buscar producto..." autocomplete="off" value="' + escapeHtml(prodName) + '">'
+      + '<input type="hidden" class="ing-product" value="' + (ing.producto_id || '') + '" data-unidad-preset="' + escapeHtml(ing.unidad || prodUnidad) + '">'
+      + '<div class="ing-dropdown hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto"></div>'
       + '</div>'
       + '<div class="w-24 shrink-0">'
       + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
-      + '<input type="number" class="ing-qty w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + ing.cantidad + '">'
+      + '<input type="number" class="ing-qty w-full px-2 py-2.5 border border-slate-200 rounded-lg text-sm text-center bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="1" min="0.001" step="0.001" value="' + ing.cantidad + '">'
       + '</div>'
       + '<div class="w-28 shrink-0">'
       + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Unidad</label>'
@@ -342,21 +408,17 @@ function renderIngredientList(ingredientes) {
       + '</button>'
       + '</div>'
       + '</div>'
-      // Tipo C toggle
-      + '<div class="px-3 pb-2 border-t border-slate-100/50">'
-      + '<label class="ing-tc-toggle flex items-center gap-2 py-1.5 cursor-pointer select-none">'
+      + '<div class="flex items-center border-t border-slate-200/60 pt-2">'
+      + '<label class="ing-tc-toggle flex items-center gap-2 cursor-pointer select-none">'
       + '<input type="checkbox" class="ing-tc-check rounded border-slate-300 text-amber-600 focus:ring-amber-500" ' + (isTipoC ? 'checked' : '') + '>'
-      + '<span class="text-[11px] font-medium text-slate-500">Rinde por tanda</span>'
-      + '<span class="ing-tc-badge ' + (isTipoC ? '' : 'hidden') + ' text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">Tipo C</span>'
+      + '<span class="text-[11px] font-medium text-slate-600">Rinde por tanda (Tipo C)</span>'
+      + '<span class="ing-tc-badge ' + (isTipoC ? '' : 'hidden') + ' text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">Activo</span>'
       + '</label>'
-      + '<div class="ing-tc-fields ' + (isTipoC ? '' : 'hidden') + ' flex gap-2 mt-1">'
-      + '<div class="flex-1">'
-      + '<label class="block text-[10px] text-slate-400 mb-0.5">Porciones x tanda</label>'
-      + '<input type="number" class="ing-tc-rendimiento w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="1" step="1" value="' + (isTipoC ? (ing.rendimiento_por_tanda || 10) : 10) + '">'
-      + '</div>'
-      + '<div class="flex-1">'
-      + '<label class="block text-[10px] text-slate-400 mb-0.5">Cantidad x tanda</label>'
-      + '<input type="number" class="ing-tc-cantidad w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="0.001" step="0.001" value="' + (isTipoC ? (ing.cantidad_tanda || ing.cantidad) : ing.cantidad) + '">'
+      + '<div class="ing-tc-fields ' + (isTipoC ? '' : 'hidden') + ' flex gap-2 ml-4">'
+      + '<input type="number" class="ing-tc-rendimiento w-16 px-2 py-1 border border-amber-200 rounded-lg text-[11px] text-center bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="1" step="1" value="' + (isTipoC ? (ing.rendimiento_por_tanda || 10) : 10) + '" placeholder="Porc.">'
+      + '<span class="text-[11px] text-slate-400 self-center">porciones =</span>'
+      + '<input type="number" class="ing-tc-cantidad w-18 px-2 py-1 border border-amber-200 rounded-lg text-[11px] text-center bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="0.001" step="0.001" value="' + (isTipoC ? (ing.cantidad_tanda || ing.cantidad) : ing.cantidad) + '" placeholder="Cant.">'
+      + '<span class="text-[11px] text-slate-400 self-center">por tanda</span>'
       + '</div>'
       + '</div>'
       + '</div>'
@@ -410,16 +472,16 @@ async function saveDish(e) {
   var ingredients = [];
   var rows = document.querySelectorAll('#dishIngredients .dish-ingredient-row');
   rows.forEach(function (row) {
-    var prodSelect = row.querySelector('.ing-product');
+    var hiddenInput = row.querySelector('.ing-product');
     var qtyInput = row.querySelector('.ing-qty');
     var unitInput = row.querySelector('.ing-unit');
     var tcCheck = row.querySelector('.ing-tc-check');
     var tcRendimiento = row.querySelector('.ing-tc-rendimiento');
     var tcCantidad = row.querySelector('.ing-tc-cantidad');
 
-    if (prodSelect && prodSelect.value && qtyInput && parseFloat(qtyInput.value) > 0) {
+    if (hiddenInput && hiddenInput.value && qtyInput && parseFloat(qtyInput.value) > 0) {
       var ing = {
-        producto_id: prodSelect.value,
+        producto_id: hiddenInput.value,
         cantidad: parseFloat(qtyInput.value),
         unidad: (unitInput ? unitInput.value : '').trim() || 'g',
         rendimiento_por_tanda: 1
