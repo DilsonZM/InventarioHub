@@ -336,9 +336,14 @@ window.editCompra = async function (id) {
     return;
   }
   try {
+    // Marcar como edicion antes de abrir modal para no resetear form
+    state.editingCompraId = id;
+
+    // Cargar productos y abrir modal
+    await openCompraModal();
+
     var res = await API.compras.get(id);
     var compra = res.data;
-    state.editingCompraId = id;
     var titleEl = document.querySelector('#compraModal h3');
     if (titleEl) titleEl.textContent = 'Editar Entrada';
 
@@ -368,7 +373,6 @@ window.editCompra = async function (id) {
     $('#compraValor').value = compra.valor_unitario;
     if (compra.fecha_compra) $('#compraFecha').value = compra.fecha_compra;
     updateCompraTotal();
-    openModal('compraModal');
   } catch (err) {
     showToast('Error al cargar entrada: ' + err.message, 'error');
   }
