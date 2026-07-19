@@ -180,7 +180,9 @@ async function openDishModal(dishId) {
   openModal('dishModal');
 }
 
-function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, editIndex) {
+function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, editIndex, tipoCData) {
+  var tc = tipoCData || {};
+
   var html = '<div class="dish-ingredient-row bg-slate-50 border border-slate-100 rounded-xl">'
     + '<div class="flex items-end gap-3 p-3">'
     + '<div class="flex-1 min-w-0">'
@@ -207,6 +209,24 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
     + '<button type="button" class="ing-remove p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Quitar ingrediente">'
     + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
     + '</button>'
+    + '</div>'
+    + '</div>'
+    // Tipo C toggle
+    + '<div class="px-3 pb-2 border-t border-slate-100/50">'
+    + '<label class="ing-tc-toggle flex items-center gap-2 py-1.5 cursor-pointer select-none">'
+    + '<input type="checkbox" class="ing-tc-check rounded border-slate-300 text-amber-600 focus:ring-amber-500" ' + (tc.rendimiento ? 'checked' : '') + '>'
+    + '<span class="text-[11px] font-medium text-slate-500">Rinde por tanda</span>'
+    + '<span class="ing-tc-badge ' + (tc.rendimiento ? '' : 'hidden') + ' text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">Tipo C</span>'
+    + '</label>'
+    + '<div class="ing-tc-fields ' + (tc.rendimiento ? '' : 'hidden') + ' flex gap-2 mt-1">'
+    + '<div class="flex-1">'
+    + '<label class="block text-[10px] text-slate-400 mb-0.5">Porciones x tanda</label>'
+    + '<input type="number" class="ing-tc-rendimiento w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="1" step="1" value="' + (tc.rendimiento || 10) + '">'
+    + '</div>'
+    + '<div class="flex-1">'
+    + '<label class="block text-[10px] text-slate-400 mb-0.5">Cantidad x tanda</label>'
+    + '<input type="number" class="ing-tc-cantidad w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="0.001" step="0.001" value="' + (tc.cantidad_tanda || tc.cantidad || '') + '">'
+    + '</div>'
     + '</div>'
     + '</div>'
     + '</div>';
@@ -267,6 +287,23 @@ function bindIngredientEvents() {
         prodSelect.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
+
+    // Tipo C toggle
+    var tcCheck = row.querySelector('.ing-tc-check');
+    if (tcCheck && !tcCheck._tcBound) {
+      tcCheck._tcBound = true;
+      tcCheck.addEventListener('change', function () {
+        var fields = row.querySelector('.ing-tc-fields');
+        var badge = row.querySelector('.ing-tc-badge');
+        if (this.checked) {
+          if (fields) fields.classList.remove('hidden');
+          if (badge) badge.classList.remove('hidden');
+        } else {
+          if (fields) fields.classList.add('hidden');
+          if (badge) badge.classList.add('hidden');
+        }
+      });
+    }
   });
 }
 
@@ -275,6 +312,8 @@ function renderIngredientList(ingredientes) {
   container.innerHTML = '';
   ingredientes.forEach(function (ing, i) {
     var row = document.createElement('div');
+    var isTipoC = ing.rendimiento_por_tanda > 1;
+
     row.innerHTML = '<div class="dish-ingredient-row bg-slate-50 border border-slate-100 rounded-xl" id="ingredientRow_' + i + '">'
       + '<div class="flex items-end gap-3 p-3">'
       + '<div class="flex-1 min-w-0">'
@@ -301,6 +340,24 @@ function renderIngredientList(ingredientes) {
       + '<button type="button" class="ing-remove p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Quitar ingrediente">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
       + '</button>'
+      + '</div>'
+      + '</div>'
+      // Tipo C toggle
+      + '<div class="px-3 pb-2 border-t border-slate-100/50">'
+      + '<label class="ing-tc-toggle flex items-center gap-2 py-1.5 cursor-pointer select-none">'
+      + '<input type="checkbox" class="ing-tc-check rounded border-slate-300 text-amber-600 focus:ring-amber-500" ' + (isTipoC ? 'checked' : '') + '>'
+      + '<span class="text-[11px] font-medium text-slate-500">Rinde por tanda</span>'
+      + '<span class="ing-tc-badge ' + (isTipoC ? '' : 'hidden') + ' text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">Tipo C</span>'
+      + '</label>'
+      + '<div class="ing-tc-fields ' + (isTipoC ? '' : 'hidden') + ' flex gap-2 mt-1">'
+      + '<div class="flex-1">'
+      + '<label class="block text-[10px] text-slate-400 mb-0.5">Porciones x tanda</label>'
+      + '<input type="number" class="ing-tc-rendimiento w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="1" step="1" value="' + (isTipoC ? (ing.rendimiento_por_tanda || 10) : 10) + '">'
+      + '</div>'
+      + '<div class="flex-1">'
+      + '<label class="block text-[10px] text-slate-400 mb-0.5">Cantidad x tanda</label>'
+      + '<input type="number" class="ing-tc-cantidad w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" min="0.001" step="0.001" value="' + (isTipoC ? (ing.cantidad_tanda || ing.cantidad) : ing.cantidad) + '">'
+      + '</div>'
       + '</div>'
       + '</div>'
       + '</div>';
@@ -356,12 +413,23 @@ async function saveDish(e) {
     var prodSelect = row.querySelector('.ing-product');
     var qtyInput = row.querySelector('.ing-qty');
     var unitInput = row.querySelector('.ing-unit');
+    var tcCheck = row.querySelector('.ing-tc-check');
+    var tcRendimiento = row.querySelector('.ing-tc-rendimiento');
+    var tcCantidad = row.querySelector('.ing-tc-cantidad');
+
     if (prodSelect && prodSelect.value && qtyInput && parseFloat(qtyInput.value) > 0) {
-      ingredients.push({
+      var ing = {
         producto_id: prodSelect.value,
         cantidad: parseFloat(qtyInput.value),
-        unidad: (unitInput ? unitInput.value : '').trim() || 'g'
-      });
+        unidad: (unitInput ? unitInput.value : '').trim() || 'g',
+        rendimiento_por_tanda: 1
+      };
+      // Tipo C
+      if (tcCheck && tcCheck.checked) {
+        ing.rendimiento_por_tanda = parseInt(tcRendimiento ? tcRendimiento.value : 10) || 10;
+        ing.cantidad_tanda = parseFloat(tcCantidad ? tcCantidad.value : ing.cantidad) || ing.cantidad;
+      }
+      ingredients.push(ing);
     }
   });
 
