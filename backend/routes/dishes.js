@@ -103,7 +103,9 @@ router.get('/', async (req, res) => {
           nombre: p.nombre || '?',
           cantidad: parseFloat(c.cantidad),
           unidad: c.unidad || '',
-          costo: costoIng
+          costo: costoIng,
+          rendimiento_por_tanda: parseInt(c.rendimiento_por_tanda) || 1,
+          cantidad_tanda: parseFloat(c.cantidad_tanda) || null
         });
       });
     }
@@ -177,7 +179,9 @@ router.get('/:id', async (req, res) => {
             producto_unidad: ing.productos ? ing.productos.unidad_medida : '',
             producto_stock: ing.productos ? ing.productos.stock_actual : 0,
             cantidad: parseFloat(ing.cantidad),
-            unidad: ing.unidad
+            unidad: ing.unidad,
+            rendimiento_por_tanda: parseInt(ing.rendimiento_por_tanda) || 1,
+            cantidad_tanda: parseFloat(ing.cantidad_tanda) || null
           };
         })
       }
@@ -217,7 +221,9 @@ router.post('/', requirePermission('puede_crear_productos'), async (req, res) =>
             plato_id: plato.id,
             producto_id: ing.producto_id,
             cantidad: Math.max(0, parseFloat(ing.cantidad) || 0),
-            unidad: ing.unidad || 'unidad'
+            unidad: ing.unidad || 'unidad',
+            rendimiento_por_tanda: parseInt(ing.rendimiento_por_tanda) || 1,
+            cantidad_tanda: ing.rendimiento_por_tanda > 1 ? (parseFloat(ing.cantidad_tanda) || ing.cantidad) : null
           };
         })
         .filter(function (ing) { return ing.cantidad > 0; });
@@ -272,7 +278,9 @@ router.put('/:id', requirePermission('puede_editar_productos'), async (req, res)
             plato_id: req.params.id,
             producto_id: ing.producto_id,
             cantidad: Math.max(0, parseFloat(ing.cantidad) || 0),
-            unidad: ing.unidad || 'unidad'
+            unidad: ing.unidad || 'unidad',
+            rendimiento_por_tanda: parseInt(ing.rendimiento_por_tanda) || 1,
+            cantidad_tanda: ing.rendimiento_por_tanda > 1 ? (parseFloat(ing.cantidad_tanda) || ing.cantidad) : null
           };
         })
         .filter(function (ing) { return ing.cantidad > 0; });

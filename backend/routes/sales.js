@@ -238,13 +238,15 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
 
     // === 3. Validar y preparar nuevos platos ===
     var ingredientesTotales = {};
+    var insumosTandaEdit = [];
+
     if (hasPlatos) {
       for (var i = 0; i < platos.length; i++) {
         var pd = platos[i];
         var cantPlato = Math.max(1, parseInt(pd.cantidad) || 1);
         var { data: receta, error: recetaErr } = await supabase
           .from('plato_ingredientes')
-          .select('producto_id, cantidad, unidad, productos!inner(nombre, unidad_medida)')
+          .select('producto_id, cantidad, unidad, rendimiento_por_tanda, cantidad_tanda, productos!inner(nombre, unidad_medida)')
           .eq('plato_id', pd.plato_id);
         if (recetaErr) throw recetaErr;
         if (!receta || receta.length === 0) continue;
@@ -252,6 +254,18 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
           var ing = receta[j];
           var pid = ing.producto_id;
           var prodUnidad = ing.productos.unidad_medida || '';
+
+          if (ing.rendimiento_por_tanda > 1 && ing.cantidad_tanda > 0) {
+            insumosTandaEdit.push({
+              producto_id: pid,
+              nombre: ing.productos.nombre,
+              porciones: cantPlato,
+              rendimiento: parseInt(ing.rendimiento_por_tanda),
+              cantidad_tanda: parseFloat(ing.cantidad_tanda)
+            });
+            continue;
+          }
+
           var converted = convertToBaseUnit(ing.cantidad * cantPlato, ing.unidad, prodUnidad);
           if (ingredientesTotales[pid]) {
             ingredientesTotales[pid].cantidad_total += converted;
@@ -314,6 +328,20 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
           p_usuario_id: req.user ? req.user.id : null
         });
       }
+    }
+
+    // === 6.5. Aplicar Tipo C: insumos por tanda ===
+    for (var tc = 0; tc < insumosTandaEdit.length; tc++) {
+      var ins = insumosTandaEdit[tc];
+      await supabase.rpc('procesar_tanda_insumo', {
+        p_producto_id: ins.producto_id,
+        p_porciones_vendidas: ins.porciones,
+        p_rendimiento_por_tanda: ins.rendimiento,
+        p_cantidad_tanda: ins.cantidad_tanda,
+        p_venta_id: req.params.id,
+        p_usuario_id: req.user ? req.user.id : null,
+        p_motivo: 'Ajuste por edicion de venta ' + original.numero_venta
+      });
     }
 
     // === 7. Eliminar detalles viejos y crear nuevos ===
@@ -581,12 +609,14 @@ async function handleDishSale(req, res) {
     var saleEstado = req.body.estado || 'completada';
 
     var ingredientesTotales = {};
+    var insumosTanda = []; // Tipo C: insumos compartidos por tanda
+
     for (var i = 0; i < platos.length; i++) {
       var d = platos[i];
       var cantPlato = Math.max(1, parseInt(d.cantidad) || 1);
       var { data: receta, error: recetaErr } = await supabase
         .from('plato_ingredientes')
-        .select('producto_id, cantidad, unidad, productos!inner(nombre, unidad_medida)')
+        .select('producto_id, cantidad, unidad, rendimiento_por_tanda, cantidad_tanda, productos!inner(nombre, unidad_medida)')
         .eq('plato_id', d.plato_id);
       if (recetaErr) throw recetaErr;
       if (!receta || receta.length === 0) continue;
@@ -594,6 +624,20 @@ async function handleDishSale(req, res) {
         var ing = receta[j];
         var pid = ing.producto_id;
         var prodUnidad = ing.productos.unidad_medida || '';
+
+        // Tipo C: insumo compartido por tanda de rendimiento
+        if (ing.rendimiento_por_tanda > 1 && ing.cantidad_tanda > 0) {
+          insumosTanda.push({
+            producto_id: pid,
+            nombre: ing.productos.nombre,
+            porciones: cantPlato,
+            rendimiento: parseInt(ing.rendimiento_por_tanda),
+            cantidad_tanda: parseFloat(ing.cantidad_tanda)
+          });
+          continue;
+        }
+
+        // Normal: porcion directa
         var converted = convertToBaseUnit(ing.cantidad * cantPlato, ing.unidad, prodUnidad);
         if (ingredientesTotales[pid]) {
           ingredientesTotales[pid].cantidad_total += converted;
@@ -712,6 +756,19 @@ async function handleDishSale(req, res) {
             p_usuario_id: req.user ? req.user.id : null
           });
         }
+      }
+      // Tipo C: insumos compartidos por tanda
+      for (var tc = 0; tc < insumosTanda.length; tc++) {
+        var ins = insumosTanda[tc];
+        await supabase.rpc('procesar_tanda_insumo', {
+          p_producto_id: ins.producto_id,
+          p_porciones_vendidas: ins.porciones,
+          p_rendimiento_por_tanda: ins.rendimiento,
+          p_cantidad_tanda: ins.cantidad_tanda,
+          p_venta_id: venta.id,
+          p_usuario_id: req.user ? req.user.id : null,
+          p_motivo: 'Venta de platos ' + numVenta
+        });
       }
     }
 
