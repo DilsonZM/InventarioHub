@@ -842,14 +842,19 @@ window.viewSale = async function (id) {
       finHtml += '</div>';
     }
 
-    // Boton ajustar pago (forma_pago + propina + bono) - visible para quien tenga permiso
+    // Boton ajustar pago + imprimir (visible para quien tenga permiso)
     var tipBtnHtml = '';
     if (can('puedeEditarSalidas')) {
-      tipBtnHtml = '<div class="px-4 py-2 border-t border-slate-100">'
+      tipBtnHtml = '<div class="flex border-t border-slate-100">'
         + '<button onclick="window.openPaymentModal(\'' + sale.id + '\')" '
-        + 'class="w-full text-xs text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg py-2 transition-colors flex items-center justify-center gap-1.5">'
+        + 'class="flex-1 text-xs text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg py-2.5 transition-colors flex items-center justify-center gap-1.5">'
         + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>'
         + 'Ajustar pago' + (sale.formaPago ? ' (' + sale.formaPago + ')' : '')
+        + '</button>'
+        + '<button onclick="window.printTicketFromDetail(\'' + sale.id + '\')" '
+        + 'class="flex-1 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg py-2.5 transition-colors flex items-center justify-center gap-1.5 border-l border-slate-100">'
+        + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 12H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
+        + 'Imprimir'
         + '</button>'
         + '</div>';
     }
@@ -919,9 +924,19 @@ window.submitPaymentModal = async function () {
     var res = await API.sales.updatePayment(id, { formaPago: formaPago, propina: propina, bonoDescuento: bono });
     if (res.success) {
       showToast('Pago actualizado: ' + formatCurrency(res.data.total), 'success');
+      // Actualizar la venta en la lista local sin recargar (no perder filtros)
+      if (state.sales) {
+        var idx = state.sales.findIndex(function (s) { return s.id === id; });
+        if (idx !== -1) {
+          state.sales[idx].propina = res.data.propina;
+          state.sales[idx].bonoDescuento = res.data.bonoDescuento;
+          state.sales[idx].formaPago = res.data.formaPago;
+          state.sales[idx].total = res.data.total;
+          renderSalesTable();
+        }
+      }
       closeModal('paymentModal');
       viewSale(id); // Recargar detalle
-      loadSales();  // Recargar tabla
     } else {
       showToast(res.message || 'Error al actualizar', 'error');
     }
@@ -930,6 +945,25 @@ window.submitPaymentModal = async function () {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
   }
+};
+
+// Imprimir factura desde el detalle de salida
+window.printTicketFromDetail = async function (id) {
+  try {
+    var res = await API.sales.get(id);
+    if (res.success && res.data) {
+      window.printTicket(res.data);
+    } else {
+      showToast('No se pudo cargar el pedido', 'error');
+    }
+  } catch (err) {
+    showToast(err.message || 'Error', 'error');
+  }
+};
+window.printPaymentSale = function () {
+  var sale = state._paymentSale;
+  if (!sale) { showToast('Sin datos del pedido', 'error'); return; }
+  window.printTicket(sale);
 };
 
 window.deleteSale = function (id) {
