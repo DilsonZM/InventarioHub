@@ -564,8 +564,12 @@ function convertToBaseUnit(cantidad, fromUnit, toUnit) {
   if (from === to) return cantidad;
   var toGrams = { g: 1, gr: 1, gramo: 1, gramos: 1, kg: 1000, kilo: 1000, kilos: 1000, lb: 453.592, lbs: 453.592, libra: 453.592, libras: 453.592, onza: 28.3495, oz: 28.3495 };
   var toML = { ml: 1, mililitro: 1, mililitros: 1, l: 1000, litro: 1000, litros: 1000, lt: 1000 };
+  var toUnit = { docena: 12, decena: 10, unidad: 1, unid: 1, und: 1 };
   if (toGrams[from] && toGrams[to]) return (cantidad * toGrams[from]) / toGrams[to];
   if (toML[from] && toML[to]) return (cantidad * toML[from]) / toML[to];
+  if (toUnit[from] && toUnit[to]) return (cantidad * toUnit[from]) / toUnit[to];
+  if (toUnit[from] && !toUnit[to]) return cantidad * toUnit[from];
+  if (!toUnit[from] && toUnit[to]) return cantidad / toUnit[to];
   return cantidad;
 }
 

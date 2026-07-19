@@ -10,9 +10,15 @@ function convertUnit(cantidad, fromUnit, toUnit) {
   if (from === to) return parseFloat(cantidad) || 0;
   var toGrams = { g: 1, gr: 1, gramo: 1, gramos: 1, kg: 1000, kilo: 1000, kilos: 1000, lb: 453.592, lbs: 453.592, libra: 453.592, libras: 453.592, onza: 28.3495, oz: 28.3495 };
   var toML = { ml: 1, mililitro: 1, mililitros: 1, l: 1000, litro: 1000, litros: 1000, lt: 1000 };
+  var toUnit = { docena: 12, decena: 10, unidad: 1, unid: 1, und: 1 };
   var c = parseFloat(cantidad) || 0;
   if (toGrams[from] && toGrams[to]) return (c * toGrams[from]) / toGrams[to];
   if (toML[from] && toML[to]) return (c * toML[from]) / toML[to];
+  if (toUnit[from] && toUnit[to]) return (c * toUnit[from]) / toUnit[to];
+  // from es batch, to es unidad base: convertir a unidades individuales
+  if (toUnit[from] && !toUnit[to]) return c * toUnit[from];
+  // from es unidad, to es batch: convertir de unidades individuales a batch
+  if (!toUnit[from] && toUnit[to]) return c / toUnit[to];
   return c;
 }
 

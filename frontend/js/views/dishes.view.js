@@ -378,12 +378,17 @@ function bindIngredientEvents() {
         var badge = row.querySelector('.ing-tc-badge');
         var qtyInput = row.querySelector('.ing-qty');
         var qtyLabel = row.querySelector('.ing-qty-label');
+        var tcCantInput = row.querySelector('.ing-tc-cantidad');
         if (this.checked) {
           if (fields) fields.classList.remove('hidden');
           if (badge) badge.classList.remove('hidden');
           // Ocultar label/input de cantidad normal (no aplica)
           if (qtyInput) { qtyInput.style.display = 'none'; qtyInput.dataset.savedQty = qtyInput.value; qtyInput.value = ''; }
           if (qtyLabel) qtyLabel.textContent = 'N/A';
+          // Auto-rellenar cantidad_tanda con la cantidad que tenia, si esta vacia
+          if (tcCantInput && !tcCantInput.value && qtyInput) {
+            tcCantInput.value = qtyInput.dataset.savedQty || '1';
+          }
         } else {
           if (fields) fields.classList.add('hidden');
           if (badge) badge.classList.add('hidden');
