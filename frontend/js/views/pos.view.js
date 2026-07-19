@@ -1146,7 +1146,25 @@ window.printKitchen = function (sale) {
 
 // Helper: obtiene la venta actual (la del ultimo ticket) para reimprimir
 function getCurrentSale() {
-  return store.state._lastTicketSale || window._lastTicketSale || null;
+  var sale = store.state._lastTicketSale || window._lastTicketSale || null;
+  if (!sale) return null;
+
+  // Sincronizar valores del formulario del ticket (si estan visibles)
+  var formaEl = document.getElementById('ticketFormaPago');
+  var propEl = document.getElementById('ticketPropina');
+  var bonoEl = document.getElementById('ticketBono');
+  if (formaEl || propEl || bonoEl) {
+    var saleClone = JSON.parse(JSON.stringify(sale));
+    if (formaEl && formaEl.value) saleClone.formaPago = formaEl.value;
+    if (propEl) saleClone.propina = parseFloat(propEl.value) || 0;
+    if (bonoEl) saleClone.bonoDescuento = parseFloat(bonoEl.value) || 0;
+    // Recalcular total
+    var subtotal = saleClone.subtotal || 0;
+    var domicilio = saleClone.costoDomicilio || 0;
+    saleClone.total = subtotal + domicilio - (saleClone.bonoDescuento || 0) + (saleClone.propina || 0);
+    return saleClone;
+  }
+  return sale;
 }
 
 
