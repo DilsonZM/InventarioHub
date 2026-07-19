@@ -93,15 +93,16 @@ window.ticketSavePayment = async function () {
     var API = window.API;
     var res = await API.sales.updatePayment(sale.id, { formaPago: formaPago, propina: propina, bonoDescuento: bono });
     if (res.success) {
-      // Actualizar la venta en memoria para que impresion y detalle usen datos nuevos
+      // Actualizar la venta en memoria para que impresion use datos nuevos
       if (window._lastTicketSale) {
         window._lastTicketSale.formaPago = res.data.formaPago;
         window._lastTicketSale.propina = res.data.propina;
         window._lastTicketSale.bonoDescuento = res.data.bonoDescuento;
         window._lastTicketSale.total = res.data.total;
       }
-      // Refrescar el detalle de salida si esta abierto
-      if (typeof window.viewSale === 'function') {
+      // Refrescar el detalle de salida SOLO si ya esta abierto (no abrirlo)
+      var detailEl = document.getElementById('saleDetailModal');
+      if (detailEl && !detailEl.classList.contains('hidden') && typeof window.viewSale === 'function') {
         window.viewSale(sale.id);
       }
       window.showToast && window.showToast('Pago actualizado', 'success');
