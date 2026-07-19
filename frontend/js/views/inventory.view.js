@@ -322,7 +322,7 @@ if (typeof document !== 'undefined') {
 
 
 // ============================================
-// Export CSV
+// Export PDF
 // ============================================
 
 function exportInventoryCSV() {
@@ -331,18 +331,26 @@ function exportInventoryCSV() {
     showToast('No hay productos para exportar', 'warning');
     return;
   }
-  var rows = products.map(function (p) {
-    return {
-      'Nombre': p.name,
-      'SKU': p.sku,
-      'Categoria': p.category,
-      'Stock Actual': p.stock,
-      'Stock Mínimo': p.minStock,
-      'Unidad': p.unidad || 'unidad'
-    };
+  if (typeof Swal === 'undefined') {
+    Utils.printStockReport(products, 'Inventario');
+    return;
+  }
+  Swal.fire({
+    title: '¿Generar reporte?',
+    html: '<p class="text-sm text-slate-600">Se generará un reporte de <b class="text-slate-800">' + products.length + ' productos</b>.'
+      + (($('#filterStatus').value) ? '<br><span class="text-xs text-amber-600">Filtro activo: ' + $('#filterStatus').value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + '</span>' : '')
+      + '</p>'
+      + '<p class="text-xs text-slate-400 mt-2">Se abrirá en una ventana para imprimir o guardar como PDF.</p>',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Generar PDF',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#073626',
+    cancelButtonColor: '#94a3b8',
+    customClass: { popup: 'rounded-2xl', confirmButton: 'rounded-xl', cancelButton: 'rounded-xl' }
+  }).then(function (result) {
+    if (result.isConfirmed) Utils.printStockReport(products, 'Inventario');
   });
-  var ok = Utils.exportToCSV(rows, 'inventario-' + Utils.todayInAppTZ() + '.csv');
-  if (ok) showToast(rows.length + ' productos exportados', 'success');
 }
 
 // ============================================

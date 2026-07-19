@@ -453,17 +453,24 @@ function exportLowStockCSV() {
     showToast('No hay productos con stock bajo para exportar', 'warning');
     return;
   }
-  var rows = products.map(function (p) {
-    return {
-      'Nombre': p.name,
-      'SKU': p.sku,
-      'Stock Actual': p.stock,
-      'Stock Mínimo': p.minStock,
-      'Unidad': p.unidad || 'unidad'
-    };
+  if (typeof Swal === 'undefined') {
+    Utils.printStockReport(products, 'Productos con Stock Bajo');
+    return;
+  }
+  Swal.fire({
+    title: '¿Generar reporte?',
+    html: '<p class="text-sm text-slate-600">Se generará un reporte de <b class="text-slate-800">' + products.length + ' productos</b> con stock bajo.</p>'
+      + '<p class="text-xs text-slate-400 mt-2">Se abrirá en una ventana para imprimir o guardar como PDF.</p>',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Generar PDF',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#073626',
+    cancelButtonColor: '#94a3b8',
+    customClass: { popup: 'rounded-2xl', confirmButton: 'rounded-xl', cancelButton: 'rounded-xl' }
+  }).then(function (result) {
+    if (result.isConfirmed) Utils.printStockReport(products, 'Productos con Stock Bajo');
   });
-  var ok = Utils.exportToCSV(rows, 'stock-bajo-' + Utils.todayInAppTZ() + '.csv');
-  if (ok) showToast(rows.length + ' productos exportados', 'success');
 }
 
 function initVentasGroupButtons() {
