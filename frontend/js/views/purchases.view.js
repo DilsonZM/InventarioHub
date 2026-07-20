@@ -58,10 +58,25 @@ function initCompras() {
     });
   }
 
-  // Wire valor unitario change
-  var valorEl = document.getElementById('compraValor');
-  if (valorEl) {
-    valorEl.addEventListener('input', updateCompraTotal);
+  // Wire valor unitario con formato de pesos colombianos
+  var valorDisplay = document.getElementById('compraValorDisplay');
+  var valorHidden = document.getElementById('compraValor');
+  if (valorDisplay && valorHidden) {
+    valorDisplay.addEventListener('input', function () {
+      var raw = this.value.replace(/[^0-9]/g, '');
+      var num = parseInt(raw, 10) || 0;
+      valorHidden.value = num;
+      this.value = num > 0 ? '$' + num.toLocaleString('es-CO') : '';
+      updateCompraTotal();
+    });
+    valorDisplay.addEventListener('focus', function () {
+      var num = parseInt(valorHidden.value, 10) || 0;
+      this.value = num > 0 ? String(num) : '';
+    });
+    valorDisplay.addEventListener('blur', function () {
+      var num = parseInt(valorHidden.value, 10) || 0;
+      this.value = num > 0 ? '$' + num.toLocaleString('es-CO') : '';
+    });
   }
 
   // Wire buscador de productos
@@ -187,6 +202,9 @@ async function openCompraModal() {
   if ($('#compraTotal')) $('#compraTotal').textContent = '$0.00';
   $('#compraFormError').classList.add('hidden');
   $('#compraConversionPreview').classList.add('hidden');
+  // Limpiar campo de valor con formato
+  var vd = document.getElementById('compraValorDisplay');
+  if (vd && !isEditing) vd.value = '';
 
   try {
     var res = await API.products.list();
@@ -371,6 +389,8 @@ window.editCompra = async function (id) {
     }
     $('#compraCantidad').value = compra.cantidad_presentacion || compra.cantidad;
     $('#compraValor').value = compra.valor_unitario;
+    var vd = document.getElementById('compraValorDisplay');
+    if (vd && compra.valor_unitario) vd.value = '$' + parseInt(compra.valor_unitario).toLocaleString('es-CO');
     if (compra.fecha_compra) $('#compraFecha').value = compra.fecha_compra;
     updateCompraTotal();
   } catch (err) {
