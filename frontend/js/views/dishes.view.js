@@ -617,7 +617,8 @@ function renderDishRow(d, isActive) {
     });
     // Tipo C separados
     if (tipoC.length > 0) {
-      ingsHtml += '<div class="border-t-2 border-dashed border-slate-200 pt-1.5 mt-1.5"><span class="text-amber-700 font-semibold text-xs">Insumos x tanda:</span></div>';
+      ingsHtml += '<div class="max-w-[350px] mt-1.5"><span class="flex-1 block border-b-2 border-dashed border-slate-300"></span></div>';
+      ingsHtml += '<div class="max-w-[350px]"><span class="text-amber-700 font-semibold text-xs">Insumos x tanda:</span></div>';
       tipoC.forEach(function (ing) {
         var falta = faltantesNames.indexOf(ing.nombre) !== -1;
         var costoPorPorcion = (ing.costo && ing.rendimiento_por_tanda) ? Math.round((ing.costo || 0) / ing.rendimiento_por_tanda * 100) / 100 : 0;
