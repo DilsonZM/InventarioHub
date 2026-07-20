@@ -288,12 +288,11 @@ function filterCompraProductos(query) {
   } else {
     dropdown.innerHTML = items.map(function (p) {
       var selected = $('#compraProducto').value === p.id;
-      return '<div class="compra-result flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 ' + (selected ? 'bg-brand-50' : '') + '"'
+      return '<div class="compra-result flex items-center gap-2 px-3 py-2.5 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0 ' + (selected ? 'bg-brand-50' : '') + '"'
         + ' data-id="' + p.id + '"'
         + ' data-unidad="' + escapeHtml(p.unidad || 'unidad') + '"'
         + ' data-name="' + escapeHtml(p.name) + '"'
         + ' data-sku="' + escapeHtml(p.sku || '') + '">'
-        + '<div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-xs font-bold text-slate-400">' + (p.icono || '📦') + '</div>'
         + '<div class="flex-1 min-w-0">'
         + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(p.name) + '</p>'
         + '<p class="text-xs text-slate-400 truncate">' + escapeHtml(p.sku || '') + ' · ' + escapeHtml(p.unidad || 'unidad') + '</p>'
