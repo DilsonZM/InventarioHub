@@ -67,7 +67,7 @@ router.get('/', async (req, res) => {
     if (platoIds.length > 0) {
       var { data: costos } = await supabase
         .from('plato_ingredientes')
-        .select('plato_id, producto_id, cantidad, unidad')
+        .select('plato_id, producto_id, cantidad, unidad, rendimiento_por_tanda, cantidad_tanda')
         .in('plato_id', platoIds);
 
       // Obtener info de productos para calcular costo
