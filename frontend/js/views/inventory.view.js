@@ -61,8 +61,23 @@ async function initInventory() {
 
   var mermaSubmit = $('#mermaSubmitBtn');
   if (mermaSubmit) mermaSubmit.addEventListener('click', function () { submitMerma(); });
-  var mermaProduct = $('#mermaProduct');
-  if (mermaProduct) mermaProduct.addEventListener('change', updateMermaStockInfo);
+
+  // Autocomplete de producto en merma
+  var mermaSearch = document.getElementById('mermaSearchProducto');
+  var mermaDropdown = document.getElementById('mermaProductDropdown');
+  if (mermaSearch && mermaDropdown) {
+    mermaSearch.addEventListener('input', function () {
+      filterMermaProductos(mermaSearch.value);
+    });
+    mermaSearch.addEventListener('focus', function () {
+      if ((state._mermaProducts || []).length > 0) filterMermaProductos(mermaSearch.value);
+    });
+    document.addEventListener('click', function (e) {
+      if (!mermaSearch.contains(e.target) && !mermaDropdown.contains(e.target)) {
+        mermaDropdown.classList.add('hidden');
+      }
+    });
+  }
 
   // Dirty tracking para el modal de producto
   var form = document.getElementById('productForm');
@@ -409,42 +424,83 @@ function exportInventoryCSV() {
 // ============================================
 
 async function openMermaModal() {
-  // Cargar productos activos con stock
   try {
     var res = await API.products.list();
     var productos = (res.data || []).filter(function (p) { return p.stock > 0; });
-    var sel = $('#mermaProduct');
-    if (sel) {
-      sel.innerHTML = '<option value="">Seleccionar producto...</option>'
-        + productos.map(function (p) {
-          return '<option value="' + p.id + '" data-stock="' + p.stock + '" data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
-            + escapeHtml(p.name) + ' (stock: ' + p.stock + ' ' + escapeHtml(p.unidad || 'unidad') + ')'
-            + '</option>';
-        }).join('');
-    }
+    state._mermaProducts = productos;
+
     // Limpiar campos
+    var searchEl = document.getElementById('mermaSearchProducto');
+    var labelEl = document.getElementById('mermaProductLabel');
+    var dropdown = document.getElementById('mermaProductDropdown');
     var cant = $('#mermaCantidad');
     var motivo = $('#mermaMotivo');
     var info = $('#mermaStockInfo');
+    if (searchEl) searchEl.value = '';
+    if (labelEl) labelEl.classList.add('hidden');
+    if (dropdown) dropdown.classList.add('hidden');
     if (cant) cant.value = '';
     if (motivo) motivo.value = '';
     if (info) info.textContent = '';
+    $('#mermaProduct').value = '';
+
     openModal('mermaModal');
   } catch (err) {
     showToast('Error al cargar productos: ' + (err.message || ''), 'error');
   }
 }
 
-function updateMermaStockInfo() {
-  var sel = $('#mermaProduct');
-  var info = $('#mermaStockInfo');
-  if (!sel || !info) return;
-  var opt = sel.options[sel.selectedIndex];
-  if (opt && opt.dataset.stock) {
-    info.textContent = 'Stock actual: ' + opt.dataset.stock + ' ' + (opt.dataset.unidad || 'unidad');
+function filterMermaProductos(query) {
+  var all = state._mermaProducts || [];
+  var q = (query || '').toLowerCase().trim();
+  var dropdown = document.getElementById('mermaProductDropdown');
+  if (!dropdown) return;
+
+  var items = q ? all.filter(function (p) {
+    return p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
+  }) : all.slice(0, 20);
+
+  if (items.length === 0) {
+    dropdown.innerHTML = '<div class="px-3 py-3 text-sm text-slate-400 text-center">Sin resultados</div>';
   } else {
-    info.textContent = '';
+    dropdown.innerHTML = items.map(function (p) {
+      var selected = $('#mermaProduct').value === p.id;
+      return '<div class="merma-result flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 ' + (selected ? 'bg-amber-50' : '') + '"'
+        + ' data-id="' + p.id + '"'
+        + ' data-name="' + escapeHtml(p.name) + '"'
+        + ' data-sku="' + escapeHtml(p.sku || '') + '"'
+        + ' data-stock="' + p.stock + '"'
+        + ' data-unidad="' + escapeHtml(p.unidad || 'unidad') + '">'
+        + '<div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-xs font-bold text-slate-400">' + (p.icono || '📦') + '</div>'
+        + '<div class="flex-1 min-w-0">'
+        + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(p.name) + '</p>'
+        + '<p class="text-xs text-slate-400 truncate">' + escapeHtml(p.sku || '') + ' · Stock: ' + p.stock + ' ' + escapeHtml(p.unidad || 'unidad') + '</p>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    dropdown.querySelectorAll('.merma-result').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        selectMermaProducto(el.dataset.id, el.dataset.name, el.dataset.sku, el.dataset.stock, el.dataset.unidad);
+        dropdown.classList.add('hidden');
+      });
+    });
   }
+  dropdown.classList.remove('hidden');
+}
+
+function selectMermaProducto(id, name, sku, stock, unidad) {
+  $('#mermaProduct').value = id;
+  var searchEl = document.getElementById('mermaSearchProducto');
+  var labelEl = document.getElementById('mermaProductLabel');
+  var info = $('#mermaStockInfo');
+  if (searchEl) searchEl.value = name + ' · ' + sku;
+  if (labelEl) {
+    labelEl.textContent = name + ' (' + sku + ' · ' + escapeHtml(unidad) + ')';
+    labelEl.classList.remove('hidden');
+  }
+  if (info) info.textContent = 'Stock actual: ' + stock + ' ' + escapeHtml(unidad);
 }
 
 async function submitMerma() {
