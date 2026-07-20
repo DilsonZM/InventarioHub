@@ -610,8 +610,8 @@ function renderDishRow(d, isActive) {
       ingsHtml += '<div class="flex items-baseline gap-1">'
         + '<span class="shrink-0">' + (falta ? '🔴 ' : '· ') + '</span>'
         + '<span class="shrink-0">' + label + '</span>'
-        + '<span class="flex-1 min-w-[20px] border-b border-dashed border-slate-300 self-end mb-0.5"></span>'
-        + (costo ? '<span class="shrink-0 text-right">' + costo + '</span>' : '')
+        + '<span class="w-8 border-b border-dashed border-slate-300 self-end mb-0.5 shrink-0"></span>'
+        + (costo ? '<span class="shrink-0">' + costo + '</span>' : '')
         + stockInfo
         + '</div>';
     });
@@ -626,8 +626,8 @@ function renderDishRow(d, isActive) {
         ingsHtml += '<div class="flex items-baseline gap-1">'
           + '<span class="shrink-0">' + (falta ? '🔴 ' : '· ') + '</span>'
           + '<span class="shrink-0">' + label + '</span>'
-          + '<span class="flex-1 min-w-[20px] border-b border-dashed border-slate-300 self-end mb-0.5"></span>'
-          + (costo ? '<span class="shrink-0 text-right">' + costo + '</span>' : '')
+          + '<span class="w-8 border-b border-dashed border-slate-300 self-end mb-0.5 shrink-0"></span>'
+          + (costo ? '<span class="shrink-0">' + costo + '</span>' : '')
           + (falta ? ' <span class="text-red-500 font-semibold shrink-0">sin stock</span>' : '')
           + '</div>';
       });
