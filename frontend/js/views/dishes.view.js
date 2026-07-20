@@ -606,8 +606,14 @@ function renderDishRow(d, isActive) {
         stockInfo = ' <span class="text-red-500 font-semibold">falta stock</span> <span class="text-red-400">(disp: ' + (f ? f.disponible : '?') + ')</span>';
       }
       var label = escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad;
-      var costo = ing.costo > 0 ? ' <span class="text-slate-700 font-medium">' + Utils.formatCurrency(ing.costo) + '</span>' : '';
-      ingsHtml += '<div>' + (falta ? '🔴 ' : '· ') + label + costo + stockInfo + '</div>';
+      var costo = ing.costo > 0 ? '<span class="text-slate-700 font-medium">' + Utils.formatCurrency(ing.costo) + '</span>' : '';
+      ingsHtml += '<div class="flex items-baseline gap-1">'
+        + '<span class="shrink-0">' + (falta ? '🔴 ' : '· ') + '</span>'
+        + '<span class="shrink-0">' + label + '</span>'
+        + '<span class="flex-1 min-w-[20px] border-b border-dashed border-slate-300 self-end mb-0.5"></span>'
+        + (costo ? '<span class="shrink-0 text-right">' + costo + '</span>' : '')
+        + stockInfo
+        + '</div>';
     });
     // Tipo C separados
     if (tipoC.length > 0) {
@@ -615,9 +621,15 @@ function renderDishRow(d, isActive) {
       tipoC.forEach(function (ing) {
         var falta = faltantesNames.indexOf(ing.nombre) !== -1;
         var costoPorPorcion = (ing.costo && ing.rendimiento_por_tanda) ? Math.round((ing.costo || 0) / ing.rendimiento_por_tanda * 100) / 100 : 0;
-        var label = escapeHtml(ing.nombre) + ' ' + (ing.cantidad_tanda || '?') + ing.unidad + ' <span class="text-amber-700 font-medium">c/' + ing.rendimiento_por_tanda + ' porc</span>';
-        var costo = costoPorPorcion > 0 ? ' <span class="text-slate-600">~' + Utils.formatCurrency(costoPorPorcion) + '/porc</span>' : '';
-        ingsHtml += '<div>' + (falta ? '🔴 ' : '· ') + label + costo + (falta ? ' <span class="text-red-500 font-semibold">sin stock</span>' : '') + '</div>';
+        var label = escapeHtml(ing.nombre) + ' ' + (ing.cantidad_tanda || '?') + ing.unidad + ' c/' + ing.rendimiento_por_tanda + ' porc';
+        var costo = costoPorPorcion > 0 ? '<span class="text-slate-600">~' + Utils.formatCurrency(costoPorPorcion) + '/porc</span>' : '';
+        ingsHtml += '<div class="flex items-baseline gap-1">'
+          + '<span class="shrink-0">' + (falta ? '🔴 ' : '· ') + '</span>'
+          + '<span class="shrink-0">' + label + '</span>'
+          + '<span class="flex-1 min-w-[20px] border-b border-dashed border-slate-300 self-end mb-0.5"></span>'
+          + (costo ? '<span class="shrink-0 text-right">' + costo + '</span>' : '')
+          + (falta ? ' <span class="text-red-500 font-semibold shrink-0">sin stock</span>' : '')
+          + '</div>';
       });
     }
     ingsHtml += '</div>';
