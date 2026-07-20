@@ -177,18 +177,23 @@ async function openDishModal(dishId) {
                 unitSel.innerHTML = pres.map(function (p) {
                   return '<option value="' + p.value + '"' + (p.factor === 1 ? ' selected' : '') + '>' + escapeHtml(p.label) + '</option>';
                 }).join('');
-                if (tcUnit) tcUnit.textContent = 'por tanda (' + escapeHtml(prod.unidad || 'unidad') + ')';
               }
             }
           });
-          // Seleccionar unidad guardada
+          // Seleccionar unidad guardada y sincronizar label TC
           d.ingredientes.forEach(function (ing, idx) {
             var row = document.getElementById('ingredientRow_' + idx);
             if (row && ing.unidad) {
               var unitSel = row.querySelector('.ing-unit');
+              var tcUnit = row.querySelector('.ing-tc-unit');
               if (unitSel) {
                 for (var o = 0; o < unitSel.options.length; o++) {
                   if (unitSel.options[o].value === ing.unidad) { unitSel.value = ing.unidad; break; }
+                }
+                // Sincronizar label TC con la opcion seleccionada
+                if (tcUnit) {
+                  var selOpt = unitSel.options[unitSel.selectedIndex];
+                  if (selOpt && selOpt.textContent) tcUnit.textContent = 'por tanda (' + selOpt.textContent + ')';
                 }
               }
             }
@@ -599,7 +604,7 @@ function renderDishRow(d, isActive) {
     if (tipoC.length > 0) {
       ingsHtml += '<div class="border-t border-slate-200/50 pt-1 mt-1"><span class="text-amber-600 font-medium">Insumos x tanda:</span></div>';
       tipoC.forEach(function (ing) {
-        var costoPorPorcion = (ing.cantidad_tanda && ing.rendimiento_por_tanda) ? Math.round((ing.costo || 0) / (ing.cantidad * ing.rendimiento_por_tanda || 1) * 100) / 100 : 0;
+        var costoPorPorcion = (ing.costo && ing.rendimiento_por_tanda) ? Math.round((ing.costo || 0) / ing.rendimiento_por_tanda * 100) / 100 : 0;
         ingsHtml += '<div>· ' + escapeHtml(ing.nombre) + ' ' + (ing.cantidad_tanda || '?') + ing.unidad
           + ' <span class="text-amber-600 font-medium">c/' + ing.rendimiento_por_tanda + ' porc</span>'
           + (costoPorPorcion > 0 ? ' <span class="text-slate-500">~' + Utils.formatCurrency(costoPorPorcion) + '/porc</span>' : '')
