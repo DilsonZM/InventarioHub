@@ -443,6 +443,8 @@ async function openMermaModal() {
     if (motivo) motivo.value = '';
     if (info) info.textContent = '';
     $('#mermaProduct').value = '';
+    var unitSel = document.getElementById('mermaUnidad');
+    if (unitSel) unitSel.innerHTML = '<option value="">Base</option>';
 
     openModal('mermaModal');
   } catch (err) {
@@ -501,12 +503,29 @@ function selectMermaProducto(id, name, sku, stock, unidad) {
     labelEl.classList.remove('hidden');
   }
   if (info) info.textContent = 'Stock actual: ' + stock + ' ' + escapeHtml(unidad);
+
+  // Poblar selector de unidad de presentacion
+  var pres = window.getPresentaciones ? window.getPresentaciones(unidad) : [{ value: '', label: 'Misma unidad base', factor: 1 }];
+  var unitSel = document.getElementById('mermaUnidad');
+  if (unitSel) {
+    unitSel.innerHTML = pres.map(function (p) {
+      return '<option value="' + p.value + '" data-factor="' + p.factor + '">' + escapeHtml(p.label) + '</option>';
+    }).join('');
+  }
 }
 
 async function submitMerma() {
   var productId = ($('#mermaProduct') || {}).value;
   var cantidad = parseFloat(($('#mermaCantidad') || {}).value);
   var motivo = (($('#mermaMotivo') || {}).value || '').trim();
+
+  // Aplicar factor de conversion de la unidad de presentacion
+  var unitSel = document.getElementById('mermaUnidad');
+  if (unitSel && unitSel.value) {
+    var selectedOpt = unitSel.options[unitSel.selectedIndex];
+    var factor = parseFloat(selectedOpt.dataset.factor) || 1;
+    cantidad = cantidad * factor;
+  }
 
   if (!productId) {
     showToast('Selecciona un producto', 'warning');
