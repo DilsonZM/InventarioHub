@@ -607,10 +607,10 @@ function renderDishRow(d, isActive) {
       }
       var label = escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad;
       var costo = ing.costo > 0 ? '<span class="text-slate-700 font-medium">' + Utils.formatCurrency(ing.costo) + '</span>' : '';
-      ingsHtml += '<div class="flex items-baseline gap-1">'
+      ingsHtml += '<div class="flex items-baseline gap-1 max-w-[350px]">'
         + '<span class="shrink-0">' + (falta ? '🔴 ' : '· ') + '</span>'
         + '<span class="shrink-0">' + label + '</span>'
-        + '<span class="w-8 border-b border-dashed border-slate-300 self-end mb-0.5 shrink-0"></span>'
+        + '<span class="flex-1 min-w-[8px] border-b border-dashed border-slate-300 self-end mb-0.5"></span>'
         + (costo ? '<span class="shrink-0">' + costo + '</span>' : '')
         + stockInfo
         + '</div>';
@@ -623,10 +623,10 @@ function renderDishRow(d, isActive) {
         var costoPorPorcion = (ing.costo && ing.rendimiento_por_tanda) ? Math.round((ing.costo || 0) / ing.rendimiento_por_tanda * 100) / 100 : 0;
         var label = escapeHtml(ing.nombre) + ' ' + (ing.cantidad_tanda || '?') + ing.unidad + ' c/' + ing.rendimiento_por_tanda + ' porc';
         var costo = costoPorPorcion > 0 ? '<span class="text-slate-600">~' + Utils.formatCurrency(costoPorPorcion) + '/porc</span>' : '';
-        ingsHtml += '<div class="flex items-baseline gap-1">'
+        ingsHtml += '<div class="flex items-baseline gap-1 max-w-[350px]">'
           + '<span class="shrink-0">' + (falta ? '🔴 ' : '· ') + '</span>'
           + '<span class="shrink-0">' + label + '</span>'
-          + '<span class="w-8 border-b border-dashed border-slate-300 self-end mb-0.5 shrink-0"></span>'
+          + '<span class="flex-1 min-w-[8px] border-b border-dashed border-slate-300 self-end mb-0.5"></span>'
           + (costo ? '<span class="shrink-0">' + costo + '</span>' : '')
           + (falta ? ' <span class="text-red-500 font-semibold shrink-0">sin stock</span>' : '')
           + '</div>';
