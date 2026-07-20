@@ -100,6 +100,18 @@ router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => 
 
     if (error) throw error;
 
+    // Obtener producto antes de actualizar stock para el promedio ponderado
+    var { data: producto, error: prodErr } = await supabase
+      .from('productos')
+      .select('stock_actual, precio_compra')
+      .eq('id', producto_id)
+      .single();
+    if (prodErr || !producto) {
+      // Rollback: eliminar la compra recien creada
+      await supabase.from('compras').delete().eq('id', data.id);
+      return res.status(400).json({ success: false, message: 'Producto no encontrado' });
+    }
+
     await supabase.rpc('registrar_movimiento', {
       p_producto_id: producto_id,
       p_tipo: 'entrada',
@@ -108,6 +120,16 @@ router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => 
       p_usuario_id: req.user ? req.user.id : null,
       p_proveedor_id: proveedor_id || null
     });
+
+    // Promedio ponderado: (stock_antes * precio_antes + cantidad * precio_nuevo) / stock_nuevo
+    var stockAntes = parseFloat(producto.stock_actual) || 0;
+    var precioAntes = parseFloat(producto.precio_compra) || 0;
+    var stockNuevo = stockAntes + cantidad;
+    var nuevoPromedio = stockNuevo > 0
+      ? Math.round(((stockAntes * precioAntes + cantidad * valor_unitario) / stockNuevo) * 100) / 100
+      : valor_unitario;
+
+    await supabase.from('productos').update({ precio_compra: nuevoPromedio }).eq('id', producto_id);
 
     res.status(201).json({
       success: true,
@@ -183,7 +205,28 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
       return res.status(404).json({ success: false, message: 'Entrada no encontrada' });
     }
 
-    // Revertir la entrada original
+    // === Revertir promedio ponderado de la compra original ===
+    var prodOrig = producto_id; // puede ser el mismo o distinto
+    var { data: prodOrigData } = await supabase
+      .from('productos')
+      .select('stock_actual, precio_compra')
+      .eq('id', original.producto_id)
+      .single();
+    if (prodOrigData) {
+      var stockOrigActual = parseFloat(prodOrigData.stock_actual) || 0;
+      var precioOrigActual = parseFloat(prodOrigData.precio_compra) || 0;
+      var stockSinEsta = stockOrigActual - parseFloat(original.cantidad);
+      if (stockSinEsta > 0) {
+        var precioSinEsta = Math.round(((precioOrigActual * stockOrigActual - parseFloat(original.valor_unitario) * parseFloat(original.cantidad)) / stockSinEsta) * 100) / 100;
+        if (precioSinEsta < 0) precioSinEsta = 0;
+        await supabase.from('productos').update({ precio_compra: precioSinEsta }).eq('id', original.producto_id);
+      } else {
+        // Si el stock queda en 0 o negativo, mantener el precio actual
+        await supabase.from('productos').update({ precio_compra: 0 }).eq('id', original.producto_id);
+      }
+    }
+
+    // === Ajustar stock (logica existente) ===
     if (original.producto_id === producto_id) {
       // Mismo producto: ajustar diferencia
       const diff = original.cantidad - cantidad;
@@ -222,6 +265,24 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
         p_motivo: 'Ajuste por edicion de compra',
         p_usuario_id: req.user ? req.user.id : null
       });
+    }
+
+    // === Aplicar nuevo promedio ponderado para la compra editada ===
+    var { data: prodNewData } = await supabase
+      .from('productos')
+      .select('stock_actual, precio_compra')
+      .eq('id', producto_id)
+      .single();
+    if (prodNewData) {
+      var stockNewActual = parseFloat(prodNewData.stock_actual) || 0;
+      var precioNewActual = parseFloat(prodNewData.precio_compra) || 0;
+      var stockAntesDeEsta = stockNewActual - cantidad;
+      if (stockAntesDeEsta < 0) stockAntesDeEsta = 0;
+      var nuevoPromedio = stockNewActual > 0
+        ? Math.round(((stockAntesDeEsta * precioNewActual + cantidad * valor_unitario) / stockNewActual) * 100) / 100
+        : valor_unitario;
+      if (nuevoPromedio < 0) nuevoPromedio = 0;
+      await supabase.from('productos').update({ precio_compra: nuevoPromedio }).eq('id', producto_id);
     }
 
     const fecha = fecha_compra || new Date().toISOString().split('T')[0];
@@ -271,6 +332,26 @@ router.delete('/:id', requirePermission('puede_eliminar_entradas'), async (req, 
       .single();
     if (origError || !original) {
       return res.status(404).json({ success: false, message: 'Entrada no encontrada' });
+    }
+
+    // Revertir promedio ponderado de esta compra
+    var { data: prodData } = await supabase
+      .from('productos')
+      .select('stock_actual, precio_compra')
+      .eq('id', original.producto_id)
+      .single();
+    if (prodData) {
+      var stockActual = parseFloat(prodData.stock_actual) || 0;
+      var precioActual = parseFloat(prodData.precio_compra) || 0;
+      var cantOriginal = parseFloat(original.cantidad);
+      var stockSinEsta = stockActual - cantOriginal;
+      if (stockSinEsta > 0) {
+        var precioSinEsta = Math.round(((precioActual * stockActual - parseFloat(original.valor_unitario) * cantOriginal) / stockSinEsta) * 100) / 100;
+        if (precioSinEsta < 0) precioSinEsta = 0;
+        await supabase.from('productos').update({ precio_compra: precioSinEsta }).eq('id', original.producto_id);
+      } else {
+        await supabase.from('productos').update({ precio_compra: 0 }).eq('id', original.producto_id);
+      }
     }
 
     // Revertir la entrada: descontar del stock
