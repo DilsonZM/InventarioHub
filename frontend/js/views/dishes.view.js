@@ -596,7 +596,7 @@ function renderDishRow(d, isActive) {
     var tipoC = d.ingredientes.filter(function (ing) { return ing.rendimiento_por_tanda && ing.rendimiento_por_tanda > 1; });
     var faltantesNames = (d.faltantes || []).map(function (f) { return f.nombre; });
 
-    ingsHtml = '<div class="text-[11px] text-slate-400 mt-0.5 space-y-0.5">';
+    ingsHtml = '<div class="text-xs text-slate-600 mt-0.5 space-y-0.5">';
     // Ingredientes normales
     normales.forEach(function (ing) {
       var falta = faltantesNames.indexOf(ing.nombre) !== -1;
@@ -605,17 +605,17 @@ function renderDishRow(d, isActive) {
         var f = (d.faltantes || []).find(function (x) { return x.nombre === ing.nombre; });
         stockInfo = ' — <span class="text-red-500 font-semibold">falta stock</span> <span class="text-red-400">(disp: ' + (f ? f.disponible : '?') + ')</span>';
       }
-      ingsHtml += '<div>' + (falta ? '🔴 ' : '· ') + escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad + (ing.costo > 0 ? ' <span class="text-slate-500">' + Utils.formatCurrency(ing.costo) + '</span>' : '') + stockInfo + '</div>';
+      ingsHtml += '<div>' + (falta ? '🔴 ' : '· ') + escapeHtml(ing.nombre) + ' ' + ing.cantidad + ing.unidad + (ing.costo > 0 ? ' <span class="text-slate-700 font-medium">' + Utils.formatCurrency(ing.costo) + '</span>' : '') + stockInfo + '</div>';
     });
     // Tipo C separados
     if (tipoC.length > 0) {
-      ingsHtml += '<div class="border-t border-slate-200/50 pt-1 mt-1"><span class="text-amber-600 font-medium">Insumos x tanda:</span></div>';
+      ingsHtml += '<div class="border-t border-slate-200 pt-1.5 mt-1.5"><span class="text-amber-700 font-semibold text-xs">Insumos x tanda:</span></div>';
       tipoC.forEach(function (ing) {
         var falta = faltantesNames.indexOf(ing.nombre) !== -1;
         var costoPorPorcion = (ing.costo && ing.rendimiento_por_tanda) ? Math.round((ing.costo || 0) / ing.rendimiento_por_tanda * 100) / 100 : 0;
         ingsHtml += '<div>' + (falta ? '🔴 ' : '· ') + escapeHtml(ing.nombre) + ' ' + (ing.cantidad_tanda || '?') + ing.unidad
-          + ' <span class="text-amber-600 font-medium">c/' + ing.rendimiento_por_tanda + ' porc</span>'
-          + (costoPorPorcion > 0 ? ' <span class="text-slate-500">~' + Utils.formatCurrency(costoPorPorcion) + '/porc</span>' : '')
+          + ' <span class="text-amber-700 font-medium">c/' + ing.rendimiento_por_tanda + ' porc</span>'
+          + (costoPorPorcion > 0 ? ' <span class="text-slate-600">~' + Utils.formatCurrency(costoPorPorcion) + '/porc</span>' : '')
           + (falta ? ' <span class="text-red-500 font-semibold">— sin stock</span>' : '')
           + '</div>';
       });
