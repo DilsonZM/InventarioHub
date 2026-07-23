@@ -119,10 +119,14 @@ async function loadPOS() {
 
         // Cargar campos financieros del pedido original
         var domEl = document.getElementById('posCostoDomicilio');
+        var domDisplay = document.getElementById('posCostoDomicilioDisplay');
         var propEl = document.getElementById('posPropina');
         var bonoEl = document.getElementById('posBonoDescuento');
         var formaEl = document.getElementById('posFormaPago');
-        if (domEl && sale.costoDomicilio) domEl.value = sale.costoDomicilio;
+        if (domEl && sale.costoDomicilio) {
+          domEl.value = sale.costoDomicilio;
+          if (domDisplay) domDisplay.value = '$' + parseInt(sale.costoDomicilio).toLocaleString('es-CO');
+        }
         if (propEl && sale.propina) propEl.value = sale.propina;
         if (bonoEl && sale.bonoDescuento) bonoEl.value = sale.bonoDescuento;
         if (formaEl && sale.formaPago) formaEl.value = sale.formaPago;
@@ -379,8 +383,18 @@ function updatePOSModeBadge() {
   // Mostrar/ocultar campo costo domicilio segun modo
   var domRow = $('#posDomicilioRow');
   if (domRow) {
-    if (state.posMode === 'domicilio') domRow.classList.remove('hidden');
-    else domRow.classList.add('hidden');
+    if (state.posMode === 'domicilio') {
+      domRow.classList.remove('hidden');
+      // Auto-rellenar con $3,000 si el usuario no lo ha editado
+      var domHidden = document.getElementById('posCostoDomicilio');
+      var domDisplay = document.getElementById('posCostoDomicilioDisplay');
+      if (domHidden && parseFloat(domHidden.value) === 0) {
+        domHidden.value = '3000';
+        if (domDisplay) domDisplay.value = '$' + (3000).toLocaleString('es-CO');
+      }
+    } else {
+      domRow.classList.add('hidden');
+    }
   }
 }
 
@@ -400,6 +414,27 @@ function initPOSFinanzas() {
       });
     }
   });
+
+  // Wire domicilio con formato de pesos colombianos
+  var domDisplay = document.getElementById('posCostoDomicilioDisplay');
+  if (domDisplay) {
+    domDisplay.addEventListener('input', function () {
+      var raw = this.value.replace(/[^0-9]/g, '');
+      var num = parseInt(raw, 10) || 0;
+      document.getElementById('posCostoDomicilio').value = num;
+      this.value = num > 0 ? '$' + num.toLocaleString('es-CO') : '';
+      updatePOSTotalFinal();
+    });
+    domDisplay.addEventListener('focus', function () {
+      var num = parseInt(document.getElementById('posCostoDomicilio').value, 10) || 0;
+      this.value = num > 0 ? String(num) : '';
+    });
+    domDisplay.addEventListener('blur', function () {
+      var num = parseInt(document.getElementById('posCostoDomicilio').value, 10) || 0;
+      this.value = num > 0 ? '$' + num.toLocaleString('es-CO') : '';
+    });
+  }
+
   updatePOSTotalFinal();
 }
 
@@ -444,6 +479,8 @@ function resetPOSFinanzas() {
     var el = document.getElementById(id);
     if (el) { el.value = ''; el._userEdited = false; }
   });
+  var domDisplay = document.getElementById('posCostoDomicilioDisplay');
+  if (domDisplay) domDisplay.value = '';
   var fp = document.getElementById('posFormaPago');
   if (fp) fp.value = '';
   updatePOSTotalFinal();

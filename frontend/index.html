@@ -1502,8 +1502,9 @@
             </summary>
             <div class="pt-2 space-y-2">
               <div id="posDomicilioRow" class="hidden">
-                <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Costo domicilio</label>
-                <input type="number" id="posCostoDomicilio" min="0" step="500" placeholder="0" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Costo domicilio (default $3,000)</label>
+                <input type="text" id="posCostoDomicilioDisplay" placeholder="$0" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50" autocomplete="off">
+                <input type="hidden" id="posCostoDomicilio" value="0">
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
