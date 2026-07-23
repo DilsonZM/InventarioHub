@@ -384,20 +384,19 @@ function updatePOSModeBadge() {
   var domRow = $('#posDomicilioRow');
   if (domRow) {
     if (state.posMode === 'domicilio') {
-      domRow.classList.remove('hidden');
-      // Auto-abrir el section de finanzas para que se vea el campo
+      domRow.style.display = '';
+      // Auto-abrir el section de finanzas
       var details = document.getElementById('posFinanzas');
       if (details) details.setAttribute('open', '');
-      // Auto-rellenar con $3,000 si el usuario no lo ha editado
+      // Formatear display
       var domHidden = document.getElementById('posCostoDomicilio');
       var domDisplay = document.getElementById('posCostoDomicilioDisplay');
-      if (domHidden && parseFloat(domHidden.value) === 0) {
-        domHidden.value = '3000';
-        if (domDisplay) domDisplay.value = '$' + (3000).toLocaleString('es-CO');
+      if (domHidden && domDisplay && !domDisplay.value) {
+        domDisplay.value = '$' + parseInt(domHidden.value || 3000).toLocaleString('es-CO');
       }
       updatePOSTotalFinal();
     } else {
-      domRow.classList.add('hidden');
+      domRow.style.display = 'none';
     }
   }
 }
