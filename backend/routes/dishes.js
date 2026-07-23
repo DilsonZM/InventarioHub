@@ -84,6 +84,7 @@ router.get('/', async (req, res) => {
 
       // Calcular stock disponible por plato (todos los ingredientes con stock >= necesario)
       var disponibilidadPorPlato = {};
+      var maxPorcionesPorPlato = {}; // max porciones que se pueden preparar con stock actual
       var faltantesPorPlato = {}; // array de { nombre, necesario, disponible }
       var totalNecesarioPorProducto = {};
       (costos || []).forEach(function (c) {
@@ -92,6 +93,14 @@ router.get('/', async (req, res) => {
         var cantidadConv = convertUnit(c.cantidad, c.unidad, prodUnidad);
         if (!totalNecesarioPorProducto[c.producto_id]) totalNecesarioPorProducto[c.producto_id] = 0;
         totalNecesarioPorProducto[c.producto_id] += cantidadConv;
+        // Max porciones: stock / cantidad_necesaria (ignorar Tipo C)
+        var esTipoC = c.rendimiento_por_tanda > 1;
+        if (!esTipoC && cantidadConv > 0) {
+          var porcionesPosibles = Math.floor((p.stock_actual || 0) / cantidadConv);
+          if (maxPorcionesPorPlato[c.plato_id] === undefined || porcionesPosibles < maxPorcionesPorPlato[c.plato_id]) {
+            maxPorcionesPorPlato[c.plato_id] = porcionesPosibles;
+          }
+        }
         // Un plato esta disponible si todos sus ingredientes tienen stock suficiente
         if (disponibilidadPorPlato[c.plato_id] === undefined) disponibilidadPorPlato[c.plato_id] = true;
         if ((p.stock_actual || 0) < cantidadConv) {
@@ -147,6 +156,8 @@ router.get('/', async (req, res) => {
         costo: Math.round((costosPorPlato[p.id] || 0) * 100) / 100,
         ingredientes: ings,
         disponible: disp,
+        disponibilidadPorPlato: disp,
+        max_porciones: maxPorcionesPorPlato[p.id] !== undefined ? maxPorcionesPorPlato[p.id] : 0,
         faltantes: faltantesPorPlato[p.id] || [],
         activo: p.activo,
         creado_en: p.creado_en,

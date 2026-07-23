@@ -61,7 +61,7 @@ async function loadPOS() {
 
   try {
     var res = await API.dishes.list();
-    allDishes = (res.data || []).filter(function (d) { return d.activo && d.disponible !== false; });
+    allDishes = (res.data || []).filter(function (d) { return d.activo; });
   } catch (e) { console.error('[POS] Error dishes:', e); }
 
   try {
@@ -175,7 +175,10 @@ function renderPOSCategories(dishes, products) {
       icon: d.icono || (d.tipo === 'bebida' ? '🥤' : '🍽️'),
       type: d.tipo,
       source: 'dish',
-      desc: d.descripcion || ''
+      desc: d.descripcion || '',
+      maxPorciones: d.max_porciones !== undefined ? d.max_porciones : 999,
+      disponible: d.disponible,
+      faltantes: d.faltantes || []
     });
   });
   products.forEach(function (p) {
@@ -221,15 +224,29 @@ function renderPOSGrid(items) {
 
   items.forEach(function (item) {
     var desc = item.desc ? '<p class="text-xs text-slate-400 truncate mt-1">' + escapeHtml(item.desc) + '</p>' : '';
+    var sinStock = item.source === 'dish' && item.maxPorciones === 0;
+    var stockBajo = item.source === 'dish' && item.maxPorciones > 0 && item.maxPorciones < 5;
+    var stockBadge = '';
+    if (item.source === 'dish') {
+      if (sinStock) {
+        stockBadge = '<span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">Sin stock</span>';
+      } else if (stockBajo) {
+        stockBadge = '<span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">Solo ' + item.maxPorciones + ' porc.</span>';
+      } else {
+        stockBadge = '<span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">Disponible</span>';
+      }
+    }
 
-    html += '<div class="pos-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow overflow-hidden"'
+    html += '<div class="pos-card bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow overflow-hidden' + (sinStock ? ' opacity-60' : '') + '"'
       + ' data-pos-type="' + item.type + '"'
       + ' data-pos-id="' + item.id + '"'
       + ' data-pos-source="' + item.source + '"'
       + ' data-pos-name="' + escapeHtml(item.name) + '"'
       + ' data-pos-icon="' + escapeHtml(item.icon || '📦') + '"'
+      + (item.source === 'dish' ? ' data-pos-maxp="' + item.maxPorciones + '"' : '')
+      + ' data-pos-sinstock="' + (sinStock ? '1' : '0') + '"'
       + ' ondblclick="window.addPOSItem(\'' + item.id + '\', \'' + item.source + '\')">'
-      + '<div class="aspect-video bg-slate-100 flex items-center justify-center text-4xl">' + (item.icon || '📦') + '</div>'
+      + '<div class="aspect-video bg-slate-100 flex items-center justify-center text-4xl relative">' + (item.icon || '📦') + '</div>'
       + '<div class="p-3">'
       + '<p class="pos-card-name text-sm font-bold text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
       + desc
@@ -237,6 +254,7 @@ function renderPOSGrid(items) {
         ? '<p class="mt-2"><span class="text-xs text-slate-400 line-through">' + Utils.formatCurrency(item.originalPrice) + '</span> <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 ml-1 align-top">-' + item.descuentoPct + '%</span></p>'
           + '<p class="pos-card-price text-md font-bold text-amber-600">' + Utils.formatCurrency(item.price) + '</p>'
         : '<p class="pos-card-price text-md font-bold text-brand-600 mt-2">' + Utils.formatCurrency(item.price) + '</p>')
+      + '<div class="mt-1.5">' + stockBadge + '</div>'
       + '</div>'
       + '</div>';
   });
@@ -704,6 +722,16 @@ window.addPOSItem = function (id, type) {
   }
   if (!item) return;
 
+  // Validar max_porciones para platos
+  if (type === 'dish' && item.max_porciones !== undefined && item.max_porciones < 999) {
+    var existing = state.posItems.find(function (i) { return i.id === id && i.type === type; });
+    var currentQty = existing ? existing.qty : 0;
+    if (currentQty >= item.max_porciones) {
+      showToast('Solo hay stock para ' + item.max_porciones + ' ' + item.nombre + '. Ya tienes ' + currentQty + ' en el pedido.', 'warning');
+      return;
+    }
+  }
+
   var name = item.nombre || item.name;
   var price = (type === 'dish') ? (item.precio_venta || 0) : (item.price || 0);
 
@@ -858,6 +886,16 @@ window.clearPOSOrder = function () {
 window.updatePOSQty = function (idx, delta) {
   var item = state.posItems[idx];
   if (!item) return;
+  // Validar max_porciones para platos al incrementar
+  if (delta > 0 && item.type === 'dish') {
+    var dish = (state._posDishes || []).find(function (d) { return d.id === item.id; });
+    if (dish && dish.max_porciones !== undefined && dish.max_porciones < 999) {
+      if (item.qty >= dish.max_porciones) {
+        showToast('Solo hay stock para ' + dish.max_porciones + ' ' + (dish.nombre || item.name) + '. Ya tienes ' + item.qty + ' en el pedido.', 'warning');
+        return;
+      }
+    }
+  }
   item.qty += delta;
   if (item.qty <= 0) {
     state.posItems.splice(idx, 1);
