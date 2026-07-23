@@ -358,6 +358,23 @@ function initPOSMode() {
       var tipo = opt ? opt.getAttribute('data-tipo') || 'mesa' : 'mesa';
       state.posMode = tipo;
       updatePOSModeBadge();
+      // Forzar mostrar/ocultar domicilio directamente (fallback robusto)
+      var domRow = document.getElementById('posDomicilioRow');
+      if (domRow) {
+        if (tipo === 'domicilio') {
+          domRow.style.display = 'block';
+          var details = document.getElementById('posFinanzas');
+          if (details) details.setAttribute('open', '');
+          var domHidden = document.getElementById('posCostoDomicilio');
+          var domDisplay = document.getElementById('posCostoDomicilioDisplay');
+          if (domHidden && domDisplay && !domDisplay.value) {
+            domDisplay.value = '$' + parseInt(domHidden.value || 3000).toLocaleString('es-CO');
+          }
+          updatePOSTotalFinal();
+        } else {
+          domRow.style.display = 'none';
+        }
+      }
     });
   }
   state.posMode = state.posMode || 'mesa';
@@ -376,19 +393,17 @@ function setPOSMode(mode) {
 }
 
 function updatePOSModeBadge() {
-  var el = $('#posModeBadge');
+  var el = document.getElementById('posModeBadge');
   if (!el) return;
   var labels = { mesa: 'Mesa', domicilio: '🛵 Domicilio', recogido: '🏠 Recoger' };
   el.textContent = labels[state.posMode || 'mesa'] || 'Mesa';
-  // Mostrar/ocultar campo costo domicilio segun modo
-  var domRow = $('#posDomicilioRow');
+  // Mostrar/ocultar campo costo domicilio segun modo (uso getElementById directo)
+  var domRow = document.getElementById('posDomicilioRow');
   if (domRow) {
     if (state.posMode === 'domicilio') {
-      domRow.style.display = '';
-      // Auto-abrir el section de finanzas
+      domRow.style.display = 'block';
       var details = document.getElementById('posFinanzas');
       if (details) details.setAttribute('open', '');
-      // Formatear display
       var domHidden = document.getElementById('posCostoDomicilio');
       var domDisplay = document.getElementById('posCostoDomicilioDisplay');
       if (domHidden && domDisplay && !domDisplay.value) {
