@@ -395,6 +395,7 @@ function updatePOSModeBadge() {
         domHidden.value = '3000';
         if (domDisplay) domDisplay.value = '$' + (3000).toLocaleString('es-CO');
       }
+      updatePOSTotalFinal();
     } else {
       domRow.classList.add('hidden');
     }
