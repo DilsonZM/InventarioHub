@@ -385,6 +385,9 @@ function updatePOSModeBadge() {
   if (domRow) {
     if (state.posMode === 'domicilio') {
       domRow.classList.remove('hidden');
+      // Auto-abrir el section de finanzas para que se vea el campo
+      var details = document.getElementById('posFinanzas');
+      if (details) details.setAttribute('open', '');
       // Auto-rellenar con $3,000 si el usuario no lo ha editado
       var domHidden = document.getElementById('posCostoDomicilio');
       var domDisplay = document.getElementById('posCostoDomicilioDisplay');
