@@ -2,7 +2,19 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
 const { requirePermission } = require('../middleware/auth');
-const { applyBogotaDateFilter } = require('../lib/timezone');
+
+function resolveBaseQuantity(cantidad, cantidadPresentacion, factorConversion, cantidadBase) {
+  var explicitBase = parseFloat(cantidadBase);
+  if (Number.isFinite(explicitBase) && explicitBase > 0) return Math.round(explicitBase * 10000) / 10000;
+
+  var rawPresentation = parseFloat(cantidadPresentacion);
+  var factor = parseFloat(factorConversion) || 1;
+  if (Number.isFinite(rawPresentation) && rawPresentation > 0 && factor !== 1) {
+    return Math.round(rawPresentation * factor * 10000) / 10000;
+  }
+
+  return Math.round((parseFloat(cantidad) || 0) * 10000) / 10000;
+}
 
 router.get('/', async (req, res) => {
   try {
@@ -12,7 +24,8 @@ router.get('/', async (req, res) => {
     const offset = (pageNum - 1) * limitNum;
 
     let countQuery = supabase.from('compras').select('*', { count: 'exact', head: true });
-    countQuery = applyBogotaDateFilter(countQuery, 'fecha_compra', from, to);
+    if (from) countQuery = countQuery.gte('fecha_compra', from);
+    if (to) countQuery = countQuery.lte('fecha_compra', to);
 
     const { count, error: countError } = await countQuery;
     if (countError) throw countError;
@@ -23,7 +36,8 @@ router.get('/', async (req, res) => {
       .order('creado_en', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
-    query = applyBogotaDateFilter(query, 'fecha_compra', from, to);
+    if (from) query = query.gte('fecha_compra', from);
+    if (to) query = query.lte('fecha_compra', to);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -73,9 +87,10 @@ router.get('/', async (req, res) => {
 
 router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => {
   try {
-    const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion } = req.body;
+    const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion, cantidad_base } = req.body;
+    const cantidadBase = resolveBaseQuantity(cantidad, cantidad_presentacion, factor_conversion, cantidad_base);
 
-    if (!producto_id || !cantidad || cantidad <= 0 || !valor_unitario || valor_unitario <= 0) {
+    if (!producto_id || !cantidadBase || cantidadBase <= 0 || !valor_unitario || valor_unitario <= 0) {
       return res.status(400).json({ success: false, message: 'Producto, cantidad y valor unitario requeridos' });
     }
 
@@ -85,7 +100,7 @@ router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => 
       .from('compras')
       .insert({
         producto_id,
-        cantidad,
+        cantidad: cantidadBase,
         valor_unitario,
         fecha_compra: fecha,
         proveedor_id: proveedor_id || null,
@@ -115,7 +130,7 @@ router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => 
     await supabase.rpc('registrar_movimiento', {
       p_producto_id: producto_id,
       p_tipo: 'entrada',
-      p_cantidad: cantidad,
+      p_cantidad: cantidadBase,
       p_motivo: 'Compra - valor unitario: $' + valor_unitario,
       p_usuario_id: req.user ? req.user.id : null,
       p_proveedor_id: proveedor_id || null
@@ -124,9 +139,9 @@ router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => 
     // Promedio ponderado: (stock_antes * precio_antes + cantidad * precio_nuevo) / stock_nuevo
     var stockAntes = parseFloat(producto.stock_actual) || 0;
     var precioAntes = parseFloat(producto.precio_compra) || 0;
-    var stockNuevo = stockAntes + cantidad;
+    var stockNuevo = stockAntes + cantidadBase;
     var nuevoPromedio = stockNuevo > 0
-      ? Math.round(((stockAntes * precioAntes + cantidad * valor_unitario) / stockNuevo) * 100) / 100
+      ? Math.round(((stockAntes * precioAntes + cantidadBase * valor_unitario) / stockNuevo) * 100) / 100
       : valor_unitario;
 
     await supabase.from('productos').update({ precio_compra: nuevoPromedio }).eq('id', producto_id);
@@ -190,9 +205,10 @@ router.get('/:id', async (req, res) => {
 // PUT /api/compras/:id - editar entrada con recalculo de stock
 router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) => {
   try {
-    const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion } = req.body;
+    const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion, cantidad_base } = req.body;
+    const cantidadBase = resolveBaseQuantity(cantidad, cantidad_presentacion, factor_conversion, cantidad_base);
 
-    if (!producto_id || !cantidad || cantidad <= 0 || !valor_unitario || valor_unitario <= 0) {
+    if (!producto_id || !cantidadBase || cantidadBase <= 0 || !valor_unitario || valor_unitario <= 0) {
       return res.status(400).json({ success: false, message: 'Producto, cantidad y valor unitario requeridos' });
     }
 
@@ -229,7 +245,7 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
     // === Ajustar stock (logica existente) ===
     if (original.producto_id === producto_id) {
       // Mismo producto: ajustar diferencia
-      const diff = original.cantidad - cantidad;
+      const diff = original.cantidad - cantidadBase;
       if (diff > 0) {
         // Se desconto de mas: devolver
         await supabase.rpc('registrar_movimiento', {
@@ -261,7 +277,7 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
       await supabase.rpc('registrar_movimiento', {
         p_producto_id: producto_id,
         p_tipo: 'entrada',
-        p_cantidad: cantidad,
+        p_cantidad: cantidadBase,
         p_motivo: 'Ajuste por edicion de compra',
         p_usuario_id: req.user ? req.user.id : null
       });
@@ -276,10 +292,10 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
     if (prodNewData) {
       var stockNewActual = parseFloat(prodNewData.stock_actual) || 0;
       var precioNewActual = parseFloat(prodNewData.precio_compra) || 0;
-      var stockAntesDeEsta = stockNewActual - cantidad;
+      var stockAntesDeEsta = stockNewActual - cantidadBase;
       if (stockAntesDeEsta < 0) stockAntesDeEsta = 0;
       var nuevoPromedio = stockNewActual > 0
-        ? Math.round(((stockAntesDeEsta * precioNewActual + cantidad * valor_unitario) / stockNewActual) * 100) / 100
+        ? Math.round(((stockAntesDeEsta * precioNewActual + cantidadBase * valor_unitario) / stockNewActual) * 100) / 100
         : valor_unitario;
       if (nuevoPromedio < 0) nuevoPromedio = 0;
       await supabase.from('productos').update({ precio_compra: nuevoPromedio }).eq('id', producto_id);
@@ -290,7 +306,7 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
       .from('compras')
       .update({
         producto_id,
-        cantidad,
+        cantidad: cantidadBase,
         valor_unitario,
         fecha_compra: fecha,
         proveedor_id: proveedor_id || null,

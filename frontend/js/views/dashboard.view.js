@@ -52,14 +52,19 @@ async function loadDashboard() {
       try {
     var fromDash = $('#filterDateFromDash').value;
     var toDash = $('#filterDateToDash').value;
+    var periodDash = $('#filterQuickPeriodDash').value;
     var cocinaDash = $('#filterCocinaDash').value;
     var productDash = $('#filterProductDash').value;
     var statsParams = {};
     var movParams = { limit: 10 };
     if (fromDash) { statsParams.from = fromDash; movParams.from = fromDash; }
     if (toDash) { statsParams.to = toDash; movParams.to = toDash; }
+    if (periodDash) statsParams.period = periodDash;
     if (cocinaDash) { statsParams.cocina = cocinaDash; }
-    if (productDash) { movParams.productoId = productDash; }
+    if (productDash) {
+      statsParams.productoId = productDash;
+      movParams.productoId = productDash;
+    }
 
     var results = await Promise.all([
       API.stats(statsParams),
@@ -79,6 +84,7 @@ async function loadDashboard() {
     animateKPI('#stat-revenue', stats.periodRevenue || 0, true);
     animateKPI('#stat-lowstock', stats.lowStockCount);
     animateKPI('#stat-value', stats.inventoryValue, true);
+    animateKPI('#stat-investment', stats.periodInvestment || stats.totalEntradas || 0, true);
     var revLabel = $('#stat-revenue-label');
     if (revLabel && stats.periodLabel) {
       revLabel.textContent = 'Salidas ' + stats.periodLabel.toLowerCase();
@@ -139,17 +145,28 @@ async function loadDashboard() {
     // Card 4 — Valor inventario: badge = salidas/inventario %
     var badgeVal = document.getElementById('badge-value');
     var subVal = document.getElementById('sublabel-value');
-    if (subVal && stats.periodRevenue > 0) {
+    if (subVal) {
       subVal.classList.remove('hidden');
-      subVal.textContent = 'vs ' + formatCurrency(stats.periodRevenue) + ' en salidas';
+      subVal.textContent = 'Stock actual valorizado';
     }
-    if (badgeVal && stats.inventoryValue > 0 && stats.periodRevenue > 0) {
+    var subInvestment = document.getElementById('sublabel-investment');
+    if (subInvestment) {
+      subInvestment.classList.remove('hidden');
+      var purchaseCount = stats.periodPurchaseCount || 0;
+      var openingText = (stats.openingInvestment || 0) > 0 ? 'Inicial + ' : '';
+      subInvestment.textContent = openingText + purchaseCount + (purchaseCount === 1 ? ' entrada' : ' entradas') + ' · ' + (stats.periodLabel || 'Período');
+    }
+    if (badgeVal && stats.inventoryValue > 0 && stats.periodInvestment > 0) {
       badgeVal.classList.remove('hidden');
-      var pctInv = (stats.periodRevenue / stats.inventoryValue) * 100;
-      badgeVal.textContent = pctInv.toFixed(0) + '% del inventario';
-      badgeVal.style.cssText = pctInv <= 30
+      var pctInv = (stats.inventoryValue / stats.periodInvestment) * 100;
+      if (pctInv <= 100) {
+        badgeVal.textContent = pctInv.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '% en stock';
+      } else {
+        badgeVal.textContent = 'Revisar apertura';
+      }
+      badgeVal.style.cssText = pctInv >= 70 && pctInv <= 100
         ? 'background:rgba(26,138,102,0.15);color:#1a8a66;'
-        : pctInv <= 60
+        : pctInv >= 40
           ? 'background:rgba(187,101,59,0.15);color:#bb653b;'
           : 'background:rgba(220,80,80,0.15);color:#dc5050;';
     } else if (badgeVal) { badgeVal.classList.add('hidden'); }
@@ -297,10 +314,11 @@ async function populateProductFilter(selectId) {
 
 async function loadVentasMargen(groupBy) {
   try {
+    groupBy = groupBy || 'dia';
     var from = $('#filterDateFromDash').value;
     var to = $('#filterDateToDash').value;
     var cocina = $('#filterCocinaDash').value;
-    var params = { groupBy: groupBy || 'dia' };
+    var params = { groupBy: groupBy };
     if (from) params.from = from;
     if (to) params.to = to;
     if (cocina) params.cocina = cocina;

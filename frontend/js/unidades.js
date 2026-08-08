@@ -61,8 +61,8 @@ window.PRESENTACIONES_POR_UNIDAD = {
   ],
   'docena': [
     { value: 'docena', label: 'Docena (12 u)', factor: 12, icon: 'dz' },
-    { value: 'unidad', label: 'Unidad', factor: 1, icon: 'u' },
-    { value: 'caja_30', label: 'Cubeta x 30 docenas (360 u)', factor: 360, icon: 'c30' }
+    { value: 'unidad', label: 'Unidad', factor: 1 / 12, icon: 'u' },
+    { value: 'caja_30', label: 'Cubeta x 30 docenas (360 u)', factor: 30, icon: 'c30' }
   ],
   'metro': [
     { value: 'metro', label: 'Metro (m)', factor: 1, icon: 'm' },

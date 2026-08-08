@@ -426,11 +426,15 @@ async function saveCompra(e) {
     factor = parseFloat(opt.dataset.factor) || 1;
   }
   var valorUnitario = parseFloat($('#compraValor').value) || 0;
+  var cantidadPresentacion = presentacion ? cantidad : null;
+  var cantidadBase = cantidad * factor;
+  cantidadBase = Math.round(cantidadBase * 10000) / 10000;
   var payload = {
-    fecha: $('#compraFecha').value || null,
+    fecha_compra: $('#compraFecha').value || null,
     producto_id: $('#compraProducto').value,
-    cantidad: cantidad,
-    cantidad_presentacion: presentacion ? cantidad : null,
+    cantidad: cantidadBase,
+    cantidad_base: cantidadBase,
+    cantidad_presentacion: cantidadPresentacion,
     unidad_presentacion: presentacion,
     factor_conversion: factor,
     valor_unitario: valorUnitario

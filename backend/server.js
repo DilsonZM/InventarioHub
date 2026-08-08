@@ -64,7 +64,7 @@ app.use('/api/reservas', authMiddleware, reservasRoutes);
 
 app.get('/api/stats', authMiddleware, async (req, res) => {
   try {
-    const { from, to, cocina } = req.query;
+    const { from, to, cocina, productoId, period } = req.query;
 
     const { count: totalProducts } = await supabase
       .from('productos')
@@ -94,17 +94,40 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
     const periodSalesCount = periodSales ? periodSales.length : 0;
     const periodRevenue = periodSales ? periodSales.reduce((sum, s) => sum + parseFloat(s.total), 0) : 0;
 
-    let label = 'Hoy';
-    if (from && to) label = 'Periodo';
+    var label = 'Acumulado';
+    var periodLabels = {
+      today: 'Hoy',
+      week: 'Esta semana',
+      month: 'Este mes',
+      quarter: 'Este trimestre',
+      year: 'Este año'
+    };
+    if (period && periodLabels[period]) label = periodLabels[period];
+    else if (from && to) label = 'Período';
     else if (from) label = 'Desde ' + from;
 
-    var totalEntradas = 0;
+    var periodInvestment = 0;
+    var periodPurchaseCount = 0;
+    var openingInvestment = 0;
+    var purchaseInvestment = 0;
     try {
-      var entradasQuery = supabase.from('compras').select('valor_total');
-      entradasQuery = applyBogotaDateFilter(entradasQuery, 'fecha_compra', from, to);
-      var { data: entradasData } = await entradasQuery;
-      totalEntradas = entradasData ? entradasData.reduce(function (s, c) { return s + parseFloat(c.valor_total); }, 0) : 0;
-    } catch (e) {}
+      var { data: investmentData, error: investmentError } = await supabase.rpc('obtener_inversion_compras', {
+        p_from: from || null,
+        p_to: to || null,
+        p_producto_id: productoId || null
+      });
+      if (investmentError) throw investmentError;
+      var investmentRow = Array.isArray(investmentData) ? investmentData[0] : investmentData;
+      periodInvestment = parseFloat(investmentRow?.period_investment) || 0;
+      periodPurchaseCount = parseInt(investmentRow?.period_purchase_count, 10) || 0;
+      openingInvestment = parseFloat(investmentRow?.opening_investment) || 0;
+      purchaseInvestment = parseFloat(investmentRow?.purchase_investment) || 0;
+    } catch (e) {
+      console.error('Purchase investment stats error:', e);
+    }
+
+    // Alias temporal para la vista actual.
+    var totalEntradas = purchaseInvestment;
 
     // Platos disponibles: los que pueden prepararse con el stock actual
     var platosDisponibles = 0, totalPlatos = 0;
@@ -155,6 +178,10 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
         periodRevenue,
         periodLabel: label,
         totalEntradas: totalEntradas,
+        periodInvestment: periodInvestment,
+        periodPurchaseCount: periodPurchaseCount,
+        openingInvestment: openingInvestment,
+        purchaseInvestment: purchaseInvestment,
         platosDisponibles: platosDisponibles,
         totalPlatos: totalPlatos
       }

@@ -7,7 +7,8 @@ function normalizeCompra(c) {
   if (!c) return null;
   return {
     id: c.id,
-    fecha: c.fecha,
+    fecha: c.fecha_compra || c.fecha,
+    fecha_compra: c.fecha_compra || c.fecha,
     producto_id: c.producto_id,
     productId: c.producto_id,
     productName: c.producto_nombre || c.productName,

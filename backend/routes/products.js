@@ -3,6 +3,38 @@ const router = express.Router();
 const supabase = require('../lib/supabase');
 const { requirePermission } = require('../middleware/auth');
 
+async function ensureInventoryOpening(productId, stock, cost, userId) {
+  if ((parseFloat(stock) || 0) <= 0) return;
+
+  const { data: opening, error: openingError } = await supabase
+    .from('inventario_aperturas')
+    .select('id')
+    .eq('producto_id', productId)
+    .maybeSingle();
+  if (openingError) throw openingError;
+  if (opening) return;
+
+  // No convertir una edición posterior a apertura si ya existen compras.
+  const { data: purchase, error: purchaseError } = await supabase
+    .from('compras')
+    .select('id')
+    .eq('producto_id', productId)
+    .limit(1)
+    .maybeSingle();
+  if (purchaseError) throw purchaseError;
+  if (purchase) return;
+
+  const { error: insertError } = await supabase
+    .from('inventario_aperturas')
+    .insert({
+      producto_id: productId,
+      cantidad_inicial: parseFloat(stock) || 0,
+      costo_unitario: parseFloat(cost) || 0,
+      usuario_id: userId || null
+    });
+  if (insertError && insertError.code !== '23505') throw insertError;
+}
+
 router.get('/categories/list', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -12,6 +44,8 @@ router.get('/categories/list', async (req, res) => {
       .order('nombre');
 
     if (error) throw error;
+
+    await ensureInventoryOpening(data.id, data.stock_actual, data.precio_compra, req.user?.id);
     res.json({ success: true, data: data.map(c => c.nombre) });
   } catch (err) {
     console.error('Categories error:', err);
@@ -64,6 +98,8 @@ router.get('/', async (req, res) => {
 
     const { data, error } = await query;
     if (error) throw error;
+
+    await ensureInventoryOpening(data.id, data.stock_actual, data.precio_compra, req.user?.id);
 
     let products = (data || []).map(p => ({
       id: p.id,
