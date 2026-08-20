@@ -347,7 +347,7 @@
       <div class="flex items-start justify-between mb-4">
         <div>
           <h2 id="reservaTitle" class="text-2xl font-extrabold text-ink-900">Reserva tu mesa</h2>
-          <p class="text-sm text-ink-500 mt-0.5">Te confirmamos por WhatsApp en minutos.</p>
+          <p id="reservaSubtitle" class="text-sm text-ink-500 mt-0.5">Te confirmamos por WhatsApp en minutos.</p>
         </div>
         <button id="closeReservaBtn" type="button" class="w-9 h-9 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center transition-colors" aria-label="Cerrar">
           <svg class="w-4 h-4 text-ink-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -367,17 +367,26 @@
           </div>
         </div>
 
+        <div class="form-row">
+          <label class="form-label">¿Cómo quieres recibir tu pedido?</label>
+          <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo de pedido">
+            <button type="button" class="delivery-mode-btn is-active px-3 py-2.5 rounded-xl border border-brand-600 bg-brand-50 text-brand-800 text-xs font-bold transition-colors" data-delivery-mode="mesa">🍽️ En el restaurante</button>
+            <button type="button" class="delivery-mode-btn px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-ink-600 text-xs font-bold transition-colors" data-delivery-mode="domicilio">🛵 A domicilio</button>
+          </div>
+          <input id="r-tipo-pedido" type="hidden" value="mesa">
+        </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div class="form-row">
-            <label for="r-fecha" class="form-label">Fecha</label>
+            <label id="r-fecha-label" for="r-fecha" class="form-label">Fecha</label>
             <input id="r-fecha" name="fecha" type="date" required class="form-input">
           </div>
           <div class="form-row">
-            <label for="r-hora" class="form-label">Hora</label>
+            <label id="r-hora-label" for="r-hora" class="form-label">Hora</label>
             <input id="r-hora" name="hora" type="time" required class="form-input" value="19:00">
           </div>
         </div>
-        <div class="form-row">
+        <div id="reservationPeopleField" class="form-row">
           <label class="form-label">Numero de personas</label>
           <div class="personas-pills" role="radiogroup" aria-label="Personas">
             <button type="button" class="persona-pill" data-personas="1">1</button>
@@ -392,7 +401,7 @@
           <input id="r-personas" name="personas" type="hidden" required>
         </div>
 
-        <div class="form-row">
+        <div id="reservationMesaField" class="form-row">
           <div class="flex items-center justify-between">
             <label class="form-label">Elige tu mesa</label>
             <button type="button" id="reloadMesasBtn" class="text-[10px] text-ink-500 font-medium underline">Actualizar</button>
@@ -400,6 +409,18 @@
           <p id="mesaHint" class="text-[11px] text-ink-500 -mt-1">Elige una mesa libre para tu horario.</p>
           <div id="mesasGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-1"></div>
           <input id="r-mesa-id" name="mesa_id" type="hidden">
+        </div>
+
+        <div id="deliveryFields" class="hidden space-y-3">
+          <div class="form-row">
+            <label for="r-direccion" class="form-label">Dirección de entrega *</label>
+            <input id="r-direccion" name="direccion_entrega" type="text" maxlength="300" placeholder="Calle, carrera, número y complemento" class="form-input">
+          </div>
+          <div class="form-row">
+            <label for="r-barrio" class="form-label">Barrio <span class="text-ink-400 font-normal">(opcional)</span></label>
+            <input id="r-barrio" name="barrio_entrega" type="text" maxlength="120" placeholder="Ej: Centro" class="form-input">
+          </div>
+          <p class="text-xs text-ink-500 bg-brand-50 border border-brand-100 rounded-xl px-3 py-2.5">Costo de domicilio: <strong class="text-brand-700">$3.000</strong>. El pedido se prepara una hora antes de la hora programada.</p>
         </div>
 
         <div class="form-row">
@@ -410,7 +431,7 @@
         <div id="reservaError" class="hidden text-sm text-rose-700 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2.5"></div>
 
         <button type="submit" id="reservaSubmitBtn" class="submit-btn">
-          <span class="submit-label">Confirmar reserva</span>
+          <span id="reservaSubmitLabel" class="submit-label">Confirmar reserva</span>
           <span class="submit-spinner hidden">
             <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
             Enviando...

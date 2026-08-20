@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
 const { requirePermission } = require('../middleware/auth');
+const { createOrderFromReservation, reservationIsDue } = require('../lib/reservation-orders');
 
 const ESTADOS_VALIDOS = ['pendiente', 'confirmada', 'cancelada', 'completada'];
 
@@ -17,7 +18,7 @@ router.get('/', requirePermission('puede_gestionar_usuarios'), async (req, res) 
     var limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 100));
     var query = supabase
       .from('reservas')
-      .select('id, nombre, telefono, email, fecha, hora, personas, notas, estado, subtotal_platos, mesa_id, mesa_nombre, numero_venta, usuario_id, creado_en, reserva_items(id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
+      .select('id, nombre, telefono, email, fecha, hora, personas, notas, estado, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, subtotal_platos, mesa_id, mesa_nombre, numero_venta, usuario_id, creado_en, reserva_items(id, plato_id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
       .order('fecha', { ascending: false })
       .order('hora', { ascending: false })
       .limit(limitNum);
@@ -67,77 +68,14 @@ router.patch('/:id/estado', requirePermission('puede_gestionar_usuarios'), async
     // Obtener reserva actual con sus items
     var { data: reserva, error: rErr } = await supabase
       .from('reservas')
-      .select('id, estado, subtotal_platos, numero_venta, nombre, telefono, email, reserva_items(id, plato_id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
+      .select('id, estado, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, subtotal_platos, numero_venta, nombre, telefono, email, mesa_id, mesa_nombre, fecha, hora, notas, reserva_items(id, plato_id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
       .eq('id', id).single();
     if (rErr) throw rErr;
 
-    // Al CONFIRMAR una reserva con items, crear pedido automaticamente
-    if (estado === 'confirmada' && reserva && (reserva.reserva_items || []).length > 0 && !reserva.numero_venta) {
-      var items = reserva.reserva_items;
-      // Generar numero de venta
-      var fechaStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      var numeroVenta = 'P-' + fechaStr + '-' + String(Date.now()).slice(-4);
-      var subtotal = parseFloat(reserva.subtotal_platos || 0);
-
-      // Crear venta
-      var { data: venta, error: vErr } = await supabase
-        .from('ventas')
-        .insert([{
-          numero_venta: numeroVenta,
-          cliente_nombre: reserva.nombre,
-          cliente_documento: reserva.telefono,
-          subtotal: subtotal,
-          impuesto: 0,
-          total: subtotal,
-          metodo_pago: 'efectivo',
-          estado: 'pendiente',
-          notas: 'Pedido generado automaticamente desde reserva #' + id.slice(-6)
-        }])
-        .select('id, numero_venta, total')
-        .single();
-      if (vErr) throw vErr;
-
-      // Crear venta_detalles (uno por cada item)
-      var ventaDetalles = items.map(function (it) {
-        return {
-          venta_id: venta.id,
-          producto_id: it.plato_id,
-          producto_nombre: it.plato_nombre,
-          cantidad: it.cantidad,
-          precio_unitario: it.precio_unitario,
-          subtotal: it.subtotal
-        };
-      });
-      var { error: vdErr } = await supabase.from('venta_detalles').insert(ventaDetalles);
-      if (vdErr) console.error('[reservas] venta_detalles error:', vdErr.message);
-
-      // Descontar stock: registrar movimiento por cada item
-      for (var i = 0; i < items.length; i++) {
-        var it2 = items[i];
-        try {
-          // Buscar ingredientes del plato y descontar proporcionalmente
-          var { data: ings } = await supabase
-            .from('plato_ingredientes')
-            .select('producto_id, cantidad, unidad')
-            .eq('plato_id', it2.plato_id);
-          for (var k = 0; k < (ings || []).length; k++) {
-            var ing = ings[k];
-            var cantDescontar = parseFloat(ing.cantidad) * it2.cantidad;
-            try {
-              await supabase.rpc('registrar_movimiento', {
-                p_producto_id: ing.producto_id,
-                p_tipo: 'salida',
-                p_cantidad: cantDescontar,
-                p_motivo: 'Pedido desde reserva',
-                p_usuario_id: null
-              });
-            } catch (e2) { /* ignore individual errors */ }
-          }
-        } catch (e3) { /* ignore */ }
-      }
-
-      // Guardar numero_venta en la reserva
-      await supabase.from('reservas').update({ numero_venta: numeroVenta }).eq('id', id);
+    // Confirmar solo agenda el pedido si falta mas de una hora.
+    // El scheduler lo convierte en venta cuando entra en la ventana de preparacion.
+    if (estado === 'confirmada' && reserva && (reserva.reserva_items || []).length > 0 && !reserva.numero_venta && reservationIsDue(reserva)) {
+      await createOrderFromReservation(reserva);
     }
 
     // Cambiar estado
@@ -145,7 +83,7 @@ router.patch('/:id/estado', requirePermission('puede_gestionar_usuarios'), async
       .from('reservas')
       .update({ estado: estado })
       .eq('id', id)
-      .select('id, estado, numero_venta')
+      .select('id, estado, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, numero_venta')
       .single();
     if (error) throw error;
     return res.json({ success: true, data: data });

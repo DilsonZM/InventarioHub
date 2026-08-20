@@ -15,6 +15,7 @@ const mesasRoutes = require('./routes/mesas');
 const printRoutes = require('./routes/print');
 const publicRoutes = require('./routes/public');
 const reservasRoutes = require('./routes/reservas');
+const { startReservationScheduler } = require('./lib/reservation-scheduler');
 const { authMiddleware, requirePermission } = require('./middleware/auth');
 const supabase = require('./lib/supabase');
 const { applyBogotaDateFilter } = require('./lib/timezone');
@@ -342,5 +343,6 @@ if (process.env.VERCEL) {
 } else {
   app.listen(PORT, () => {
     console.log('InventarioHub API corriendo en http://localhost:' + PORT);
+    startReservationScheduler();
   });
 }

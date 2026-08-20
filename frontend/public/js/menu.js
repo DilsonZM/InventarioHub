@@ -45,6 +45,7 @@
   var mesas = [];
   var mesaSeleccionada = null;
   var misReservas = [];
+  var tipoPedido = 'mesa';
 
   // ===== Elementos =====
   var $ = function (id) { return document.getElementById(id); };
@@ -152,7 +153,9 @@
       else { elCartFab.classList.add('hidden'); elCartFab.classList.remove('flex'); }
     }
     if (elReservaBtnText) {
-      elReservaBtnText.textContent = count > 0 ? 'Reservar mesa y pedir (' + formatPrecio(subtotal) + ')' : 'Reservar Mesa';
+      elReservaBtnText.textContent = count > 0
+        ? (tipoPedido === 'domicilio' ? 'Pedir a domicilio (' : 'Reservar mesa y pedir (') + formatPrecio(subtotal) + ')'
+        : (tipoPedido === 'domicilio' ? 'Pedir a domicilio' : 'Reservar Mesa');
     }
     renderCartItems();
   }
@@ -192,12 +195,16 @@
       var itemsTxt = (r.reserva_items && r.reserva_items.length > 0)
         ? '<p class="my-reserva-items">' + r.reserva_items.length + ' plato' + (r.reserva_items.length > 1 ? 's' : '') + ' · ' + formatPrecio(r.subtotal_platos) + '</p>'
         : '<p class="my-reserva-items">Solo mesa</p>';
+      var isDelivery = r.tipo_pedido === 'domicilio';
+      var destination = isDelivery
+        ? '<strong>🛵 Domicilio</strong> · ' + escapeHtml(r.direccion_entrega || 'Dirección pendiente')
+        : (r.mesa_nombre ? '<strong>' + escapeHtml(r.mesa_nombre) + '</strong> · ' : '') + (r.personas || 0) + ' pers.';
       return '<div class="my-reserva-card" data-reserva="' + r.id + '">'
         + '<div class="my-reserva-head">'
         + '<span class="my-reserva-fecha">' + formatFechaBonita(r.fecha) + ' · ' + (r.hora || '').slice(0, 5) + '</span>'
         + '<span class="my-reserva-estado my-reserva-estado-' + r.estado + '">' + r.estado + '</span>'
         + '</div>'
-        + '<p class="my-reserva-mesa">' + (r.mesa_nombre ? '<strong>' + escapeHtml(r.mesa_nombre) + '</strong> · ' : '') + r.personas + ' pers.</p>'
+        + '<p class="my-reserva-mesa">' + destination + '</p>'
         + itemsTxt
         + (r.numero_venta ? '<p class="my-reserva-total">Pedido: ' + escapeHtml(r.numero_venta) + '</p>' : '')
         + '</div>';
@@ -216,6 +223,7 @@
 
   // ===== Mesas =====
   function loadMesas() {
+    if (tipoPedido === 'domicilio') { mesas = []; renderMesas(); return; }
     var fecha = elFecha.value;
     var hora = $('r-hora').value;
     if (!fecha || !hora) { mesas = []; renderMesas(); return; }
@@ -332,6 +340,9 @@
     $('closeReservaBtn').addEventListener('click', closeReserva);
     $('reservaBackdrop').addEventListener('click', closeReserva);
     $('reservaForm').addEventListener('submit', submitReserva);
+    document.querySelectorAll('.delivery-mode-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { setDeliveryMode(btn.getAttribute('data-delivery-mode')); });
+    });
     $('reservaEditCartBtn').addEventListener('click', function () { closeReserva(); openCart(); });
     $('reloadMesasBtn').addEventListener('click', loadMesas);
     elFecha.addEventListener('change', function () { mesaSeleccionada = null; $('r-mesa-id').value = ''; loadMesas(); });
@@ -510,12 +521,57 @@
     if (!session) { showLogin(); return; }
     mesaSeleccionada = null;
     $('r-mesa-id').value = '';
+    setDeliveryMode('mesa');
     renderReservaCartSummary();
     $('reservaSheet').classList.add('is-open');
     $('reservaBackdrop').classList.add('is-open');
     loadMesas();
   }
   function closeReserva() { $('reservaSheet').classList.remove('is-open'); $('reservaBackdrop').classList.remove('is-open'); hideReservaError(); }
+
+  function setDeliveryMode(mode) {
+    tipoPedido = mode === 'domicilio' ? 'domicilio' : 'mesa';
+    $('r-tipo-pedido').value = tipoPedido;
+    var isDelivery = tipoPedido === 'domicilio';
+    var title = $('reservaTitle');
+    var subtitle = $('reservaSubtitle');
+    var dateLabel = $('r-fecha-label');
+    var timeLabel = $('r-hora-label');
+    var people = $('reservationPeopleField');
+    var mesa = $('reservationMesaField');
+    var delivery = $('deliveryFields');
+    var direccion = $('r-direccion');
+    var barrio = $('r-barrio');
+    var submitLabel = $('reservaSubmitLabel');
+
+    if (title) title.textContent = isDelivery ? 'Pide a domicilio' : 'Reserva tu mesa';
+    if (subtitle) subtitle.textContent = isDelivery ? 'Te confirmamos el pedido por WhatsApp.' : 'Te confirmamos por WhatsApp en minutos.';
+    if (dateLabel) dateLabel.textContent = isDelivery ? 'Fecha de entrega' : 'Fecha';
+    if (timeLabel) timeLabel.textContent = isDelivery ? 'Hora de entrega' : 'Hora';
+    if (people) people.classList.toggle('hidden', isDelivery);
+    if (mesa) mesa.classList.toggle('hidden', isDelivery);
+    if (delivery) delivery.classList.toggle('hidden', !isDelivery);
+    if (direccion) direccion.required = isDelivery;
+    if (submitLabel) submitLabel.textContent = isDelivery ? 'Confirmar domicilio' : 'Confirmar reserva';
+
+    document.querySelectorAll('.delivery-mode-btn').forEach(function (btn) {
+      var active = btn.getAttribute('data-delivery-mode') === tipoPedido;
+      btn.classList.toggle('is-active', active);
+      btn.classList.toggle('border-brand-600', active);
+      btn.classList.toggle('bg-brand-50', active);
+      btn.classList.toggle('text-brand-800', active);
+      btn.classList.toggle('border-ink-200', !active);
+      btn.classList.toggle('bg-white', !active);
+      btn.classList.toggle('text-ink-600', !active);
+    });
+
+    if (isDelivery) {
+      mesas = [];
+      renderMesas();
+    } else {
+      loadMesas();
+    }
+  }
   function renderReservaCartSummary() {
     if (cart.length === 0) { $('reservaCartSummary').classList.add('hidden'); return; }
     $('reservaCartSummary').classList.remove('hidden');
@@ -535,9 +591,14 @@
     var notas = $('r-notas').value.trim();
     var personasVal = $('r-personas').value;
     var mesaId = $('r-mesa-id').value || null;
+    var direccionEntrega = $('r-direccion').value.trim();
+    var barrioEntrega = $('r-barrio').value.trim();
+    var isDelivery = tipoPedido === 'domicilio';
     if (!fecha) return showReservaError('Selecciona una fecha');
     if (!hora) return showReservaError('Selecciona una hora');
-    if (!personasVal) return showReservaError('Selecciona el numero de personas');
+    if (isDelivery && direccionEntrega.length < 5) return showReservaError('Ingresa una direccion de entrega');
+    if (!isDelivery && !personasVal) return showReservaError('Selecciona el numero de personas');
+    if (isDelivery && cart.length === 0) return showReservaError('Agrega al menos un plato al pedido');
 
     setReservaLoading(true);
     var itemsPayload = cart.map(function (it) { return { plato_id: it.platoId, cantidad: it.cantidad }; });
@@ -547,8 +608,12 @@
       body: JSON.stringify({
         nombre: session.usuario.nombre, telefono: session.usuario.telefono,
         email: session.usuario.email || undefined,
-        fecha: fecha, hora: hora, personas: parseInt(personasVal, 10),
-        notas: notas, mesa_id: mesaId, items: itemsPayload
+        fecha: fecha, hora: hora,
+        personas: isDelivery ? null : parseInt(personasVal, 10),
+        tipo_pedido: tipoPedido,
+        direccion_entrega: isDelivery ? direccionEntrega : null,
+        barrio_entrega: isDelivery ? barrioEntrega : null,
+        notas: notas, mesa_id: isDelivery ? null : mesaId, items: itemsPayload
       })
     })
     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
@@ -557,15 +622,18 @@
       var d = res.json.data || {};
       var itemsCount = d.items_count || 0;
       var fechaBonita = formatFechaBonita(d.fecha || fecha);
-      var msg = 'Te esperamos el ' + fechaBonita + ' a las ' + (d.hora || hora).slice(0, 5)
-        + ' para ' + (d.personas || personasVal) + ' persona' + ((d.personas || personasVal) === 1 ? '' : 's');
-      if (d.mesa_nombre) msg += ' en ' + d.mesa_nombre;
+       var msg = isDelivery
+         ? 'Tu domicilio queda programado para el ' + fechaBonita + ' a las ' + (d.hora || hora).slice(0, 5) + '.'
+         : 'Te esperamos el ' + fechaBonita + ' a las ' + (d.hora || hora).slice(0, 5)
+           + ' para ' + (d.personas || personasVal) + ' persona' + ((d.personas || personasVal) === 1 ? '' : 's');
+       if (!isDelivery && d.mesa_nombre) msg += ' en ' + d.mesa_nombre;
       if (itemsCount > 0) msg += '. Plato(s): ' + itemsCount;
       msg += '.';
       $('successMsg').textContent = msg;
       showSuccess();
       cart = []; saveCart(); renderCart();
-      elReservaForm.reset();
+       elReservaForm.reset();
+       setDeliveryMode('mesa');
       document.querySelectorAll('.persona-pill').forEach(function (p) { p.classList.remove('is-active'); });
       var p2 = document.querySelector('.persona-pill[data-personas="2"]');
       if (p2) { p2.classList.add('is-active'); $('r-personas').value = 2; }

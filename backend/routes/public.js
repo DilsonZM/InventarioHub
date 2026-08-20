@@ -195,7 +195,7 @@ router.get('/mis-reservas', async (req, res) => {
     if (!usuarioId) return res.status(401).json({ success: false, message: 'No autorizado' });
     var { data, error } = await supabase
       .from('reservas')
-      .select('id, fecha, hora, personas, subtotal_platos, notas, estado, mesa_id, mesa_nombre, numero_venta, creado_en, reserva_items(id, plato_nombre, cantidad, precio_unitario, subtotal)')
+      .select('id, fecha, hora, personas, subtotal_platos, notas, estado, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, mesa_id, mesa_nombre, numero_venta, creado_en, reserva_items(id, plato_nombre, cantidad, precio_unitario, subtotal)')
       .eq('usuario_id', usuarioId)
       .order('fecha', { ascending: false })
       .limit(50);
@@ -222,8 +222,11 @@ router.post('/reservas', async (req, res) => {
     var fecha = clean(b.fecha, 10);
     var hora = clean(b.hora, 5);
     var notas = clean(b.notas, 500);
-    var personas = parseInt(b.personas, 10);
+    var tipoPedido = clean(b.tipo_pedido, 20) || 'mesa';
+    var personas = b.personas === '' || b.personas == null ? null : parseInt(b.personas, 10);
     var mesaId = clean(b.mesa_id, 60) || null;
+    var direccionEntrega = clean(b.direccion_entrega, 300);
+    var barrioEntrega = clean(b.barrio_entrega, 120);
     var items = Array.isArray(b.items) ? b.items : [];
 
     if (nombre.length < 2) return res.status(400).json({ success: false, message: 'Nombre invalido' });
@@ -231,7 +234,16 @@ router.post('/reservas', async (req, res) => {
     if (email && !isEmail(email)) return res.status(400).json({ success: false, message: 'Email invalido' });
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return res.status(400).json({ success: false, message: 'Fecha invalida' });
     if (!/^\d{2}:\d{2}$/.test(hora)) return res.status(400).json({ success: false, message: 'Hora invalida' });
-    if (!Number.isInteger(personas) || personas < 1 || personas > 20) {
+    if (!['mesa', 'domicilio'].includes(tipoPedido)) {
+      return res.status(400).json({ success: false, message: 'Tipo de pedido invalido' });
+    }
+    if (tipoPedido === 'domicilio' && direccionEntrega.length < 5) {
+      return res.status(400).json({ success: false, message: 'La direccion de entrega es obligatoria' });
+    }
+    if (tipoPedido === 'domicilio' && items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Agrega al menos un plato para pedir a domicilio' });
+    }
+    if (tipoPedido === 'mesa' && (!Number.isInteger(personas) || personas < 1 || personas > 20)) {
       return res.status(400).json({ success: false, message: 'Numero de personas invalido (1-20)' });
     }
     var todayStr = new Date().toISOString().slice(0, 10);
@@ -239,6 +251,7 @@ router.post('/reservas', async (req, res) => {
 
     // Verificar mesa si viene
     var mesaNombre = null;
+    if (tipoPedido === 'domicilio') mesaId = null;
     if (mesaId) {
       // Validar UUID basico
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mesaId)) {
@@ -300,8 +313,12 @@ router.post('/reservas', async (req, res) => {
 
     var insertObj = {
       nombre: nombre, telefono: telefono, fecha: fecha, hora: hora,
-      personas: personas, notas: notas || null, estado: 'pendiente',
-      subtotal_platos: Math.round(subtotalPlatos * 100) / 100
+      personas: tipoPedido === 'domicilio' ? null : personas, notas: notas || null, estado: 'pendiente',
+      subtotal_platos: Math.round(subtotalPlatos * 100) / 100,
+      tipo_pedido: tipoPedido,
+      direccion_entrega: tipoPedido === 'domicilio' ? direccionEntrega : null,
+      barrio_entrega: tipoPedido === 'domicilio' ? (barrioEntrega || null) : null,
+      costo_domicilio: tipoPedido === 'domicilio' ? 3000 : 0
     };
     if (email) insertObj.email = email;
     if (usuarioId) insertObj.usuario_id = usuarioId;
@@ -312,7 +329,7 @@ router.post('/reservas', async (req, res) => {
 
     var { data: reserva, error } = await supabase.from('reservas')
       .insert([insertObj])
-      .select('id, nombre, fecha, hora, personas, subtotal_platos, mesa_id, mesa_nombre')
+      .select('id, nombre, fecha, hora, personas, subtotal_platos, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, mesa_id, mesa_nombre')
       .single();
     if (error) {
       if (/relation.*reservas.*does not exist/i.test(error.message || '')) {
@@ -332,6 +349,10 @@ router.post('/reservas', async (req, res) => {
     return res.json({
       success: true,
       data: Object.assign({}, reserva, {
+        tipo_pedido: tipoPedido,
+        direccion_entrega: tipoPedido === 'domicilio' ? direccionEntrega : null,
+        barrio_entrega: tipoPedido === 'domicilio' ? (barrioEntrega || null) : null,
+        costo_domicilio: tipoPedido === 'domicilio' ? 3000 : 0,
         items_count: itemsValidados.length,
         items: itemsValidados
       }),
