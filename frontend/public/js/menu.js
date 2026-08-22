@@ -597,16 +597,31 @@
     if (delivery) delivery.classList.toggle('hidden', !isDelivery);
     if (direccion) direccion.required = isDelivery;
     if (submitLabel) submitLabel.textContent = isDelivery ? 'Confirmar domicilio' : 'Confirmar reserva';
-    if (isDelivery) {
-      // En domicilio la fila fecha/hora se muestra solo si el usuario
-      // elige "Programar"; por defecto la oculta (el backend autollena).
-      resetEntregaTipoSiDomicilio();
-      var fh = $('r-fecha-hora-row');
-      if (fh) fh.style.display = 'none';
-    } else {
-      // En mesa siempre se muestra la fila fecha/hora
-      var fh2 = $('r-fecha-hora-row');
-      if (fh2) fh2.style.display = '';
+
+    // Mover la fila fecha/hora al lugar correcto segun el modo.
+    // - Mesa: aparece despues de las pills de personas y el selector de mesa
+    //   (para que el cliente elija fecha/hora del local).
+    // - Domicilio: aparece DENTRO del bloque domicilio, despues del selector
+    //   "Cuando lo quieres recibir". Por defecto oculto (backend autollena);
+    //   se muestra cuando el usuario elige "Programar".
+    var fhRow = $('r-fecha-hora-row');
+    if (fhRow) {
+      if (isDelivery) {
+        // Mover dentro de deliveryFields justo despues del banner info
+        var anchor = $('r-entrega-info');
+        if (anchor && anchor.parentNode) {
+          anchor.parentNode.insertBefore(fhRow, anchor.nextSibling);
+          fhRow.style.display = 'none';
+        }
+        resetEntregaTipoSiDomicilio();
+      } else {
+        // Mover despues del selector de mesa (antes del bloque domicilio)
+        var mesaAnchor = $('reservationMesaField');
+        if (mesaAnchor && mesaAnchor.parentNode) {
+          mesaAnchor.parentNode.insertBefore(fhRow, mesaAnchor.nextSibling);
+          fhRow.style.display = '';
+        }
+      }
     }
 
     document.querySelectorAll('.delivery-mode-btn').forEach(function (btn) {
