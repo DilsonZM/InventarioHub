@@ -1126,6 +1126,17 @@
             </div>
           </div>
 
+          <!-- Bloque domicilio (solo se muestra si la venta es envio) -->
+          <div id="detailSaleEnvio" class="hidden mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p class="text-xs font-extrabold text-amber-700 uppercase tracking-wider mb-1.5">🛵 Envio a domicilio</p>
+            <p class="text-sm font-semibold text-slate-800 leading-snug" id="detailSaleEnvioDireccion">--</p>
+            <p class="text-xs text-slate-600 mt-0.5" id="detailSaleEnvioBarrio"></p>
+            <div class="mt-2 pt-2 border-t border-amber-200/60 flex flex-wrap gap-4 text-xs text-slate-600">
+              <span id="detailSaleEnvioCliente"></span>
+              <span id="detailSaleEnvioTelefono"></span>
+            </div>
+          </div>
+
           <div class="mb-6">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Productos</p>
             <div class="border border-slate-200 rounded-xl overflow-hidden">
@@ -1505,6 +1516,14 @@
             <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Costo domicilio</label>
             <input type="text" id="posCostoDomicilioDisplay" placeholder="$0" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50" autocomplete="off">
             <input type="hidden" id="posCostoDomicilio" value="3000">
+            <label class="block text-[11px] font-medium text-slate-500 mb-0.5 mt-2">Nombre del cliente <span class="text-rose-500">*</span></label>
+            <input type="text" id="posClienteDomicilio" placeholder="Ej: Juan Perez" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50" autocomplete="off">
+            <label class="block text-[11px] font-medium text-slate-500 mb-0.5 mt-2">Direccion de entrega <span class="text-rose-500">*</span></label>
+            <input type="text" id="posDireccionEntrega" placeholder="Ej: Calle 10 #45-67" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50" autocomplete="off">
+            <label class="block text-[11px] font-medium text-slate-500 mb-0.5 mt-2">Barrio <span class="text-slate-400 font-normal">(opcional)</span></label>
+            <input type="text" id="posBarrioEntrega" placeholder="Ej: Centro" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50" autocomplete="off">
+            <label class="block text-[11px] font-medium text-slate-500 mb-0.5 mt-2">Telefono de contacto <span class="text-rose-500">*</span></label>
+            <input type="tel" id="posTelefonoDomicilio" placeholder="Ej: 3001234567" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50" autocomplete="off">
           </div>
           <!-- Campos financieros (colapsables) -->
           <details id="posFinanzas" class="pos-finanzas group">
@@ -1783,6 +1802,13 @@
               <p class="text-[12px] text-slate-500 font-mono" id="ticketFecha">12 jun 2026, 08:30</p>
               <p class="text-[12px] text-slate-500 font-mono" id="ticketCocina">Cocina 1</p>
             </div>
+          </div>
+          <!-- Bloque domicilio (oculto por defecto, se muestra si la venta es envio) -->
+          <div id="ticketEnvio" class="hidden px-5 py-3 border-t-2 border-dashed border-amber-200 bg-amber-50">
+            <p class="text-[11px] font-extrabold text-amber-700 uppercase tracking-wider mb-1">🛵 Envio a domicilio</p>
+            <p id="ticketEnvioDireccion" class="text-[12px] text-slate-700 font-mono leading-snug"></p>
+            <p id="ticketEnvioBarrio" class="text-[11px] text-slate-500 font-mono mt-0.5"></p>
+            <p id="ticketEnvioTelefono" class="text-[11px] text-slate-500 font-mono mt-1"></p>
           </div>
           <!-- Items -->
           <div class="px-5 py-4 space-y-2.5" id="ticketItems"></div>

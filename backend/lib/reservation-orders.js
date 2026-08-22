@@ -115,7 +115,9 @@ async function createOrderFromReservation(reserva) {
       costo_domicilio: deliveryCost,
       propina: 0,
       bono_descuento: 0,
-      forma_pago: null
+      forma_pago: null,
+      direccion_entrega: isDelivery ? (reserva.direccion_entrega || null) : null,
+      barrio_entrega: isDelivery ? (reserva.barrio_entrega || null) : null
     })
     .select('id, numero_venta, total')
     .single();

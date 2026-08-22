@@ -112,8 +112,12 @@ const API = (() => {
         const qs = new URLSearchParams(params).toString();
         return request('/reservas' + (qs ? '?' + qs : ''));
       },
-      updateEstado: (id, estado) =>
-        request('/reservas/' + id + '/estado', { method: 'PATCH', body: JSON.stringify({ estado }) }),
+      updateEstado: (id, payload) => {
+        // Acepta string (compatibilidad) u objeto con flags extra
+        // como { estado: 'confirmada', crear_pedido_inmediato: true }.
+        var body = typeof payload === 'string' ? { estado: payload } : (payload || {});
+        return request('/reservas/' + id + '/estado', { method: 'PATCH', body: JSON.stringify(body) });
+      },
       delete: (id) => request('/reservas/' + id, { method: 'DELETE' }),
     },
 

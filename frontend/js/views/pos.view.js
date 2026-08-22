@@ -128,6 +128,18 @@ async function loadPOS() {
           if (domDisplay) domDisplay.value = '$' + parseInt(sale.costoDomicilio).toLocaleString('es-CO');
         }
         if (propEl && sale.propina) propEl.value = sale.propina;
+        // Cargar campos de domicilio si la venta editada era a domicilio
+        if (sale.paymentMethod === 'domicilio') {
+          var cliEl = document.getElementById('posClienteDomicilio');
+          var dirEl = document.getElementById('posDireccionEntrega');
+          var barEl = document.getElementById('posBarrioEntrega');
+          var telEl = document.getElementById('posTelefonoDomicilio');
+          if (cliEl && sale.clienteNombre) cliEl.value = sale.clienteNombre;
+          if (dirEl && sale.direccionEntrega) dirEl.value = sale.direccionEntrega;
+          if (barEl && sale.barrioEntrega) barEl.value = sale.barrioEntrega;
+          // cliente_documento guarda el telefono en ventas (mismo patron que reservas)
+          if (telEl && sale.cliente_documento) telEl.value = sale.cliente_documento;
+        }
         if (bonoEl && sale.bonoDescuento) bonoEl.value = sale.bonoDescuento;
         if (formaEl && sale.formaPago) formaEl.value = sale.formaPago;
       }
@@ -519,6 +531,11 @@ function resetPOSFinanzas() {
   if (domDisplay) domDisplay.value = '';
   var fp = document.getElementById('posFormaPago');
   if (fp) fp.value = '';
+  // Limpiar campos de domicilio (cliente, direccion, barrio, telefono)
+  ['posClienteDomicilio', 'posDireccionEntrega', 'posBarrioEntrega', 'posTelefonoDomicilio'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   updatePOSTotalFinal();
 }
 
@@ -575,6 +592,33 @@ async function submitPOSOrder() {
     return;
   }
 
+  // Validacion de domicilio: nombre, direccion y telefono son obligatorios.
+  var domicilioData = null;
+  if (mode === 'domicilio') {
+    var cli = (document.getElementById('posClienteDomicilio') || {}).value || '';
+    var dir = (document.getElementById('posDireccionEntrega') || {}).value || '';
+    var bar = (document.getElementById('posBarrioEntrega') || {}).value || '';
+    var tel = (document.getElementById('posTelefonoDomicilio') || {}).value || '';
+    if (!cli.trim() || cli.trim().length < 2) {
+      showToast('Ingresa el nombre del cliente para el domicilio', 'warning');
+      return;
+    }
+    if (dir.trim().length < 5) {
+      showToast('La direccion de entrega es obligatoria para domicilios', 'warning');
+      return;
+    }
+    if (!tel.trim() || tel.trim().length < 7) {
+      showToast('Ingresa un telefono de contacto valido para el domicilio', 'warning');
+      return;
+    }
+    domicilioData = {
+      clienteNombre: cli.trim(),
+      direccionEntrega: dir.trim(),
+      barrioEntrega: bar.trim(),
+      telefono: tel.trim()
+    };
+  }
+
   var btn = $('#posRegisterBtn');
   var btnText = $('#posRegisterText');
   if (btn) { btn.disabled = true; if (btnText) btnText.textContent = 'Procesando...'; }
@@ -611,6 +655,12 @@ async function submitPOSOrder() {
     bonoDescuento: fin.bonoDescuento
     // formaPago NO se envia: se captura al final, al editar el pedido
   };
+  if (domicilioData) {
+    payload.clienteNombre = domicilioData.clienteNombre;
+    payload.direccionEntrega = domicilioData.direccionEntrega;
+    payload.barrioEntrega = domicilioData.barrioEntrega;
+    payload.cliente_documento = domicilioData.telefono;
+  }
 
   // Loading overlay con animacion energetica.
   // Muestra 3 pasos visuales para que el usuario vea que el sistema

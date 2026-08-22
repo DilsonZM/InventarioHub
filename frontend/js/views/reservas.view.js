@@ -147,12 +147,108 @@ function formatFechaBonita(yyyy_mm_dd) {
 
 async function reservaAccion(id, nuevoEstado) {
   try {
-    await API.reservas.updateEstado(id, nuevoEstado);
+    // Cuando confirma una reserva CON items, preguntamos si quiere
+    // crear el pedido ya o esperar hasta 1h antes de la hora programada.
+    var r = state.reservas.find(function (x) { return x.id === id; });
+    var tieneItems = r && r.items && r.items.length > 0;
+    var payload = { estado: nuevoEstado };
+    if (nuevoEstado === 'confirmada' && tieneItems) {
+      var crearYa = await showConfirmarReservaModal(r);
+      if (crearYa === null) return; // cancelado
+      payload.crear_pedido_inmediato = crearYa;
+    }
+    await API.reservas.updateEstado(id, payload);
     showToast('Reserva ' + nuevoEstado, 'success');
     loadReservas();
   } catch (err) {
     showToast('Error al cambiar estado', 'error');
   }
+}
+
+// Modal custom (no SweetAlert) para elegir si crear pedido inmediato.
+// Devuelve true (ya), false (esperar), o null (cancelado).
+// Por defecto "Crear pedido ya" viene pre-seleccionado.
+function showConfirmarReservaModal(r) {
+  return new Promise(function (resolve) {
+    var itemsCount = (r.items || []).length;
+    var fechaTxt = formatFechaBonita(r.fecha) + ' ' + (r.hora || '').slice(0, 5);
+    var isDelivery = r.tipo_pedido === 'domicilio';
+    var destinoTxt = isDelivery
+      ? '🛵 ' + (r.direccion_entrega || 'Domicilio')
+      : (r.mesa_nombre ? '🍽️ ' + r.mesa_nombre : '🍽️ Mesa');
+
+    var modal = document.createElement('div');
+    modal.id = 'confirmarReservaModal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+    modal.style.background = 'rgba(15, 23, 42, 0.55)';
+    modal.innerHTML = ''
+      + '<div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">'
+      + '  <div class="p-5 sm:p-6">'
+      + '    <div class="flex items-center gap-3 mb-4">'
+      + '      <div class="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">'
+      + '        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+      + '      </div>'
+      + '      <div>'
+      + '        <h3 class="text-base font-bold text-slate-800">Confirmar reserva</h3>'
+      + '        <p class="text-xs text-slate-500 mt-0.5">' + escapeHtml(r.nombre) + ' &middot; ' + fechaTxt + '</p>'
+      + '        <p class="text-[11px] text-brand-600 font-semibold mt-0.5">' + destinoTxt + ' &middot; ' + itemsCount + ' plato' + (itemsCount !== 1 ? 's' : '') + '</p>'
+      + '      </div>'
+      + '    </div>'
+      + '    <p class="text-sm text-slate-600 mb-4">¿Como quieres enviar el pedido a cocina?</p>'
+      + '    <div class="space-y-2">'
+      + '      <label class="flex items-start gap-3 p-3 border-2 border-emerald-500 bg-emerald-50 rounded-xl cursor-pointer transition-colors" data-opcion="ya">'
+      + '        <input type="radio" name="crear_pedido_opcion" value="ya" checked class="mt-1 accent-emerald-600">'
+      + '        <div>'
+      + '          <p class="text-sm font-bold text-slate-800">Crear pedido ya</p>'
+      + '          <p class="text-xs text-slate-500 mt-0.5">Aparece inmediatamente en Pedidos. Recomendado para reservas cercanas.</p>'
+      + '        </div>'
+      + '      </label>'
+      + '      <label class="flex items-start gap-3 p-3 border border-slate-200 hover:border-slate-300 bg-white rounded-xl cursor-pointer transition-colors" data-opcion="esperar">'
+      + '        <input type="radio" name="crear_pedido_opcion" value="esperar" class="mt-1 accent-emerald-600">'
+      + '        <div>'
+      + '          <p class="text-sm font-bold text-slate-800">Esperar hasta 1h antes</p>'
+      + '          <p class="text-xs text-slate-500 mt-0.5">El pedido aparecera automaticamente ~60 min antes de la hora programada.</p>'
+      + '        </div>'
+      + '      </label>'
+      + '    </div>'
+      + '  </div>'
+      + '  <div class="border-t border-slate-100 bg-slate-50 px-5 py-3 flex items-center justify-end gap-2">'
+      + '    <button data-cancel class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>'
+      + '    <button data-ok class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm">Confirmar reserva</button>'
+      + '  </div>'
+      + '</div>';
+
+    document.body.appendChild(modal);
+
+    function cerrar(val) {
+      if (modal.parentNode) modal.parentNode.removeChild(modal);
+      resolve(val);
+    }
+
+    modal.querySelectorAll('[data-opcion]').forEach(function (label) {
+      label.addEventListener('click', function () {
+        modal.querySelectorAll('[data-opcion]').forEach(function (l) {
+          l.classList.remove('border-emerald-500', 'bg-emerald-50');
+          l.classList.add('border-slate-200', 'bg-white');
+          var inp = l.querySelector('input');
+          if (inp) inp.checked = false;
+        });
+        label.classList.remove('border-slate-200', 'bg-white');
+        label.classList.add('border-emerald-500', 'bg-emerald-50');
+        var inp = label.querySelector('input');
+        if (inp) inp.checked = true;
+      });
+    });
+
+    modal.querySelector('[data-cancel]').addEventListener('click', function () { cerrar(null); });
+    modal.querySelector('[data-ok]').addEventListener('click', function () {
+      var val = modal.querySelector('input[name="crear_pedido_opcion"]:checked');
+      cerrar(val ? val.value === 'ya' : true); // default true si nada marcado
+    });
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) cerrar(null);
+    });
+  });
 }
 
 async function reservaEliminar(id) {

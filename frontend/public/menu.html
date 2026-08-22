@@ -420,7 +420,16 @@
             <label for="r-barrio" class="form-label">Barrio <span class="text-ink-400 font-normal">(opcional)</span></label>
             <input id="r-barrio" name="barrio_entrega" type="text" maxlength="120" placeholder="Ej: Centro" class="form-input">
           </div>
-          <p class="text-xs text-ink-500 bg-brand-50 border border-brand-100 rounded-xl px-3 py-2.5">Costo de domicilio: <strong class="text-brand-700">$3.000</strong>. El pedido se prepara una hora antes de la hora programada.</p>
+          <div class="form-row">
+            <label class="form-label">¿Cuando lo quieres recibir?</label>
+            <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo de entrega">
+              <button type="button" id="r-entrega-inmediata-btn" class="entrega-tipo-btn is-active px-3 py-2.5 rounded-xl border border-amber-500 bg-amber-50 text-amber-800 text-xs font-bold transition-colors" data-entrega-tipo="inmediata">⚡ Entrega inmediata</button>
+              <button type="button" id="r-entrega-programada-btn" class="entrega-tipo-btn px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-ink-600 text-xs font-bold transition-colors" data-entrega-tipo="programada">🕐 Programar</button>
+            </div>
+            <input id="r-entrega-inmediata" type="hidden" value="true">
+            <p id="r-entrega-info" class="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">Tiempo estimado de entrega: <strong>45 minutos</strong>. Lo preparamos ahora y te lo llevamos.</p>
+          </div>
+          <p class="text-xs text-ink-500 bg-brand-50 border border-brand-100 rounded-xl px-3 py-2.5">Costo de domicilio: <strong class="text-brand-700">$3.000</strong>.</p>
         </div>
 
         <div class="form-row">

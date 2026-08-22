@@ -56,6 +56,8 @@ router.get('/', async (req, res) => {
       estadoCocina: sale.estado_cocina || 'pendiente',
       mesaId: sale.mesa_id || null,
       mesaNombre: sale.mesas?.nombre || null,
+      direccionEntrega: sale.direccion_entrega || null,
+      barrioEntrega: sale.barrio_entrega || null,
       costoDomicilio: parseFloat(sale.costo_domicilio) || 0,
       propina: parseFloat(sale.propina) || 0,
       bonoDescuento: parseFloat(sale.bono_descuento) || 0,
@@ -140,6 +142,8 @@ router.get('/:id', async (req, res) => {
       estadoCocina: data.estado_cocina || 'pendiente',
       mesaId: data.mesa_id || null,
       mesaNombre: data.mesas?.nombre || null,
+      direccionEntrega: data.direccion_entrega || null,
+      barrioEntrega: data.barrio_entrega || null,
       costoDomicilio: parseFloat(data.costo_domicilio) || 0,
       propina: parseFloat(data.propina) || 0,
       bonoDescuento: parseFloat(data.bono_descuento) || 0,
@@ -182,6 +186,13 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
     }
     if (!paymentMethod) {
       return res.status(400).json({ success: false, message: 'Cocina requerida' });
+    }
+    // Si el pedido es a domicilio, la direccion de entrega es obligatoria.
+    // Se permite actualizar la direccion en una venta existente (caso comun).
+    var direccionEntrega = (req.body.direccionEntrega || req.body.direccion_entrega || '').toString().trim();
+    var barrioEntrega = (req.body.barrioEntrega || req.body.barrio_entrega || '').toString().trim();
+    if (paymentMethod === 'domicilio' && direccionEntrega.length < 5) {
+      return res.status(400).json({ success: false, message: 'La direccion de entrega es obligatoria para domicilios' });
     }
 
     // Obtener la venta original con sus detalles
@@ -424,6 +435,8 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
       .update({
         metodo_pago: paymentMethod,
         mesa_id: mesa_id || null,
+        direccion_entrega: paymentMethod === 'domicilio' ? (direccionEntrega || original.direccion_entrega) : null,
+        barrio_entrega: paymentMethod === 'domicilio' ? (barrioEntrega || original.barrio_entrega) : null,
         subtotal: subtotal,
         impuesto: impuesto,
         total: total,
@@ -512,6 +525,13 @@ router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
     if (!paymentMethod) {
       return res.status(400).json({ success: false, message: 'Metodo de pago requerido' });
     }
+    // Domicilio desde el POS exige direccion de entrega (validacion en backend
+    // para evitar que un pedido sin destino llegue a cocina).
+    var direccionEntregaPost = (req.body.direccionEntrega || req.body.direccion_entrega || '').toString().trim();
+    var barrioEntregaPost = (req.body.barrioEntrega || req.body.barrio_entrega || '').toString().trim();
+    if (paymentMethod === 'domicilio' && direccionEntregaPost.length < 5) {
+      return res.status(400).json({ success: false, message: 'La direccion de entrega es obligatoria para domicilios' });
+    }
 
     for (const item of items) {
       if (!item.productId || !item.quantity || item.quantity <= 0) {
@@ -540,6 +560,15 @@ router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
     });
 
     if (error) throw error;
+
+    // Si es domicilio, persistimos direccion/barrio (el RPC procesar_venta
+    // no recibe estos campos; los guardamos con un update directo).
+    if (paymentMethod === 'domicilio' && direccionEntregaPost) {
+      await supabase.from('ventas').update({
+        direccion_entrega: direccionEntregaPost,
+        barrio_entrega: barrioEntregaPost || null
+      }).eq('id', saleId);
+    }
 
     const { data: sale } = await supabase
       .from('ventas')
@@ -687,6 +716,8 @@ async function handleDishSale(req, res) {
       numero_venta: numVenta, metodo_pago: paymentMethod, usuario_id: req.user ? req.user.id : null,
       cliente_nombre: clienteNombre || null, estado: saleEstado,
       mesa_id: req.body.mesa_id || null,
+      direccion_entrega: paymentMethod === 'domicilio' ? direccionEntregaPost : null,
+      barrio_entrega: paymentMethod === 'domicilio' ? (barrioEntregaPost || null) : null,
       subtotal: totalVenta, impuesto: impuestoVenta, total: totalFinal,
       costo_domicilio: costoDomicilio, propina: propina, bono_descuento: bonoDescuento,
       forma_pago: req.body.formaPago || null,
@@ -935,6 +966,12 @@ router.post('/comanda', requirePermission('puede_crear_salidas'), async (req, re
     if (!paymentMethod) {
       return res.status(400).json({ success: false, message: 'Metodo de pago requerido' });
     }
+    // Domicilio exige direccion de entrega (mismo criterio que POST /api/sales).
+    var direccionEntregaCom = (req.body.direccionEntrega || req.body.direccion_entrega || '').toString().trim();
+    var barrioEntregaCom = (req.body.barrioEntrega || req.body.barrio_entrega || '').toString().trim();
+    if (paymentMethod === 'domicilio' && direccionEntregaCom.length < 5) {
+      return res.status(400).json({ success: false, message: 'La direccion de entrega es obligatoria para domicilios' });
+    }
 
     const { data: saleId, error } = await supabase.rpc('procesar_venta', {
       p_items: items.map(item => ({
@@ -958,8 +995,13 @@ router.post('/comanda', requirePermission('puede_crear_salidas'), async (req, re
 
     if (error) throw error;
 
-    // Marcar como pendiente (comanda, no facturada)
-    await supabase.from('ventas').update({ estado: 'pendiente' }).eq('id', saleId);
+    // Marcar como pendiente (comanda, no facturada) y guardar direccion si es domicilio
+    var updateComanda = { estado: 'pendiente' };
+    if (paymentMethod === 'domicilio' && direccionEntregaCom) {
+      updateComanda.direccion_entrega = direccionEntregaCom;
+      updateComanda.barrio_entrega = barrioEntregaCom || null;
+    }
+    await supabase.from('ventas').update(updateComanda).eq('id', saleId);
 
     const { data: sale } = await supabase
       .from('ventas')

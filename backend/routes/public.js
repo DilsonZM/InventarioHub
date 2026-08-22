@@ -63,6 +63,17 @@ function rateLimitOk(ip, key, max, windowMs) {
 function clean(v, max) { return v == null ? '' : String(v).trim().slice(0, max); }
 function isEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || '')); }
 function makeToken(id) { return Buffer.from(String(id)).toString('base64'); }
+
+// Devuelve fecha (YYYY-MM-DD) y hora (HH:MM) en zona Bogota para el
+// instante actual + minutos estimados de preparacion (default 45).
+function horaEstimadaBogota(minutosAdelante) {
+  var ahora = new Date();
+  var futuro = new Date(ahora.getTime() + (minutosAdelante || 45) * 60 * 1000);
+  // Intl.DateTimeFormat garantiza la zona Bogota independientemente del host.
+  var fechaStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(futuro);
+  var horaStr = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit', hour12: false }).format(futuro);
+  return { fecha: fechaStr, hora: horaStr };
+}
 function readToken(t) {
   if (!t || typeof t !== 'string') return null;
   try {
@@ -242,13 +253,26 @@ router.post('/reservas', async (req, res) => {
       return res.status(429).json({ success: false, message: 'Demasiadas solicitudes. Intenta en un minuto.' });
     }
     var b = req.body || {};
+    var entregaInmediata = b.entrega_inmediata === true;
+    var tipoPedido = clean(b.tipo_pedido, 20) || 'mesa';
     var nombre = clean(b.nombre, 150);
     var telefono = clean(b.telefono, 30);
     var email = clean(b.email, 150);
     var fecha = clean(b.fecha, 10);
     var hora = clean(b.hora, 5);
     var notas = clean(b.notas, 500);
-    var tipoPedido = clean(b.tipo_pedido, 20) || 'mesa';
+
+    // Entrega inmediata: autollenar fecha/hora con ahora+45min en zona Bogota.
+    // Aplica solo a domicilios. La hora estimada es editable en el cliente
+    // si el admin/cliente quiere ajustarla antes de mandar.
+    if (entregaInmediata) {
+      if (tipoPedido !== 'domicilio') {
+        return res.status(400).json({ success: false, message: 'Entrega inmediata solo aplica a domicilios' });
+      }
+      var estimado = horaEstimadaBogota(45);
+      fecha = estimado.fecha;
+      hora = estimado.hora;
+    }
     var personas = b.personas === '' || b.personas == null ? null : parseInt(b.personas, 10);
     var mesaId = clean(b.mesa_id, 60) || null;
     var direccionEntrega = clean(b.direccion_entrega, 300);
@@ -398,7 +422,9 @@ router.post('/reservas', async (req, res) => {
         items_count: itemsValidados.length,
         items: itemsValidados
       }),
-      message: 'Reserva recibida'
+      message: entregaInmediata
+        ? ('Domicilio programado para las ' + hora + ' (entrega estimada en ~45 min)')
+        : 'Reserva recibida'
     });
   } catch (err) {
     console.error('[public/reservas] error:', err.message);

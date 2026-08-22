@@ -14,6 +14,27 @@ export function renderTicketFromData(sale, includeTip) {
   $('#ticketFecha').textContent = window.Utils.formatDate(sale.createdAt);
   $('#ticketBarcode').textContent = '*' + (sale.numero_venta || '') + '*';
 
+  // Bloque de envio a domicilio (solo se muestra si paymentMethod === 'domicilio'
+  // y la venta trae direccion_entrega).
+  var envioEl = document.getElementById('ticketEnvio');
+  if (envioEl) {
+    var isDelivery = sale.paymentMethod === 'domicilio' && sale.direccionEntrega;
+    envioEl.classList.toggle('hidden', !isDelivery);
+    if (isDelivery) {
+      document.getElementById('ticketEnvioDireccion').textContent = sale.direccionEntrega;
+      var barrioEl = document.getElementById('ticketEnvioBarrio');
+      if (barrioEl) {
+        barrioEl.textContent = sale.barrioEntrega ? ('Barrio: ' + sale.barrioEntrega) : '';
+        barrioEl.classList.toggle('hidden', !sale.barrioEntrega);
+      }
+      var telEl = document.getElementById('ticketEnvioTelefono');
+      if (telEl) {
+        telEl.textContent = sale.cliente_documento ? ('Tel: ' + sale.cliente_documento) : '';
+        telEl.classList.toggle('hidden', !sale.cliente_documento);
+      }
+    }
+  }
+
   var items = sale.items || [];
   var subtotal = 0;
   $('#ticketItems').innerHTML = items.map(function (item) {

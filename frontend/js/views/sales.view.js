@@ -772,6 +772,32 @@ window.viewSale = async function (id) {
       else label = sale.paymentMethod || '—';
       pmEl.textContent = label;
     }
+
+    // Bloque de domicilio en el detalle (solo si paymentMethod === 'domicilio')
+    var envioBox = $('#detailSaleEnvio');
+    if (envioBox) {
+      var isDeliverySale = sale.paymentMethod === 'domicilio' && sale.direccionEntrega;
+      envioBox.classList.toggle('hidden', !isDeliverySale);
+      if (isDeliverySale) {
+        $('#detailSaleEnvioDireccion').textContent = sale.direccionEntrega;
+        var barrioDetEl = $('#detailSaleEnvioBarrio');
+        if (barrioDetEl) {
+          barrioDetEl.textContent = sale.barrioEntrega ? ('Barrio: ' + sale.barrioEntrega) : '';
+          barrioDetEl.classList.toggle('hidden', !sale.barrioEntrega);
+        }
+        var cliDetEl = $('#detailSaleEnvioCliente');
+        if (cliDetEl) {
+          cliDetEl.textContent = sale.clienteNombre ? ('👤 ' + sale.clienteNombre) : '';
+          cliDetEl.classList.toggle('hidden', !sale.clienteNombre);
+        }
+        var telDetEl = $('#detailSaleEnvioTelefono');
+        if (telDetEl) {
+          telDetEl.textContent = sale.cliente_documento ? ('📞 ' + sale.cliente_documento) : '';
+          telDetEl.classList.toggle('hidden', !sale.cliente_documento);
+        }
+      }
+    }
+
     var totalEl = $('#detailSaleTotal');
     if (totalEl) totalEl.textContent = formatCurrency(total);
 

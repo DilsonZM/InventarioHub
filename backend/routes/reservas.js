@@ -53,6 +53,7 @@ router.patch('/:id/estado', requirePermission('puede_gestionar_usuarios'), async
     var b = req.body || {};
     var estado = (b.estado || '').toString();
     var mesaId = b.mesa_id || null;
+    var crearPedidoInmediato = b.crear_pedido_inmediato === true;
     if (ESTADOS_VALIDOS.indexOf(estado) === -1) {
       return res.status(400).json({ success: false, message: 'Estado invalido' });
     }
@@ -72,9 +73,15 @@ router.patch('/:id/estado', requirePermission('puede_gestionar_usuarios'), async
       .eq('id', id).single();
     if (rErr) throw rErr;
 
-    // Confirmar solo agenda el pedido si falta mas de una hora.
-    // El scheduler lo convierte en venta cuando entra en la ventana de preparacion.
-    if (estado === 'confirmada' && reserva && (reserva.reserva_items || []).length > 0 && !reserva.numero_venta && reservationIsDue(reserva)) {
+    // Confirmar crea el pedido si:
+    //   - el admin eligio "Crear pedido ya" (saltarse la ventana de 1h), o
+    //   - la fecha+hora ya esta dentro de la ventana de 1h (scheduler la tomaria igual).
+    var debeCrearPedido = estado === 'confirmada'
+      && reserva
+      && (reserva.reserva_items || []).length > 0
+      && !reserva.numero_venta
+      && (crearPedidoInmediato || reservationIsDue(reserva));
+    if (debeCrearPedido) {
       await createOrderFromReservation(reserva);
     }
 

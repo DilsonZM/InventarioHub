@@ -343,6 +343,30 @@
     document.querySelectorAll('.delivery-mode-btn').forEach(function (btn) {
       btn.addEventListener('click', function () { setDeliveryMode(btn.getAttribute('data-delivery-mode')); });
     });
+    // Selector entrega inmediata / programada (solo aplica a domicilios)
+    function setEntregaTipo(tipo) {
+      var inmed = tipo === 'inmediata';
+      $('r-entrega-inmediata').value = inmed ? 'true' : 'false';
+      var info = $('r-entrega-info');
+      if (info) {
+        info.textContent = inmed
+          ? 'Tiempo estimado de entrega: 45 minutos. Lo preparamos ahora y te lo llevamos.'
+          : 'Tu pedido se prepara y se entrega en la fecha y hora que elijas abajo.';
+        info.className = inmed
+          ? 'text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2'
+          : 'text-[11px] text-ink-500 bg-ink-50 border border-ink-100 rounded-xl px-3 py-2';
+      }
+      var activeCls = 'px-3 py-2.5 rounded-xl border border-amber-500 bg-amber-50 text-amber-800 text-xs font-bold transition-colors is-active';
+      var idleCls = 'px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-ink-600 text-xs font-bold transition-colors';
+      var b1 = $('r-entrega-inmediata-btn');
+      var b2 = $('r-entrega-programada-btn');
+      if (b1) b1.className = inmed ? activeCls : idleCls;
+      if (b2) b2.className = inmed ? idleCls : activeCls;
+    }
+    var bInm = $('r-entrega-inmediata-btn');
+    var bProg = $('r-entrega-programada-btn');
+    if (bInm) bInm.addEventListener('click', function () { setEntregaTipo('inmediata'); });
+    if (bProg) bProg.addEventListener('click', function () { setEntregaTipo('programada'); });
     $('reservaEditCartBtn').addEventListener('click', function () { closeReserva(); openCart(); });
     $('reloadMesasBtn').addEventListener('click', loadMesas);
     elFecha.addEventListener('change', function () { mesaSeleccionada = null; $('r-mesa-id').value = ''; loadMesas(); });
@@ -529,6 +553,22 @@
   }
   function closeReserva() { $('reservaSheet').classList.remove('is-open'); $('reservaBackdrop').classList.remove('is-open'); hideReservaError(); }
 
+  function resetEntregaTipoSiDomicilio() {
+    var btn = $('r-entrega-inmediata-btn');
+    if (btn) {
+      $('r-entrega-inmediata').value = 'true';
+      var activeCls = 'px-3 py-2.5 rounded-xl border border-amber-500 bg-amber-50 text-amber-800 text-xs font-bold transition-colors is-active';
+      var idleCls = 'px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-ink-600 text-xs font-bold transition-colors';
+      $('r-entrega-inmediata-btn').className = activeCls;
+      $('r-entrega-programada-btn').className = idleCls;
+      var info = $('r-entrega-info');
+      if (info) {
+        info.textContent = 'Tiempo estimado de entrega: 45 minutos. Lo preparamos ahora y te lo llevamos.';
+        info.className = 'text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2';
+      }
+    }
+  }
+
   function setDeliveryMode(mode) {
     tipoPedido = mode === 'domicilio' ? 'domicilio' : 'mesa';
     $('r-tipo-pedido').value = tipoPedido;
@@ -553,6 +593,7 @@
     if (delivery) delivery.classList.toggle('hidden', !isDelivery);
     if (direccion) direccion.required = isDelivery;
     if (submitLabel) submitLabel.textContent = isDelivery ? 'Confirmar domicilio' : 'Confirmar reserva';
+    if (isDelivery) resetEntregaTipoSiDomicilio();
 
     document.querySelectorAll('.delivery-mode-btn').forEach(function (btn) {
       var active = btn.getAttribute('data-delivery-mode') === tipoPedido;
@@ -593,6 +634,7 @@
     var mesaId = $('r-mesa-id').value || null;
     var direccionEntrega = $('r-direccion').value.trim();
     var barrioEntrega = $('r-barrio').value.trim();
+    var entregaInmediata = ($('r-entrega-inmediata') || {}).value === 'true';
     var isDelivery = tipoPedido === 'domicilio';
     if (!fecha) return showReservaError('Selecciona una fecha');
     if (!hora) return showReservaError('Selecciona una hora');
@@ -602,19 +644,21 @@
 
     setReservaLoading(true);
     var itemsPayload = cart.map(function (it) { return { plato_id: it.platoId, cantidad: it.cantidad }; });
+    var payloadBody = {
+      nombre: session.usuario.nombre, telefono: session.usuario.telefono,
+      email: session.usuario.email || undefined,
+      fecha: fecha, hora: hora,
+      personas: isDelivery ? null : parseInt(personasVal, 10),
+      tipo_pedido: tipoPedido,
+      direccion_entrega: isDelivery ? direccionEntrega : null,
+      barrio_entrega: isDelivery ? barrioEntrega : null,
+      notas: notas, mesa_id: isDelivery ? null : mesaId, items: itemsPayload
+    };
+    if (isDelivery && entregaInmediata) payloadBody.entrega_inmediata = true;
     fetch('/api/public/reservas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.token },
-      body: JSON.stringify({
-        nombre: session.usuario.nombre, telefono: session.usuario.telefono,
-        email: session.usuario.email || undefined,
-        fecha: fecha, hora: hora,
-        personas: isDelivery ? null : parseInt(personasVal, 10),
-        tipo_pedido: tipoPedido,
-        direccion_entrega: isDelivery ? direccionEntrega : null,
-        barrio_entrega: isDelivery ? barrioEntrega : null,
-        notas: notas, mesa_id: isDelivery ? null : mesaId, items: itemsPayload
-      })
+      body: JSON.stringify(payloadBody)
     })
     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
     .then(function (res) {
@@ -623,7 +667,9 @@
       var itemsCount = d.items_count || 0;
       var fechaBonita = formatFechaBonita(d.fecha || fecha);
        var msg = isDelivery
-         ? 'Tu domicilio queda programado para el ' + fechaBonita + ' a las ' + (d.hora || hora).slice(0, 5) + '.'
+         ? (entregaInmediata
+             ? 'Tu domicilio esta en marcha. Tiempo estimado de entrega: 45 minutos.'
+             : 'Tu domicilio queda programado para el ' + fechaBonita + ' a las ' + (d.hora || hora).slice(0, 5) + '.')
          : 'Te esperamos el ' + fechaBonita + ' a las ' + (d.hora || hora).slice(0, 5)
            + ' para ' + (d.personas || personasVal) + ' persona' + ((d.personas || personasVal) === 1 ? '' : 's');
        if (!isDelivery && d.mesa_nombre) msg += ' en ' + d.mesa_nombre;
