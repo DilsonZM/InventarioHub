@@ -1324,3 +1324,101 @@
 .sales-kpi-slate.is-active {
   box-shadow: 0 0 0 2px #94a3b8, 0 12px 28px -8px rgba(148, 163, 184, 0.30) !important;
 }
+
+/* ============================================
+   Badge pulsante del sidebar (Pedidos / Reservas)
+   Muestra un punto rojo palpitante cuando hay
+   solicitudes nuevas sin revisar.
+   ============================================ */
+.nav-link {
+  position: relative;
+}
+.nav-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.8rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #ef4444;
+  border: 2px solid var(--color-bg-sidebar);
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  display: none;
+}
+.nav-badge.show {
+  display: block;
+  animation: navBadgePulse 1.4s ease-out infinite;
+}
+@keyframes navBadgePulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  70% { box-shadow: 0 0 0 9px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+@media (min-width: 1024px) {
+  #sidebar.collapsed .nav-badge {
+    top: 0.5rem;
+    right: 0.6rem;
+  }
+}
+
+/* ============================================
+   Banner no bloqueante (solicitud nueva)
+   Tarjeta deslizante arriba-derecha con sonido.
+   ============================================ */
+#realtimeBanner {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  width: calc(100vw - 2rem);
+  max-width: 360px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-default);
+  border-left-width: 4px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  box-shadow: 0 12px 32px -8px rgba(2, 6, 23, 0.28);
+  cursor: pointer;
+  transform: translateX(calc(100% + 2rem));
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+}
+#realtimeBanner.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+#realtimeBanner .rtb-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+#realtimeBanner .rtb-icon.pedido {
+  background: rgba(26, 138, 102, 0.14);
+}
+#realtimeBanner .rtb-icon.reserva {
+  background: rgba(245, 158, 11, 0.15);
+}
+#realtimeBanner .rtb-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+#realtimeBanner .rtb-msg {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-badge { animation: none !important; }
+  #realtimeBanner { transition: none; }
+}

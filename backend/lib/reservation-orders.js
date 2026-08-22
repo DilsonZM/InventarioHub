@@ -164,4 +164,4 @@ async function createOrderFromReservation(reserva) {
   return venta;
 }
 
-module.exports = { createOrderFromReservation, reservationIsDue };
+module.exports = { createOrderFromReservation, reservationIsDue, convertToBaseUnit };

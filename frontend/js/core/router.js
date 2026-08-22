@@ -7,6 +7,7 @@
 
 import { $ } from './dom.js';
 import { store } from './store.js';
+import { markSeen } from './realtime.js';
 
 const TITLES = {
   dashboard: 'Dashboard',
@@ -50,6 +51,9 @@ export function navigate(view) {
     void target.offsetHeight; // reflow
     target.style.animation = 'slideUp 0.4s ease-out forwards';
   }
+
+  // Al abrir la vista se marcan sus solicitudes como vistas (limpia el badge)
+  if (view === 'sales' || view === 'reservas') markSeen(view);
 
   // Marca el link activo en el sidebar
   document.querySelectorAll('.nav-link').forEach(function (link) {

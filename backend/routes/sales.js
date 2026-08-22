@@ -6,7 +6,7 @@ const { applyBogotaDateFilter } = require('../lib/timezone');
 
 router.get('/', async (req, res) => {
   try {
-    const { from, to, page, limit, mesa, modo, search } = req.query;
+    const { from, to, page, limit, mesa, modo, search, estado } = req.query;
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
     const offset = (pageNum - 1) * limitNum;
@@ -18,6 +18,7 @@ router.get('/', async (req, res) => {
     countQuery = applyBogotaDateFilter(countQuery, 'creado_en', from, to);
     if (mesa) countQuery = countQuery.eq('mesa_id', mesa);
     if (modo) countQuery = countQuery.eq('metodo_pago', modo);
+    if (estado) countQuery = countQuery.eq('estado', estado);
 
     const { count, error: countError } = await countQuery;
     if (countError) throw countError;
@@ -31,6 +32,7 @@ router.get('/', async (req, res) => {
     query = applyBogotaDateFilter(query, 'creado_en', from, to);
     if (mesa) query = query.eq('mesa_id', mesa);
     if (modo) query = query.eq('metodo_pago', modo);
+    if (estado) query = query.eq('estado', estado);
 
     const { data, error } = await query;
     if (error) throw error;

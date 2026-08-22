@@ -14,7 +14,7 @@ import { initUser, initLogout, buildVisitorUser } from './shell/user.js';
 import { setCurrentDate } from './shell/header.js';
 import { initNavigation, navigate } from './core/router.js';
 import { initCalendar } from './components/calendar.js';
-import { startRealtime, stopRealtime, onNewSales } from './core/realtime.js';
+import { startRealtime, stopRealtime, onNewSales, onNewReservas } from './core/realtime.js';
 
 // Carga estatica de las vistas. Cada modulo registra sus handlers en
 // window (compatibilidad con onclick inline) y expone los init*/load*/render*
@@ -117,6 +117,14 @@ async function bootstrap() {
           document.getElementById('view-dashboard') &&
           !document.getElementById('view-dashboard').classList.contains('hidden')) {
         window.loadDashboard();
+      }
+    });
+    // Recargar reservas cuando llega una nueva y la vista esta visible
+    onNewReservas(function () {
+      if (typeof window.loadReservas === 'function' &&
+          document.getElementById('view-reservas') &&
+          !document.getElementById('view-reservas').classList.contains('hidden')) {
+        window.loadReservas();
       }
     });
   }

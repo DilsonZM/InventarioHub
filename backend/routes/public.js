@@ -5,6 +5,50 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
+const { convertToBaseUnit } = require('../lib/reservation-orders');
+
+// Calcula, para cada plato, si hay inventario suficiente para preparar la
+// cantidad solicitada. Reutiliza la conversion de unidades de
+// reservation-orders.js. Los insumos de tipo "tanda" (rendimiento_por_tanda
+// > 1) no bloquean la disponibilidad porque se consumen por tanda.
+// Devuelve: { [plato_id]: { ok: boolean, faltantes: string[] } }
+async function computeStockForItems(items) {
+  var result = {};
+  var platoIds = (items || []).map(function (i) { return i.plato_id; }).filter(Boolean);
+  if (platoIds.length === 0) return result;
+
+  var { data: ings, error: ingErr } = await supabase
+    .from('plato_ingredientes')
+    .select('plato_id, producto_id, cantidad, unidad, rendimiento_por_tanda, cantidad_tanda, productos!inner(nombre, unidad_medida)')
+    .in('plato_id', platoIds);
+  if (ingErr) throw ingErr;
+
+  var prodIds = [];
+  (ings || []).forEach(function (ing) { if (ing.producto_id) prodIds.push(ing.producto_id); });
+  var stockMap = {};
+  if (prodIds.length > 0) {
+    var { data: prods } = await supabase.from('productos')
+      .select('id, nombre, stock_actual, unidad_medida').in('id', prodIds);
+    (prods || []).forEach(function (p) { stockMap[p.id] = p; });
+  }
+
+  (items || []).forEach(function (item) {
+    var q = Math.max(1, parseInt(item.cantidad, 10) || 1);
+    var faltantes = [];
+    (ings || []).forEach(function (ing) {
+      if (ing.plato_id !== item.plato_id) return;
+      if (parseInt(ing.rendimiento_por_tanda, 10) > 1 && parseFloat(ing.cantidad_tanda) > 0) return;
+      var prod = stockMap[ing.producto_id];
+      if (!prod) return;
+      var needed = convertToBaseUnit(parseFloat(ing.cantidad) * q, ing.unidad, prod.unidad_medida);
+      if (parseFloat(prod.stock_actual || 0) < needed) {
+        faltantes.push(prod.nombre || 'Producto');
+      }
+    });
+    result[item.plato_id] = { ok: faltantes.length === 0, faltantes: faltantes };
+  });
+  return result;
+}
 
 // Rate limit
 const rateMap = new Map();
@@ -44,37 +88,19 @@ router.get('/menu', async (req, res) => {
       } else { throw error; }
     }
     var platoIds = (platos || []).map(function (p) { return p.id; });
-    var disponibleSet = new Set(platoIds);
-    if (platoIds.length > 0) {
-      var { data: ings } = await supabase.from('plato_ingredientes')
-        .select('plato_id, producto_id, cantidad, unidad').in('plato_id', platoIds);
-      var prodIds = [];
-      (ings || []).forEach(function (i) { if (i.producto_id) prodIds.push(i.producto_id); });
-      var stockMap = {};
-      if (prodIds.length > 0) {
-        var { data: prods } = await supabase.from('productos')
-          .select('id, stock_actual, unidad_medida').in('id', prodIds);
-        (prods || []).forEach(function (p) { stockMap[p.id] = p; });
-      }
-      var sinStockCount = {}, ingredientesCount = {};
-      (ings || []).forEach(function (i) {
-        var prod = stockMap[i.producto_id];
-        var stock = prod ? parseFloat(prod.stock_actual || 0) : 0;
-        ingredientesCount[i.plato_id] = (ingredientesCount[i.plato_id] || 0) + 1;
-        if (stock <= 0) sinStockCount[i.plato_id] = (sinStockCount[i.plato_id] || 0) + 1;
-      });
-      Object.keys(ingredientesCount).forEach(function (id) {
-        if (sinStockCount[id] === ingredientesCount[id]) disponibleSet.delete(id);
-      });
-    }
+    var stockCheck = await computeStockForItems(
+      platoIds.map(function (id) { return { plato_id: id, cantidad: 1 }; })
+    );
     var data = (platos || []).map(function (p) {
+      var s = stockCheck[p.id];
+      var disponible = !s || s.ok;
       return {
         id: p.id, nombre: p.nombre, descripcion: p.descripcion || '',
         precio: parseFloat(p.precio_venta || 0), tipo: p.tipo,
         categoria: p.categoria || (p.tipo === 'bebida' ? 'bebidas' : 'platos'),
-        imagen_url: p.imagen_url || null, disponible: disponibleSet.has(p.id)
+        imagen_url: p.imagen_url || null, disponible: disponible
       };
-    });
+    }).filter(function (d) { return d.disponible; });
     return res.json({ success: true, data: data });
   } catch (err) {
     console.error('[public/menu] error:', err.message);
@@ -304,6 +330,22 @@ router.post('/reservas', async (req, res) => {
           notas: clean(it.notas, 200) || null
         });
         subtotalPlatos += sub;
+      }
+    }
+
+    // Validar que haya inventario suficiente para preparar cada plato.
+    // Asi la solicitud no llega "aceptada" y luego falla en la cocina.
+    if (itemsValidados.length > 0) {
+      var stockCheck = await computeStockForItems(itemsValidados);
+      for (var scIdx = 0; scIdx < itemsValidados.length; scIdx++) {
+        var sc = stockCheck[itemsValidados[scIdx].plato_id];
+        if (sc && !sc.ok) {
+          var faltante = (sc.faltantes[0] || 'ingredientes').toLowerCase();
+          return res.status(409).json({
+            success: false,
+            message: 'Por ahora ' + itemsValidados[scIdx].plato_nombre + ' no está disponible (falta ' + faltante + '). Elige otro plato o vuelve más tarde.'
+          });
+        }
       }
     }
 
