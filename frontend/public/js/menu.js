@@ -597,7 +597,17 @@
     if (delivery) delivery.classList.toggle('hidden', !isDelivery);
     if (direccion) direccion.required = isDelivery;
     if (submitLabel) submitLabel.textContent = isDelivery ? 'Confirmar domicilio' : 'Confirmar reserva';
-    if (isDelivery) resetEntregaTipoSiDomicilio();
+    if (isDelivery) {
+      // En domicilio la fila fecha/hora se muestra solo si el usuario
+      // elige "Programar"; por defecto la oculta (el backend autollena).
+      resetEntregaTipoSiDomicilio();
+      var fh = $('r-fecha-hora-row');
+      if (fh) fh.style.display = 'none';
+    } else {
+      // En mesa siempre se muestra la fila fecha/hora
+      var fh2 = $('r-fecha-hora-row');
+      if (fh2) fh2.style.display = '';
+    }
 
     document.querySelectorAll('.delivery-mode-btn').forEach(function (btn) {
       var active = btn.getAttribute('data-delivery-mode') === tipoPedido;
