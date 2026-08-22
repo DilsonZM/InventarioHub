@@ -356,6 +356,10 @@
           ? 'text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2'
           : 'text-[11px] text-ink-500 bg-ink-50 border border-ink-100 rounded-xl px-3 py-2';
       }
+      // Si es inmediata, ocultar fecha/hora (el backend los autollena).
+      // Si es programada, mostrarlos para que el cliente los edite.
+      var fechaHoraRow = $('r-fecha-hora-row');
+      if (fechaHoraRow) fechaHoraRow.style.display = inmed ? 'none' : '';
       var activeCls = 'px-3 py-2.5 rounded-xl border border-amber-500 bg-amber-50 text-amber-800 text-xs font-bold transition-colors is-active';
       var idleCls = 'px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-ink-600 text-xs font-bold transition-colors';
       var b1 = $('r-entrega-inmediata-btn');
