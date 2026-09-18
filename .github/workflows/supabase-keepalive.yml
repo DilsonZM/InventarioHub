@@ -1,0 +1,48 @@
+name: Supabase Keep-Alive
+
+# El plan Free de Supabase pausa el proyecto tras ~7 dias sin actividad.
+# Cuando se pausa, su DNS deja de resolver y toda la app (local y Vercel)
+# pierde acceso a la base de datos.
+#
+# Este workflow hace una consulta liviana cada 3 dias para mantener el
+# proyecto activo.
+#
+# Requiere el secret de repositorio SUPABASE_PUBLISHABLE_KEY:
+#   Settings > Secrets and variables > Actions > New repository secret
+# Valor: la publishable key del proyecto (sb_publishable_...).
+# NO usar la service_role key acá.
+
+on:
+  schedule:
+    - cron: '37 9 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    name: Ping Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar API REST
+        env:
+          SUPABASE_URL: https://zosuleqcmhwoivbjurew.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Falta el secret SUPABASE_PUBLISHABLE_KEY. Agregalo en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+          HTTP_CODE=$(curl -s -o /tmp/resp.json -w "%{http_code}" --max-time 30 \
+            "$SUPABASE_URL/rest/v1/app_config?select=id&limit=1" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY")
+
+          echo "HTTP $HTTP_CODE"
+          echo "Respuesta: $(cat /tmp/resp.json)"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Proyecto activo: keep-alive OK"
+          else
+            echo "::error::Supabase no respondio (HTTP $HTTP_CODE). Posible proyecto pausado. Restauralo en https://supabase.com/dashboard/project/zosuleqcmhwoivbjurew"
+            exit 1
+          fi
