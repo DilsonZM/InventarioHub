@@ -117,8 +117,11 @@ function renderReservas() {
         ? '    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">🛵 Domicilio</span>'
           + '<p class="text-xs text-slate-600 mt-1 max-w-[180px] truncate" title="' + escapeHtml(r.direccion_entrega || '') + '">' + escapeHtml(r.direccion_entrega || 'Sin direccion') + '</p>'
           + (r.costo_domicilio > 0 ? '<p class="text-[10px] text-slate-400">Domicilio $' + Number(r.costo_domicilio).toLocaleString('es-CO') + '</p>' : '')
-        : '    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">🍽️ Mesa</span>'
-          + (r.mesa_nombre ? '<p class="text-xs text-slate-600 mt-1">' + escapeHtml(r.mesa_nombre) + '</p>' : '')
+        : (r.mesa_nombre
+            ? '    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">🍽️ Mesa</span>'
+              + '<p class="text-xs text-slate-600 mt-1">' + escapeHtml(r.mesa_nombre) + '</p>'
+            : '    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">🚶 Sin mesa</span>'
+              + '<p class="text-[10px] text-slate-400 mt-1">Pasa a recogerlo</p>')
           + (r.personas ? '<p class="text-[10px] text-slate-400">' + r.personas + ' pers.</p>' : ''))
       + '  </td>'
       + '  <td class="px-6 py-3">'
@@ -175,7 +178,7 @@ function showConfirmarReservaModal(r) {
     var isDelivery = r.tipo_pedido === 'domicilio';
     var destinoTxt = isDelivery
       ? '🛵 ' + (r.direccion_entrega || 'Domicilio')
-      : (r.mesa_nombre ? '🍽️ ' + r.mesa_nombre : '🍽️ Mesa');
+      : (r.mesa_nombre ? '🍽️ ' + r.mesa_nombre : '🚶 Sin mesa (pasa a recogerlo)');
 
     var modal = document.createElement('div');
     modal.id = 'confirmarReservaModal';
@@ -270,7 +273,7 @@ function reservaVerItems(id) {
   var isDelivery = r.tipo_pedido === 'domicilio';
   var destinoLine = isDelivery
     ? '🛵 Domicilio · ' + escapeHtml(r.direccion_entrega || 'Sin direccion') + (r.barrio_entrega ? ' · ' + escapeHtml(r.barrio_entrega) : '')
-    : (r.mesa_nombre ? '🍽️ Mesa ' + escapeHtml(r.mesa_nombre) : '🍽️ Mesa') + (r.personas ? ' · ' + r.personas + ' pers.' : '');
+    : (r.mesa_nombre ? '🍽️ Mesa ' + escapeHtml(r.mesa_nombre) : '🚶 Sin mesa') + (r.personas ? ' · ' + r.personas + ' pers.' : '');
   var html = ''
     + '<div class="p-5 sm:p-6">'
     + '  <div class="flex items-start justify-between mb-4">'
