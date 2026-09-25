@@ -169,6 +169,12 @@
         <div class="form-row">
           <label for="r-telefono" class="form-label">WhatsApp</label>
           <input id="r-telefono" name="telefono" type="tel" required minlength="7" maxlength="30" placeholder="Ej: 304 6365259" class="form-input" autocomplete="tel">
+          <p id="r-telefono-hint" class="text-[11px] text-ink-400 mt-1.5">Celular de 10 digitos (empieza por 3).</p>
+        </div>
+        <div class="form-row">
+          <label for="r-telefono2" class="form-label">Confirma tu WhatsApp</label>
+          <input id="r-telefono2" name="telefono2" type="tel" required minlength="7" maxlength="30" placeholder="Escribe el mismo numero otra vez" class="form-input" autocomplete="off">
+          <p id="r-telefono2-hint" class="text-[11px] text-ink-400 mt-1.5">Te escribimos a este numero cuando tu pedido este listo.</p>
         </div>
         <div class="form-row">
           <label for="r-email" class="form-label">Email <span class="text-ink-400 font-normal">(opcional)</span></label>
@@ -206,6 +212,7 @@
         <div class="form-row">
           <label for="l-telefono" class="form-label">WhatsApp</label>
           <input id="l-telefono" name="telefono" type="tel" required minlength="7" maxlength="30" placeholder="Ej: 304 6365259" class="form-input" autocomplete="tel">
+          <p id="l-telefono-hint" class="text-[11px] text-ink-400 mt-1.5">Celular de 10 digitos (empieza por 3).</p>
         </div>
         <div id="loginError" class="hidden text-sm text-rose-700 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2.5"></div>
         <button type="submit" id="loginSubmitBtn" class="submit-btn">

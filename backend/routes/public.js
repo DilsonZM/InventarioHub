@@ -7,6 +7,7 @@ const router = express.Router();
 const supabase = require('../lib/supabase');
 const { convertToBaseUnit } = require('../lib/reservation-orders');
 const { notifyNewOrder } = require('../lib/telegram');
+const { normalizePhone } = require('../lib/phone');
 
 // Calcula, para cada plato, si hay inventario suficiente para preparar la
 // cantidad solicitada. Reutiliza la conversion de unidades de
@@ -172,9 +173,11 @@ router.post('/login', async (req, res) => {
   try {
     var b = req.body || {};
     var nombre = clean(b.nombre, 150);
-    var telefono = clean(b.telefono, 30);
+    var telefono = normalizePhone(clean(b.telefono, 30));
     var email = clean(b.email, 150);
-    if (telefono.length < 7) return res.status(400).json({ success: false, message: 'Telefono invalido' });
+    if (!telefono) {
+      return res.status(400).json({ success: false, message: 'Ingresa un celular valido de 10 digitos que empiece por 3 (ej: 300 123 4567)' });
+    }
     if (email && !isEmail(email)) return res.status(400).json({ success: false, message: 'Email invalido' });
 
     // Si NO viene nombre (caso "Iniciar sesion" solo con telefono):
@@ -257,7 +260,7 @@ router.post('/reservas', async (req, res) => {
     var entregaInmediata = b.entrega_inmediata === true;
     var tipoPedido = clean(b.tipo_pedido, 20) || 'mesa';
     var nombre = clean(b.nombre, 150);
-    var telefono = clean(b.telefono, 30);
+    var telefono = normalizePhone(clean(b.telefono, 30));
     var email = clean(b.email, 150);
     var fecha = clean(b.fecha, 10);
     var hora = clean(b.hora, 5);
@@ -281,7 +284,7 @@ router.post('/reservas', async (req, res) => {
     var items = Array.isArray(b.items) ? b.items : [];
 
     if (nombre.length < 2) return res.status(400).json({ success: false, message: 'Nombre invalido' });
-    if (telefono.length < 7) return res.status(400).json({ success: false, message: 'Telefono invalido' });
+    if (!telefono) return res.status(400).json({ success: false, message: 'Ingresa un celular valido de 10 digitos que empiece por 3 (ej: 300 123 4567)' });
     if (email && !isEmail(email)) return res.status(400).json({ success: false, message: 'Email invalido' });
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return res.status(400).json({ success: false, message: 'Fecha invalida' });
     if (!/^\d{2}:\d{2}$/.test(hora)) return res.status(400).json({ success: false, message: 'Hora invalida' });

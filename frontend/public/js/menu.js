@@ -51,6 +51,63 @@
   // ===== Elementos =====
   var $ = function (id) { return document.getElementById(id); };
 
+  // ===== WhatsApp: normalizacion y validacion (celular colombiano) =====
+  // Acepta "3001234567", "300 123 4567", "+57 300 123 4567", "573001234567"
+  // y devuelve "+573001234567". Si no es valido devuelve null.
+  function normalizePhone(raw) {
+    var digits = String(raw == null ? '' : raw).replace(/\D/g, '');
+    if (!digits) return null;
+    if (digits.length === 12 && digits.slice(0, 2) === '57') digits = digits.slice(2);
+    if (digits.length !== 10 || digits[0] !== '3') return null;
+    return '+57' + digits;
+  }
+  function formatPhone(normalized) {
+    if (!normalized || normalized.length !== 13) return normalized || '';
+    return normalized.slice(0, 3) + ' ' + normalized.slice(3, 6) + ' ' + normalized.slice(6, 9) + ' ' + normalized.slice(9);
+  }
+  // Actualiza la ayuda debajo de un input de telefono
+  function updatePhoneHint(inputId, hintId) {
+    var input = $(inputId);
+    var hint = $(hintId);
+    if (!input || !hint) return;
+    var raw = input.value.trim();
+    if (!raw) {
+      hint.textContent = 'Celular de 10 digitos (empieza por 3).';
+      hint.className = 'text-[11px] text-ink-400 mt-1.5';
+      return;
+    }
+    var norm = normalizePhone(raw);
+    if (norm) {
+      hint.textContent = 'Te escribiremos al ' + formatPhone(norm);
+      hint.className = 'text-[11px] text-emerald-600 mt-1.5';
+    } else {
+      hint.textContent = 'Numero invalido: debe ser un celular de 10 digitos que empiece por 3.';
+      hint.className = 'text-[11px] text-rose-600 mt-1.5';
+    }
+  }
+  // Compara el telefono con su confirmacion
+  function updatePhoneConfirmHint() {
+    var t1 = $('r-telefono');
+    var t2 = $('r-telefono2');
+    var hint = $('r-telefono2-hint');
+    if (!t1 || !t2 || !hint) return;
+    var raw2 = t2.value.trim();
+    if (!raw2) {
+      hint.textContent = 'Te escribimos a este numero cuando tu pedido este listo.';
+      hint.className = 'text-[11px] text-ink-400 mt-1.5';
+      return;
+    }
+    var n1 = normalizePhone(t1.value);
+    var n2 = normalizePhone(raw2);
+    if (n1 && n2 && n1 === n2) {
+      hint.textContent = '✓ Los numeros coinciden';
+      hint.className = 'text-[11px] text-emerald-600 mt-1.5';
+    } else {
+      hint.textContent = 'Los numeros no coinciden, revisalos.';
+      hint.className = 'text-[11px] text-rose-600 mt-1.5';
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     session = loadSession();
     cart = loadCart();
@@ -316,6 +373,19 @@
     $('loginForm').addEventListener('submit', submitLogin);
     $('registerForm').addEventListener('submit', submitRegister);
 
+    // WhatsApp: ayuda visual en vivo (normalizacion + confirmacion)
+    var telReg = $('r-telefono');
+    if (telReg) telReg.addEventListener('input', function () {
+      updatePhoneHint('r-telefono', 'r-telefono-hint');
+      updatePhoneConfirmHint();
+    });
+    var telReg2 = $('r-telefono2');
+    if (telReg2) telReg2.addEventListener('input', updatePhoneConfirmHint);
+    var telLogin = $('l-telefono');
+    if (telLogin) telLogin.addEventListener('input', function () {
+      updatePhoneHint('l-telefono', 'l-telefono-hint');
+    });
+
     // Link "crea una aqui" desde login
     var loginToRegisterLink = $('loginToRegisterLink');
     if (loginToRegisterLink) {
@@ -425,8 +495,8 @@
   // ===== Login (solo WhatsApp) =====
   function submitLogin(e) {
     e.preventDefault(); hideLoginError();
-    var telefono = $('l-telefono').value.trim();
-    if (telefono.length < 7) return showLoginError('Ingresa un WhatsApp valido (min 7 digitos)');
+    var telefono = normalizePhone($('l-telefono').value);
+    if (!telefono) return showLoginError('Ingresa un celular valido de 10 digitos que empiece por 3 (ej: 300 123 4567)');
     setLoginLoading(true);
     fetch('/api/public/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -456,10 +526,12 @@
   function submitRegister(e) {
     e.preventDefault(); hideRegisterError();
     var nombre = $('r-nombre').value.trim();
-    var telefono = $('r-telefono').value.trim();
+    var telefono = normalizePhone($('r-telefono').value);
+    var telefono2 = normalizePhone($('r-telefono2') ? $('r-telefono2').value : '');
     var email = $('r-email').value.trim();
     if (nombre.length < 2) return showRegisterError('Ingresa tu nombre completo');
-    if (telefono.length < 7) return showRegisterError('Ingresa un WhatsApp valido (min 7 digitos)');
+    if (!telefono) return showRegisterError('Ingresa un celular valido de 10 digitos que empiece por 3 (ej: 300 123 4567)');
+    if (telefono2 !== telefono) return showRegisterError('Los numeros de WhatsApp no coinciden. Revisalos.');
     setRegisterLoading(true);
     fetch('/api/public/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
