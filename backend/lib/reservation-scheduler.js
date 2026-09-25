@@ -13,7 +13,7 @@ function todayInBogota() {
 async function processDueReservations() {
   var { data, error } = await supabase
     .from('reservas')
-    .select('id, nombre, telefono, fecha, hora, notas, estado, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, subtotal_platos, mesa_id, mesa_nombre, numero_venta, reserva_items(id, plato_id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
+    .select('id, nombre, telefono, fecha, hora, notas, estado, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, subtotal_platos, personas, mesa_id, mesa_nombre, numero_venta, reserva_items(id, plato_id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
     .eq('estado', 'confirmada')
     .is('numero_venta', null)
     .gte('fecha', todayInBogota())

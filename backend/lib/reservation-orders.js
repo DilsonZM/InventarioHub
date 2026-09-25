@@ -29,7 +29,7 @@ function makeOrderNumber() {
   return 'P-' + date + '-' + String(Math.floor(Math.random() * 10000)).padStart(4, '0');
 }
 
-async function createOrderFromReservation(reserva) {
+async function createOrderFromReservation(reserva, usuarioId) {
   if (!reserva || reserva.numero_venta) return null;
 
   var items = reserva.reserva_items || [];
@@ -91,12 +91,18 @@ async function createOrderFromReservation(reserva) {
   var isDelivery = reserva.tipo_pedido === 'domicilio';
   var deliveryCost = isDelivery ? (parseFloat(reserva.costo_domicilio) || 3000) : 0;
   var orderNumber = makeOrderNumber();
-  var notes = reserva.notas || '';
+  // Notas del pedido: para domicilio va la direccion; para mesa la fecha/hora
+  // y personas de la reserva (asi cocina/salon sabe para cuando es).
+  var notesParts = [];
   if (isDelivery) {
-    notes = ('Domicilio: ' + (reserva.direccion_entrega || '')
-      + (reserva.barrio_entrega ? ' | Barrio: ' + reserva.barrio_entrega : '')
-      + (notes ? ' | ' + notes : '')).slice(0, 500);
+    notesParts.push('Domicilio: ' + (reserva.direccion_entrega || '')
+      + (reserva.barrio_entrega ? ' | Barrio: ' + reserva.barrio_entrega : ''));
+  } else if (reserva.fecha && reserva.hora) {
+    notesParts.push('Reserva ' + reserva.fecha + ' ' + String(reserva.hora).slice(0, 5)
+      + (reserva.personas ? ' · ' + reserva.personas + ' pers.' : ''));
   }
+  if (reserva.notas) notesParts.push(reserva.notas);
+  var notes = notesParts.join(' | ').slice(0, 500);
 
   var { data: venta, error: ventaError } = await supabase
     .from('ventas')
@@ -110,6 +116,8 @@ async function createOrderFromReservation(reserva) {
       metodo_pago: isDelivery ? 'domicilio' : 'cocina',
       estado: 'pendiente',
       notas: notes || null,
+      usuario_id: usuarioId || null,
+      personas: isDelivery ? null : (parseInt(reserva.personas, 10) || null),
       mesa_id: isDelivery ? null : (reserva.mesa_id || null),
       estado_cocina: 'pendiente',
       costo_domicilio: deliveryCost,

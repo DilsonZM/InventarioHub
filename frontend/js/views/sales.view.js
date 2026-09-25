@@ -240,6 +240,18 @@ function populateVendedorFilter() {
 // Operativos: pendiente / listo / entregado
 // Cierre:     confirmada (paga) / cortesia / cancelada
 // ============================================
+// Etiqueta de destino de un pedido: mesa (o fallback) + cantidad de personas.
+function saleDestinoLabel(s) {
+  if (s.paymentMethod === 'domicilio') return '🛵 Domicilio';
+  if (s.paymentMethod === 'recogido') return '🏠 Recoger';
+  var mesa = s.mesaNombre || (s.mesaId ? 'Mesa ' + s.mesaId.slice(-4) : '');
+  var pers = s.personas ? s.personas + ' pers.' : '';
+  if (mesa && pers) return mesa + ' · ' + pers;
+  if (mesa) return mesa;
+  if (pers) return '🍽️ ' + pers;
+  return '—';
+}
+
 function buildEstadoSelect(s) {
   var estado = s.estadoCocina || 'pendiente';
 
@@ -328,14 +340,7 @@ function renderSalesTable() {
     var estado = s.estadoCocina || 'pendiente';
     var estadoSelect = buildEstadoSelect(s);
 
-    var mesaName;
-    if (s.paymentMethod === 'domicilio') {
-      mesaName = '🛵 Domicilio';
-    } else if (s.paymentMethod === 'recogido') {
-      mesaName = '🏠 Recoger';
-    } else {
-      mesaName = s.mesaNombre || (s.mesaId ? 'Mesa ' + s.mesaId.slice(-4) : '—');
-    }
+    var mesaName = saleDestinoLabel(s);
 
     return '<tr class="sales-row-estado-' + estado + ' hover:bg-slate-50 transition-colors">'
       + '<td class="px-6 py-4 text-sm font-mono text-slate-600">' + escapeHtml(s.numero_venta || s.id.slice(-6)) + '</td>'
@@ -378,14 +383,7 @@ function renderSalesTable() {
     var estado = s.estadoCocina || 'pendiente';
     var estadoSelect = buildEstadoSelect(s);
 
-    var mesaName;
-    if (s.paymentMethod === 'domicilio') {
-      mesaName = '🛵 Domicilio';
-    } else if (s.paymentMethod === 'recogido') {
-      mesaName = '🏠 Recoger';
-    } else {
-      mesaName = s.mesaNombre || (s.mesaId ? 'Mesa ' + s.mesaId.slice(-4) : '—');
-    }
+    var mesaName = saleDestinoLabel(s);
 
     return '<div class="sales-card-estado-' + estado + ' bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
       + '<div class="flex items-center justify-between">'
@@ -783,14 +781,7 @@ window.viewSale = async function (id) {
     var dateEl = $('#detailSaleDate');
     if (dateEl) dateEl.textContent = formatDate(sale.createdAt);
     var pmEl = $('#detailSalePayment');
-    if (pmEl) {
-      var label = sale.paymentMethod;
-      if (label === 'domicilio') label = '🛵 Domicilio';
-      else if (label === 'recogido') label = '🏠 Recoger';
-      else if (sale.mesaNombre) label = sale.mesaNombre;
-      else label = sale.paymentMethod || '—';
-      pmEl.textContent = label;
-    }
+    if (pmEl) pmEl.textContent = saleDestinoLabel(sale);
 
     // Bloque de domicilio en el detalle (solo si paymentMethod === 'domicilio')
     var envioBox = $('#detailSaleEnvio');

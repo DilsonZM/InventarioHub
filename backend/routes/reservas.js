@@ -69,7 +69,7 @@ router.patch('/:id/estado', requirePermission('puede_gestionar_usuarios'), async
     // Obtener reserva actual con sus items
     var { data: reserva, error: rErr } = await supabase
       .from('reservas')
-      .select('id, estado, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, subtotal_platos, numero_venta, nombre, telefono, email, mesa_id, mesa_nombre, fecha, hora, notas, reserva_items(id, plato_id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
+      .select('id, estado, tipo_pedido, direccion_entrega, barrio_entrega, costo_domicilio, subtotal_platos, numero_venta, nombre, telefono, email, personas, mesa_id, mesa_nombre, fecha, hora, notas, reserva_items(id, plato_id, plato_nombre, cantidad, precio_unitario, subtotal, notas)')
       .eq('id', id).single();
     if (rErr) throw rErr;
 
@@ -82,7 +82,7 @@ router.patch('/:id/estado', requirePermission('puede_gestionar_usuarios'), async
       && !reserva.numero_venta
       && (crearPedidoInmediato || reservationIsDue(reserva));
     if (debeCrearPedido) {
-      await createOrderFromReservation(reserva);
+      await createOrderFromReservation(reserva, req.user ? req.user.id : null);
     }
 
     // Cambiar estado
