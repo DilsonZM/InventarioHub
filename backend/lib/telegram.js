@@ -28,7 +28,8 @@ function buildOrderMessage(order) {
   const lines = [];
   lines.push('🔔 *Nuevo Pedido Registrado*');
   lines.push('');
-  lines.push('*Pedido:* ' + esc(order.numero_venta || order.numero || '-'));
+  // Etiqueta: "Pedido" para ordenes con platos, "Reserva" para reservas de mesa
+  lines.push('*' + esc(order.ref_label || 'Pedido') + ':* ' + esc(order.numero_venta || order.numero || '-'));
   lines.push('*Destino:* ' + esc(order.destino || '—'));
   if (order.cliente) lines.push('*Cliente:* ' + esc(order.cliente));
   if (order.telefono) lines.push('*Teléfono:* ' + esc(order.telefono));
@@ -57,7 +58,7 @@ async function sendTelegramMessage(text) {
     const res = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'Markdown' })
+      body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'MarkdownV2' })
     });
     if (!res.ok) {
       const body = await res.text();

@@ -413,9 +413,12 @@ router.post('/reservas', async (req, res) => {
       if (itemsErr) console.error('[public/reservas] error items:', itemsErr.message);
     }
 
-    // Aviso a Telegram (no bloqueante: notifyNewOrder nunca lanza)
+    // Aviso a Telegram (no bloqueante: notifyNewOrder nunca lanza).
+    // Si trae platos o es domicilio es un PEDIDO; si es solo mesa es RESERVA.
+    var esPedido = itemsValidados.length > 0 || tipoPedido === 'domicilio';
     await notifyNewOrder({
-      numero_venta: 'Reserva ' + String(reserva.id).slice(-6).toUpperCase(),
+      ref_label: esPedido ? 'Pedido' : 'Reserva',
+      numero_venta: '#' + String(reserva.id).slice(-6).toUpperCase(),
       destino: tipoPedido === 'domicilio'
         ? '🛵 Domicilio'
         : ('🍽️ ' + (mesaNombre || 'Mesa (reserva)')),
