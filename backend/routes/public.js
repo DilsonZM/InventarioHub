@@ -424,6 +424,7 @@ router.post('/reservas', async (req, res) => {
         : ('🍽️ ' + (mesaNombre || 'Mesa (reserva)')),
       cliente: nombre,
       telefono: telefono,
+      personas: tipoPedido === 'domicilio' ? null : (parseInt(personas, 10) || null),
       direccion: tipoPedido === 'domicilio' ? direccionEntrega : null,
       barrio: tipoPedido === 'domicilio' ? barrioEntrega : null,
       items: itemsValidados.map(function (it) {

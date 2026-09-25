@@ -44,6 +44,7 @@
   var personas = 2;
   var mesas = [];
   var mesaSeleccionada = null;
+  var SIN_MESA = '__sin_mesa__'; // opcion explicita: el cliente pasa a recogerlo
   var misReservas = [];
   var tipoPedido = 'mesa';
 
@@ -238,28 +239,48 @@
   function renderMesas() {
     var grid = $('mesasGrid');
     var hint = $('mesaHint');
-    if (mesas.length === 0) {
-      grid.innerHTML = '<p class="col-span-full text-center text-xs text-ink-400 py-3">No hay mesas registradas o cambia la fecha/hora.</p>';
-      hint.textContent = 'Configura mesas en el panel admin.';
-      return;
+
+    // Si la mesa elegida dejo de estar disponible en el nuevo horario,
+    // se limpia la seleccion (el cliente debe elegir de nuevo).
+    if (mesaSeleccionada && mesaSeleccionada !== SIN_MESA) {
+      var actual = mesas.find(function (m) { return m.id === mesaSeleccionada; });
+      if (!actual || !actual.disponible) {
+        mesaSeleccionada = null;
+        $('r-mesa-id').value = '';
+      }
     }
-    var disponibles = mesas.filter(function (m) { return m.disponible; }).length;
-    hint.textContent = disponibles + ' mesa' + (disponibles !== 1 ? 's' : '') + ' libre' + (disponibles !== 1 ? 's' : '') + ' para tu horario.';
-    grid.innerHTML = mesas.map(function (m) {
-      var selectedClass = m.id === mesaSeleccionada ? ' is-selected' : '';
-      var occupiedClass = !m.disponible ? ' is-occupied' : '';
-      var disabled = !m.disponible ? 'disabled' : '';
-      var estadoTxt = !m.disponible ? 'Ocupada' : (m.id === mesaSeleccionada ? 'Seleccionada' : 'Libre');
-      return '<button type="button" class="mesa-btn' + selectedClass + occupiedClass + '" data-mesa="' + m.id + '" ' + disabled + '>'
-        + '<span class="mesa-btn-nombre">' + escapeHtml(m.nombre) + '</span>'
-        + '<span class="mesa-btn-estado">' + estadoTxt + '</span>'
-        + '</button>';
-    }).join('');
+
+    // Opcion explicita "Sin mesa": el cliente pasa a recogerlo.
+    var sinMesaSelected = mesaSeleccionada === SIN_MESA;
+    var sinMesaBtn = '<button type="button" class="mesa-btn mesa-btn-sin' + (sinMesaSelected ? ' is-selected' : '') + '" data-mesa="' + SIN_MESA + '">'
+      + '<span class="mesa-btn-nombre">🚶 Sin mesa</span>'
+      + '<span class="mesa-btn-estado">' + (sinMesaSelected ? 'Seleccionada' : 'Paso a recogerlo') + '</span>'
+      + '</button>';
+
+    if (mesas.length === 0) {
+      grid.innerHTML = sinMesaBtn
+        + '<p class="col-span-full text-center text-xs text-ink-400 py-3">No hay mesas disponibles para ese horario.</p>';
+      hint.textContent = 'Podes elegir "Sin mesa" y pasar a recogerlo.';
+    } else {
+      var disponibles = mesas.filter(function (m) { return m.disponible; }).length;
+      hint.textContent = disponibles + ' mesa' + (disponibles !== 1 ? 's' : '') + ' libre' + (disponibles !== 1 ? 's' : '') + ' para tu horario.';
+      grid.innerHTML = sinMesaBtn + mesas.map(function (m) {
+        var selectedClass = m.id === mesaSeleccionada ? ' is-selected' : '';
+        var occupiedClass = !m.disponible ? ' is-occupied' : '';
+        var disabled = !m.disponible ? 'disabled' : '';
+        var estadoTxt = !m.disponible ? 'Ocupada' : (m.id === mesaSeleccionada ? 'Seleccionada' : 'Libre');
+        return '<button type="button" class="mesa-btn' + selectedClass + occupiedClass + '" data-mesa="' + m.id + '" ' + disabled + '>'
+          + '<span class="mesa-btn-nombre">' + escapeHtml(m.nombre) + '</span>'
+          + '<span class="mesa-btn-estado">' + estadoTxt + '</span>'
+          + '</button>';
+      }).join('');
+    }
+
     grid.querySelectorAll('.mesa-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         if (b.disabled) return;
         mesaSeleccionada = b.getAttribute('data-mesa');
-        $('r-mesa-id').value = mesaSeleccionada;
+        $('r-mesa-id').value = (mesaSeleccionada === SIN_MESA) ? '' : mesaSeleccionada;
         renderMesas();
       });
     });
@@ -373,8 +394,10 @@
     if (bProg) bProg.addEventListener('click', function () { setEntregaTipo('programada'); });
     $('reservaEditCartBtn').addEventListener('click', function () { closeReserva(); openCart(); });
     $('reloadMesasBtn').addEventListener('click', loadMesas);
-    elFecha.addEventListener('change', function () { mesaSeleccionada = null; $('r-mesa-id').value = ''; loadMesas(); });
-    $('r-hora').addEventListener('change', function () { mesaSeleccionada = null; $('r-mesa-id').value = ''; loadMesas(); });
+    // Al cambiar fecha/hora se recargan las mesas, pero NO se borra la
+    // seleccion: renderMesas la conserva si sigue disponible.
+    elFecha.addEventListener('change', loadMesas);
+    $('r-hora').addEventListener('change', loadMesas);
     document.querySelectorAll('.persona-pill').forEach(function (p) {
       p.addEventListener('click', function () {
         document.querySelectorAll('.persona-pill').forEach(function (x) { x.classList.remove('is-active'); });
@@ -669,6 +692,7 @@
     if (!hora) return showReservaError('Selecciona una hora');
     if (isDelivery && direccionEntrega.length < 5) return showReservaError('Ingresa una direccion de entrega');
     if (!isDelivery && !personasVal) return showReservaError('Selecciona el numero de personas');
+    if (!isDelivery && !mesaSeleccionada) return showReservaError("Elige una mesa o marca 'Sin mesa' (pasas a recogerlo)");
     if (isDelivery && cart.length === 0) return showReservaError('Agrega al menos un plato al pedido');
 
     setReservaLoading(true);

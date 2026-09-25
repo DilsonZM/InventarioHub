@@ -31,6 +31,7 @@ function buildOrderMessage(order) {
   // Etiqueta: "Pedido" para ordenes con platos, "Reserva" para reservas de mesa
   lines.push('*' + esc(order.ref_label || 'Pedido') + ':* ' + esc(order.numero_venta || order.numero || '-'));
   lines.push('*Destino:* ' + esc(order.destino || '—'));
+  if (order.personas) lines.push('👥 *Personas:* ' + esc(order.personas));
   if (order.cliente) lines.push('*Cliente:* ' + esc(order.cliente));
   if (order.telefono) lines.push('*Teléfono:* ' + esc(order.telefono));
   if (order.direccion) lines.push('*Dirección:* ' + esc(order.direccion));

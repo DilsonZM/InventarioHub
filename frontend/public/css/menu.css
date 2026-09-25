@@ -566,6 +566,20 @@ body { overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
 .mesa-btn.is-selected .mesa-btn-estado { color: var(--brand-100); }
 .mesa-btn.is-occupied { background: var(--ink-50); border-color: var(--ink-200); }
 .mesa-btn.is-occupied .mesa-btn-estado { color: #dc2626; font-weight: 700; }
+/* Opcion "Sin mesa": el cliente pasa a recogerlo */
+.mesa-btn-sin {
+  border-style: dashed;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+.mesa-btn-sin .mesa-btn-nombre { color: #92400e; }
+.mesa-btn-sin .mesa-btn-estado { color: #b45309; }
+.mesa-btn-sin.is-selected {
+  background: #f59e0b; border-color: #b45309;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+}
+.mesa-btn-sin.is-selected .mesa-btn-nombre { color: white; }
+.mesa-btn-sin.is-selected .mesa-btn-estado { color: #fef3c7; }
 
 /* ============== Cart items ============== */
 .cart-item {

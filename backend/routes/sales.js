@@ -647,6 +647,7 @@ async function notifySaleToTelegram(mapped) {
     destino: destino,
     cliente: mapped.clienteNombre,
     telefono: mapped.cliente_documento,
+    personas: mapped.personas,
     direccion: mapped.direccionEntrega,
     barrio: mapped.barrioEntrega,
     items: (mapped.items || []).map(function (it) {
