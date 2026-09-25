@@ -19,6 +19,7 @@ const TITLES = {
   movimientos: 'Movimientos',
   users: 'Usuarios',
   reservas: 'Reservas',
+  historico: 'Histórico',
   config: 'Configuracion'
 };
 
@@ -33,6 +34,7 @@ const LOADERS = {
   dishes: 'loadDishes',
   users: 'loadUsers',
   reservas: 'loadReservas',
+  historico: 'loadHistorico',
   config: 'loadConfig',
   pos: 'loadPOS'
 };

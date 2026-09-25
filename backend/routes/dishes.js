@@ -121,7 +121,12 @@ router.get('/', async (req, res) => {
         var cantidadConv = convertUnit(c.cantidad, c.unidad, prodUnidad);
         var precio = parseFloat(p.precio_compra || 0);
         var costoIng = Math.round(cantidadConv * precio * 100) / 100;
-        costosPorPlato[c.plato_id] = (costosPorPlato[c.plato_id] || 0) + costoIng;
+        // Tipo C: el costo de la tanda se reparte entre las porciones que rinde
+        var rendimientoTanda = parseInt(c.rendimiento_por_tanda) || 1;
+        var costoPorcion = rendimientoTanda > 1
+          ? Math.round(costoIng / rendimientoTanda * 100) / 100
+          : costoIng;
+        costosPorPlato[c.plato_id] = (costosPorPlato[c.plato_id] || 0) + costoPorcion;
         if (!ingredientesPorPlato[c.plato_id]) ingredientesPorPlato[c.plato_id] = [];
         ingredientesPorPlato[c.plato_id].push({
           producto_id: c.producto_id,

@@ -5,6 +5,7 @@ import { showToast } from '../components/toast.js';
 import { formatCurrency, formatDate } from '../utils.js';
 import { store } from '../core/store.js';
 import { can } from '../core/permissions.js';
+import { on } from '../core/events.js';
 
 // sales.view.js
 // Vista extraida de app.js en el Sub-paso 3.4 (views).
@@ -15,9 +16,11 @@ async function initSales() {
   var newOrderBtnMobile = $('#newOrderBtnMobile');
   if (newOrderBtnMobile) newOrderBtnMobile.addEventListener('click', function () { location.hash = '#pos'; });
 
-  // Filtro por estado via cards KPI (Pendientes/Preparando/Listos/Entregados)
+  // Filtro por estado via cards KPI (Pendientes/Listos/Entregados)
   // Click en una card = filtra la tabla. Click otra vez = quita el filtro.
-  // Los recuentos en los KPIs siempre muestran el total (no el filtrado).
+  // Al seleccionar una card, las demas se atenuan (is-dimmed) para que se
+  // vea claramente cual estado esta filtrando. Los recuentos siempre
+  // muestran el total sin filtrar.
   state.estadoFilter = null;
   document.querySelectorAll('.sales-kpi-filter').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -27,12 +30,7 @@ async function initSales() {
       } else {
         state.estadoFilter = estado;
       }
-      // Actualizar visual de las cards
-      document.querySelectorAll('.sales-kpi-filter').forEach(function (b) {
-        var active = b.getAttribute('data-filter-estado') === state.estadoFilter;
-        b.classList.toggle('is-active', active);
-        b.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
+      updateSalesKpiSelection();
       renderSalesTable();
     });
   });
@@ -183,6 +181,10 @@ async function loadSales() {
   // vendedor se filtra en el cliente (el backend no lo soporta)
   var vendedor = $('#filterVendedor') ? $('#filterVendedor').value : '';
 
+  // La vista de Pedidos muestra SOLO pedidos activos (operativos).
+  // Los pedidos cerrados viven en la vista Historico.
+  params.scope = 'activos';
+
   if (from) params.from = from;
   if (to) params.to = to;
   if (mesa === '__domicilio__') params.modo = 'domicilio';
@@ -233,6 +235,36 @@ function populateVendedorFilter() {
   if (select.innerHTML !== html) select.innerHTML = html;
 }
 
+// ============================================
+// Selector de estado del pedido (dropdown por fila).
+// Operativos: pendiente / listo / entregado
+// Cierre:     confirmada (paga) / cortesia / cancelada
+// ============================================
+function buildEstadoSelect(s) {
+  var estado = s.estadoCocina || 'pendiente';
+
+  // Flujo operativo + Confirmada (paga), luego una linea divisoria sutil
+  // y las excepciones de cierre (Cortesia / Cancelada).
+  var options = [
+    { value: 'pendiente', label: 'Pendiente' },
+    { value: 'listo', label: 'Listo' },
+    { value: 'entregado', label: 'Entregado' },
+    { value: 'confirmada', label: 'Confirmada (paga)' },
+    { separator: true },
+    { value: 'cortesia', label: 'Cortesía' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ];
+
+  var opts = options.map(function (o) {
+    if (o.separator) return '<option disabled>&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</option>';
+    return '<option value="' + o.value + '"' + (o.value === estado ? ' selected' : '') + '>' + o.label + '</option>';
+  }).join('');
+
+  return '<select class="estado-select estado-select--' + estado + '" data-prev="' + estado + '"'
+    + ' onchange="window.changeOrderState(\'' + s.id + '\', this)" title="Cambiar estado del pedido">'
+    + opts + '</select>';
+}
+
 function renderSalesTable() {
   var tbody = $('#salesTable');
   var cards = $('#salesCards');
@@ -246,7 +278,7 @@ function renderSalesTable() {
     });
   }
   var estadoFilterActive = !!state.estadoFilter;
-  var estadoLabels = { pendiente: 'Pendientes', preparando: 'Preparando', listo: 'Listos', entregado: 'Entregados' };
+  var estadoLabels = { pendiente: 'Pendientes', listo: 'Listos', entregado: 'Entregados' };
   var estadoFilterLabel = estadoFilterActive ? estadoLabels[state.estadoFilter] : '';
 
   if (salesToRender.length === 0) {
@@ -294,22 +326,7 @@ function renderSalesTable() {
 
   tbody.innerHTML = salesToRender.map(function (s) {
     var estado = s.estadoCocina || 'pendiente';
-    var estadoBadge = {
-      pendiente: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>Pendiente</span>',
-      preparando: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03z"/></svg>Preparando</span>',
-      listo: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Listo</span>',
-      entregado: '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>Entregado</span>'
-    }[estado] || estadoBadge.pendiente;
-
-    // Boton de avance de estado
-    var advanceBtn = '';
-    if (estado === 'pendiente') {
-      advanceBtn = '<button onclick="window.advanceOrderState(\'' + s.id + '\')" class="pedido-action-btn action-advance" title="Iniciar preparacion"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button>';
-    } else if (estado === 'preparando') {
-      advanceBtn = '<button onclick="window.advanceOrderState(\'' + s.id + '\')" class="pedido-action-btn action-advance" title="Marcar como listo"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg></button>';
-    } else if (estado === 'listo') {
-      advanceBtn = '<button onclick="window.advanceOrderState(\'' + s.id + '\')" class="pedido-action-btn action-advance" title="Entregar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></button>';
-    }
+    var estadoSelect = buildEstadoSelect(s);
 
     var mesaName;
     if (s.paymentMethod === 'domicilio') {
@@ -326,16 +343,18 @@ function renderSalesTable() {
       + '<td class="px-6 py-4">'
       + s.items.map(function (i) {
         var qty = i.unidadPresentacion && i.factorConversion !== 1 ? i.cantidadPresentacion : i.quantity;
-        return '<div class="text-sm text-slate-700 mb-0.5">' + escapeHtml(i.productName) + ' x' + qty + '</div>';
+        var obs = i.observacion
+          ? '<div class="text-[11px] text-amber-600 mb-0.5">&#128221; ' + escapeHtml(i.observacion) + '</div>'
+          : '';
+        return '<div class="text-sm text-slate-700 mb-0.5">' + escapeHtml(i.productName) + ' x' + qty + '</div>' + obs;
       }).join('')
       + '</td>'
       + '<td class="px-6 py-4 text-sm font-semibold text-slate-800 text-right">' + Utils.formatCurrency(s.total) + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-700">' + escapeHtml(s.usuario_nombre || s.username || 'Desconocido') + '</td>'
-      + '<td class="px-6 py-4 text-center">' + estadoBadge + '</td>'
+      + '<td class="px-6 py-4 text-center">' + estadoSelect + '</td>'
       + '<td class="px-6 py-4 text-sm text-slate-500">' + formatDate(s.createdAt) + '</td>'
       + '<td class="px-6 py-4 text-right">'
       + '<div class="flex items-center justify-end gap-1.5">'
-      + advanceBtn
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="pedido-action-btn action-view" title="Ver detalle">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
@@ -357,13 +376,7 @@ function renderSalesTable() {
 
   cards.innerHTML = salesToRender.map(function (s) {
     var estado = s.estadoCocina || 'pendiente';
-    var estadoColors = {
-      pendiente: 'bg-rose-100 text-rose-800',
-      preparando: 'bg-orange-100 text-orange-800',
-      listo: 'bg-green-100 text-green-800',
-      entregado: 'bg-slate-100 text-slate-600'
-    };
-    var estadoLabel = { pendiente: 'Pendiente', preparando: 'Preparando', listo: 'Listo', entregado: 'Entregado' }[estado];
+    var estadoSelect = buildEstadoSelect(s);
 
     var mesaName;
     if (s.paymentMethod === 'domicilio') {
@@ -377,12 +390,15 @@ function renderSalesTable() {
     return '<div class="sales-card-estado-' + estado + ' bg-white border border-slate-200 rounded-xl p-4 space-y-3">'
       + '<div class="flex items-center justify-between">'
       + '<span class="font-mono text-sm text-slate-500">' + escapeHtml(s.numero_venta || ('#' + s.id.slice(-6))) + '</span>'
-      + '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ' + estadoColors[estado] + '">' + estadoLabel + '</span>'
+      + estadoSelect
       + '</div>'
       + '<div class="space-y-1">'
       + s.items.map(function (i) {
         var qty = i.unidadPresentacion && i.factorConversion !== 1 ? i.cantidadPresentacion : i.quantity;
-        return '<div class="text-sm text-slate-600">' + escapeHtml(i.productName) + ' x' + qty + '</div>';
+        var obs = i.observacion
+          ? '<div class="text-[11px] text-amber-600">&#128221; ' + escapeHtml(i.observacion) + '</div>'
+          : '';
+        return '<div class="text-sm text-slate-600">' + escapeHtml(i.productName) + ' x' + qty + '</div>' + obs;
       }).join('')
       + '</div>'
       + '<div class="flex items-center justify-between pt-2 border-t border-slate-100">'
@@ -392,12 +408,6 @@ function renderSalesTable() {
       + '<span class="text-sm font-semibold text-slate-800">' + Utils.formatCurrency(s.total) + '</span>'
       + '</div>'
       + '<div class="flex items-center gap-1.5">'
-      + (estado !== 'entregado'
-        ? '<button onclick="window.advanceOrderState(\'' + s.id + '\')" class="pedido-action-btn action-advance" title="' + (estado === 'pendiente' ? 'Iniciar' : estado === 'preparando' ? 'Listo' : 'Entregar') + '">'
-        + (estado === 'pendiente' ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
-         : estado === 'preparando' ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>'
-         : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>')
-        + '</button>' : '')
       + '<button onclick="window.viewSale(\'' + s.id + '\')" class="pedido-action-btn action-view" title="Ver">'
       + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
       + '</button>'
@@ -418,15 +428,24 @@ function renderSalesTable() {
   }).join('');
 }
 
+// Marca visualmente la card KPI seleccionada y atenua las demas
+function updateSalesKpiSelection() {
+  document.querySelectorAll('.sales-kpi-filter').forEach(function (b) {
+    var isThis = b.getAttribute('data-filter-estado') === state.estadoFilter;
+    var hasFilter = !!state.estadoFilter;
+    b.classList.toggle('is-active', isThis);
+    b.classList.toggle('is-dimmed', hasFilter && !isThis);
+    b.setAttribute('aria-pressed', isThis ? 'true' : 'false');
+  });
+}
+
 function updateSalesSummary() {
   var sales = state.sales;
   var pendientes = sales.filter(function (s) { return (s.estadoCocina || 'pendiente') === 'pendiente'; }).length;
-  var preparando = sales.filter(function (s) { return s.estadoCocina === 'preparando'; }).length;
   var listos = sales.filter(function (s) { return s.estadoCocina === 'listo'; }).length;
   var entregados = sales.filter(function (s) { return s.estadoCocina === 'entregado'; }).length;
 
   $('#summaryPendientes').textContent = pendientes;
-  $('#summaryPreparando').textContent = preparando;
   $('#summaryListos').textContent = listos;
   $('#summaryEntregados').textContent = entregados;
 }
@@ -1053,28 +1072,170 @@ window.editSale = function (id) {
   });
 };
 
-window.advanceOrderState = async function (id) {
+// ============================================
+// Cambio de estado del pedido (dropdown de la tabla).
+// Operativos (pendiente/listo/entregado): se aplican directo.
+// Cierre:
+//   confirmada -> checkbox "ya fue pagado" (evita errores del usuario)
+//   cortesia   -> confirmacion simple ("¿estas seguro?")
+//   cancelada  -> comentario obligatorio
+// Al cerrar, el pedido sale de la vista activa y queda en el Historico.
+// ============================================
+
+var OPERATIONAL_STATES = ['pendiente', 'listo', 'entregado'];
+var _orderStateCtx = null;
+
+async function applyOrderState(id, estado, motivo, selectEl, prev) {
+  try {
+    if (selectEl) selectEl.disabled = true;
+    var res = await window.ServicesSales.advanceEstado(id, estado, motivo);
+    if (!res || !res.success) throw new Error((res && res.message) || 'No se pudo cambiar el estado');
+    showToast(res.message || 'Estado actualizado', 'success');
+    await loadSales();
+  } catch (err) {
+    showToast('Error: ' + (err.message || 'No se pudo cambiar el estado'), 'error');
+    if (selectEl) { selectEl.value = prev; selectEl.disabled = false; }
+  }
+}
+
+function updateOrderStateOkState() {
+  var ok = document.getElementById('orderStateOk');
+  if (!ok) return;
+  // Solo el checkbox de "ya fue pagado" (Confirmada) bloquea el boton.
+  // El motivo de cancelacion es opcional: el boton queda siempre habilitado.
+  var enabled = true;
+  if (_orderStateCtx && _orderStateCtx.requireCheck) {
+    var chk = document.getElementById('orderStateCheck');
+    if (!chk || !chk.checked) enabled = false;
+  }
+  ok.disabled = !enabled;
+  ok.classList.toggle('opacity-50', !enabled);
+  ok.classList.toggle('cursor-not-allowed', !enabled);
+}
+
+function openOrderStateModal(opts) {
+  _orderStateCtx = opts;
+  var iconEl = document.getElementById('orderStateIcon');
+  var titleEl = document.getElementById('orderStateTitle');
+  var msgEl = document.getElementById('orderStateMessage');
+  var okEl = document.getElementById('orderStateOk');
+  var checkWrap = document.getElementById('orderStateCheckWrap');
+  var checkEl = document.getElementById('orderStateCheck');
+  var commentWrap = document.getElementById('orderStateCommentWrap');
+  var commentEl = document.getElementById('orderStateComment');
+
+  var palettes = {
+    confirmada: { bg: 'bg-emerald-100', fg: 'text-emerald-600', btn: 'bg-emerald-600 hover:bg-emerald-700' },
+    cortesia: { bg: 'bg-amber-100', fg: 'text-amber-600', btn: 'bg-amber-500 hover:bg-amber-600' },
+    cancelada: { bg: 'bg-rose-100', fg: 'text-rose-600', btn: 'bg-rose-600 hover:bg-rose-700' }
+  };
+  var p = palettes[opts.kind] || palettes.confirmada;
+  var icons = {
+    confirmada: '<svg class="w-6 h-6 ' + p.fg + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    cortesia: '<svg class="w-6 h-6 ' + p.fg + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>',
+    cancelada: '<svg class="w-6 h-6 ' + p.fg + '" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+  };
+
+  if (iconEl) {
+    iconEl.className = 'w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center ' + p.bg;
+    iconEl.innerHTML = icons[opts.kind] || icons.confirmada;
+  }
+  if (titleEl) titleEl.textContent = opts.title || 'Confirmar';
+  if (msgEl) msgEl.textContent = opts.message || '';
+  if (okEl) {
+    okEl.textContent = opts.okText || 'Confirmar';
+    okEl.className = 'flex-1 px-4 py-2.5 text-white font-semibold rounded-xl shadow-sm text-sm touch-target transition-colors ' + p.btn;
+  }
+
+  if (checkWrap && checkEl) {
+    if (opts.requireCheck) { checkWrap.classList.remove('hidden'); checkWrap.classList.add('flex'); checkEl.checked = false; }
+    else { checkWrap.classList.add('hidden'); checkWrap.classList.remove('flex'); }
+  }
+  if (commentWrap && commentEl) {
+    if (opts.requireComment) { commentWrap.classList.remove('hidden'); commentEl.value = ''; }
+    else { commentWrap.classList.add('hidden'); }
+  }
+  updateOrderStateOkState();
+  openModal('orderStateModal');
+  if (opts.requireComment && commentEl) setTimeout(function () { commentEl.focus(); }, 60);
+}
+
+function cancelOrderStateModal() {
+  if (_orderStateCtx && _orderStateCtx.selectEl) _orderStateCtx.selectEl.value = _orderStateCtx.prev;
+  _orderStateCtx = null;
+  closeModal('orderStateModal');
+}
+
+function confirmOrderStateModal() {
+  if (!_orderStateCtx) return;
+  var ctx = _orderStateCtx;
+  var commentEl = document.getElementById('orderStateComment');
+  // El motivo es opcional: si esta vacio se guarda un texto por defecto
+  var comment = '';
+  if (commentEl && ctx.requireComment) {
+    comment = commentEl.value.trim() || 'Sin motivo especificado';
+  }
+  _orderStateCtx = null;
+  closeModal('orderStateModal');
+  if (typeof ctx.onOk === 'function') ctx.onOk(comment);
+}
+
+window.changeOrderState = function (id, selectEl) {
   if (!can('puedeCrearSalidas')) {
     showToast('Sin permiso', 'error');
+    selectEl.value = selectEl.dataset.prev;
     return;
   }
-  try {
-    var sale = state.sales.find(function (s) { return s.id === id; });
-    if (!sale) return;
-    var actual = sale.estadoCocina || 'pendiente';
-    var next = { pendiente: 'preparando', preparando: 'listo', listo: 'entregado' }[actual];
-    if (!next) { showToast('El pedido ya fue entregado', 'info'); return; }
+  var nuevo = selectEl.value;
+  var prev = selectEl.dataset.prev;
+  if (nuevo === prev) return;
 
-    await window.ServicesSales.advanceEstado(id, next);
-    sale.estadoCocina = next;
-    renderSalesTable();
-    updateSalesSummary();
-    var labels = { preparando: 'En preparacion', listo: 'Listo para servir', entregado: 'Entregado' };
-    showToast(labels[next] || next, 'success');
-  } catch (err) {
-    showToast('Error: ' + (err.message || 'No se pudo avanzar estado'), 'error');
+  // Estados operativos: se aplican directo
+  if (OPERATIONAL_STATES.indexOf(nuevo) !== -1) {
+    applyOrderState(id, nuevo, null, selectEl, prev);
+    return;
+  }
+
+  // Cierre: piden confirmacion segun el caso
+  if (nuevo === 'confirmada') {
+    openOrderStateModal({
+      kind: 'confirmada', selectEl: selectEl, prev: prev,
+      title: '¿Confirmar este pedido?',
+      message: 'Se registrará el pago y el pedido pasará al Histórico.',
+      okText: 'Sí, ya fue pagado',
+      requireCheck: true,
+      onOk: function () { applyOrderState(id, 'confirmada', null, selectEl, prev); }
+    });
+  } else if (nuevo === 'cortesia') {
+    openOrderStateModal({
+      kind: 'cortesia', selectEl: selectEl, prev: prev,
+      title: '¿Estás seguro?',
+      message: 'El pedido se marcará como cortesía: no se cobra, pero los insumos sí se descuentan del inventario.',
+      okText: 'Sí, es cortesía',
+      onOk: function () { applyOrderState(id, 'cortesia', null, selectEl, prev); }
+    });
+  } else if (nuevo === 'cancelada') {
+    openOrderStateModal({
+      kind: 'cancelada', selectEl: selectEl, prev: prev,
+      title: '¿Cancelar este pedido?',
+      message: 'Pasará al Histórico y el stock descontado se revertirá.',
+      okText: 'Cancelar pedido',
+      requireComment: true,
+      onOk: function (comment) { applyOrderState(id, 'cancelada', comment, selectEl, prev); }
+    });
   }
 };
+
+// Handlers del modal de cierre (una sola vez)
+on('#orderStateOk', confirmOrderStateModal);
+on('#orderStateCancelBtn', cancelOrderStateModal);
+on('[data-order-state-overlay]', cancelOrderStateModal);
+on('#orderStateCheck', updateOrderStateOkState);
+document.addEventListener('keydown', function (e) {
+  var modal = document.getElementById('orderStateModal');
+  if (!modal || modal.classList.contains('hidden')) return;
+  if (e.key === 'Escape') cancelOrderStateModal();
+});
 
 
 

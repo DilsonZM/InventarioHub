@@ -15,9 +15,9 @@ function initDishes() {
   var form = $('#dishForm');
   if (form) {
     form.addEventListener('submit', saveDish);
-    // Dirty tracking
-    form.addEventListener('input', function () { state.dishDirty = true; });
-    form.addEventListener('change', function () { state.dishDirty = true; });
+    // Dirty tracking + resumen de valor en vivo
+    form.addEventListener('input', function () { state.dishDirty = true; updateDishCostSummary(); });
+    form.addEventListener('change', function () { state.dishDirty = true; updateDishCostSummary(); });
   }
 
   var search = $('#searchDishes');
@@ -137,6 +137,7 @@ async function openDishModal(dishId) {
   $('#dishDescuentoInfo').classList.add('hidden');
   $('#dishIngredients').innerHTML = '<p id="noIngredientsMsg" class="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl">Sin ingredientes. Agregá productos del inventario para armar la receta.</p>';
   $('#dishFormError').classList.add('hidden');
+  updateDishCostSummary();
 
   // Cargar productos para los selectores de ingredientes
   window._dishProducts = [];
@@ -198,6 +199,8 @@ async function openDishModal(dishId) {
               }
             }
           });
+          // Recalcular costo con unidades ya pobladas
+          updateDishCostSummary();
         }, 100);
       }
     } catch (e) {
@@ -226,7 +229,7 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
     + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Producto</label>'
     + '<input type="text" class="ing-search w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="Buscar producto..." autocomplete="off" value="' + (tc.prodName || '') + '">'
     + '<input type="hidden" class="ing-product" value="' + (productoIdPreset || '') + '" data-unidad-preset="' + (unidadPreset || '') + '">'
-    + '<div class="ing-dropdown hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto"></div>'
+    + '<div class="ing-dropdown hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto"></div>'
     + '</div>'
     + '<div class="w-24 shrink-0">'
     + '<label class="ing-qty-label block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Cantidad</label>'
@@ -282,6 +285,79 @@ function openIngredientSelector(productoIdPreset, cantidadPreset, unidadPreset, 
   }
 
   bindIngredientEvents();
+  updateDishCostSummary();
+}
+
+// ============================================
+// Resumen de valor en vivo del plato:
+// costo de la receta, precio de venta y margen.
+// Se recalcula al agregar/quitar ingredientes, cambiar cantidades,
+// unidades, Tipo C o el precio de venta.
+// ============================================
+
+function getIngredientUnitFactor(prodUnidad, unitValue) {
+  if (!unitValue) return 1;
+  var pres = window.getPresentaciones ? window.getPresentaciones(prodUnidad || '') : [];
+  var found = pres.find(function (p) { return p.value === unitValue; });
+  return found && found.factor ? found.factor : 1;
+}
+
+function updateDishCostSummary() {
+  var costEl = document.getElementById('dishCostValue');
+  var priceEl = document.getElementById('dishPriceValue');
+  var marginEl = document.getElementById('dishMarginValue');
+  var pctEl = document.getElementById('dishMarginPct');
+  if (!costEl || !priceEl || !marginEl || !pctEl) return;
+
+  var totalCost = 0;
+  var rows = document.querySelectorAll('#dishIngredients .dish-ingredient-row');
+  var countEl = document.getElementById('dishIngredientsCount');
+  if (countEl) {
+    countEl.textContent = rows.length === 0
+      ? 'Sin ingredientes'
+      : (rows.length === 1 ? '1 ingrediente' : rows.length + ' ingredientes');
+  }
+  rows.forEach(function (row) {
+    var hidden = row.querySelector('.ing-product');
+    var unitSel = row.querySelector('.ing-unit');
+    var qtyInput = row.querySelector('.ing-qty');
+    var tcCheck = row.querySelector('.ing-tc-check');
+    var tcRend = row.querySelector('.ing-tc-rendimiento');
+    var tcCant = row.querySelector('.ing-tc-cantidad');
+
+    var productId = hidden ? hidden.value : '';
+    if (!productId) return;
+    var prod = (window._dishProducts || []).find(function (p) { return p.id === productId; });
+    if (!prod) return;
+
+    var precioCompra = parseFloat(prod.cost) || 0;
+    var prodUnidad = prod.unidad || '';
+    var factor = getIngredientUnitFactor(prodUnidad, unitSel ? unitSel.value : '');
+
+    var isTipoC = tcCheck && tcCheck.checked;
+    var costo = 0;
+    if (isTipoC) {
+      // Tipo C: la cantidad es por tanda; el costo por porcion se divide
+      // entre el rendimiento.
+      var cantTanda = parseFloat(tcCant ? tcCant.value : 0) || 0;
+      var rendimiento = parseInt(tcRend ? tcRend.value : 0, 10) || 1;
+      costo = (cantTanda * factor * precioCompra) / rendimiento;
+    } else {
+      var qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+      costo = qty * factor * precioCompra;
+    }
+    totalCost += costo;
+  });
+
+  var price = parseFloat(($('#dishPrice') || {}).value) || 0;
+  var margin = price - totalCost;
+  var pct = price > 0 ? (margin / price * 100) : 0;
+
+  costEl.textContent = Utils.formatCurrency(Math.round(totalCost));
+  priceEl.textContent = Utils.formatCurrency(Math.round(price));
+  marginEl.textContent = Utils.formatCurrency(Math.round(margin));
+  marginEl.className = 'text-lg font-bold font-mono mt-0.5 ' + (margin >= 0 ? 'text-emerald-600' : 'text-rose-600');
+  pctEl.textContent = (price > 0 ? pct.toFixed(0) : '0') + '% de margen';
 }
 
 function bindIngredientEvents() {
@@ -297,6 +373,7 @@ function bindIngredientEvents() {
         if (remaining.length === 0) {
           $('#dishIngredients').innerHTML = '<p id="noIngredientsMsg" class="text-sm text-slate-400 text-center py-6 border-2 border-dashed border-slate-200 rounded-xl">Sin ingredientes. Agregá productos del inventario para armar la receta.</p>';
         }
+        updateDishCostSummary();
       });
     }
 
@@ -359,6 +436,7 @@ function bindIngredientEvents() {
               // Mostrar unidad base en el label de "por tanda"
               var tcUnitLabel = row.querySelector('.ing-tc-unit');
               if (tcUnitLabel) tcUnitLabel.textContent = 'por tanda (' + escapeHtml(unidad) + ')';
+              updateDishCostSummary();
             });
           });
         }
@@ -422,7 +500,7 @@ function renderIngredientList(ingredientes) {
       + '<label class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Producto</label>'
       + '<input type="text" class="ing-search w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all" placeholder="Buscar producto..." autocomplete="off" value="' + escapeHtml(prodName) + '">'
       + '<input type="hidden" class="ing-product" value="' + (ing.producto_id || '') + '" data-unidad-preset="' + escapeHtml(ing.unidad || prodUnidad) + '">'
-      + '<div class="ing-dropdown hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto"></div>'
+      + '<div class="ing-dropdown hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto"></div>'
       + '</div>'
       + '<div class="w-24 shrink-0">'
       + '<label class="ing-qty-label block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">' + (isTipoC ? 'N/A' : 'Cantidad') + '</label>'

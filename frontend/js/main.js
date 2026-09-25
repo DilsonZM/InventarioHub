@@ -27,6 +27,7 @@ import './views/movements.view.js';
 import './views/dishes.view.js';
 import './views/users.view.js';
 import './views/reservas.view.js';
+import './views/historico.view.js';
 import './views/config.view.js';
 import './views/pos.view.js';
 
@@ -92,6 +93,7 @@ async function bootstrap() {
   callIfExists('initMovimientos');
   callIfExists('initDishes');
   callIfExists('initUsers');
+  callIfExists('initHistorico');
   callIfExists('initModals');
   callIfExists('loadPrinterConfigUI');
 

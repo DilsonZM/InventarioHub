@@ -40,9 +40,15 @@ export function renderTicketFromData(sale, includeTip) {
   $('#ticketItems').innerHTML = items.map(function (item) {
     var sub = item.subtotal || ((item.unitPrice || 0) * (item.quantity || 0));
     subtotal += sub;
-    return '<div class="flex items-center justify-between text-[13px]">'
+    var obsHtml = item.observacion
+      ? '<div class="text-[11px] text-amber-600 mt-0.5">&#128221; ' + escapeHtml(item.observacion) + '</div>'
+      : '';
+    return '<div>'
+      + '<div class="flex items-center justify-between text-[13px]">'
       + '<span class="text-slate-700">' + escapeHtml(item.productName) + ' x' + item.quantity + '</span>'
       + '<span class="text-slate-700 font-mono">' + window.Utils.formatCurrency(sub) + '</span>'
+      + '</div>'
+      + obsHtml
       + '</div>';
   }).join('');
 

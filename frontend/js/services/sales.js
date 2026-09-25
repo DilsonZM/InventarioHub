@@ -62,8 +62,8 @@ export async function remove(id) {
   return window.API.sales.delete(id);
 }
 
-export async function advanceEstado(id, estado) {
-  return window.API.sales.advanceEstado(id, estado);
+export async function advanceEstado(id, estado, motivo) {
+  return window.API.sales.advanceEstado(id, estado, motivo);
 }
 
 export async function loadSalesIntoState(params) {

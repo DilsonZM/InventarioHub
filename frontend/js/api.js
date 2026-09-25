@@ -162,8 +162,8 @@ const API = (() => {
         request(`/sales/${id}`, { method: 'PUT', body: JSON.stringify(sale) }),
       delete: (id) =>
         request(`/sales/${id}`, { method: 'DELETE' }),
-      advanceEstado: (id, estado) =>
-        request(`/sales/${id}/estado-cocina`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
+      advanceEstado: (id, estado, motivo) =>
+        request(`/sales/${id}/estado-cocina`, { method: 'PATCH', body: JSON.stringify({ estado, motivo: motivo || null }) }),
       updateTip: (id, propina) =>
         request(`/sales/${id}/tip`, { method: 'PUT', body: JSON.stringify({ propina }) }),
       updatePayment: (id, data) =>

@@ -193,17 +193,9 @@ function renderPOSCategories(dishes, products) {
       faltantes: d.faltantes || []
     });
   });
-  products.forEach(function (p) {
-    allItems.push({
-      id: p.id,
-      name: p.name,
-      price: p.price || 0,
-      icon: p.icono || '📦',
-      type: 'producto',
-      source: 'product',
-      desc: p.unidad || ''
-    });
-  });
+  // Los productos (materia prima/ingredientes) NO se muestran en el POS:
+  // solo se venden platos y bebidas. Se mantiene la carga en state._posProducts
+  // para poder editar pedidos antiguos que si tengan productos.
 
   // Cache para el filtro
   state._posAllItems = allItems;
@@ -327,13 +319,14 @@ function renderPOSOrder() {
   state.posItems.forEach(function (item, idx) {
     var sub = item.price * item.qty;
     total += sub;
-    var obsIcon = item.observacion
-      ? '<span class="text-amber-500 ml-1" title="' + escapeHtml(item.observacion) + '">📝</span>'
+    var obsLine = item.observacion
+      ? '<button type="button" class="pos-obs-line" onclick="window.editPOSObservacion(' + idx + ')" title="Editar observacion">&#128221; ' + escapeHtml(item.observacion) + '</button>'
       : '';
     html += '<div class="flex items-center gap-2 py-2 border-b border-slate-100">'
       + '<div class="flex-1 min-w-0">'
-      + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.name) + obsIcon + '</p>'
+      + '<p class="text-sm font-medium text-slate-800 truncate">' + escapeHtml(item.name) + '</p>'
       + '<p class="text-xs text-slate-500">' + Utils.formatCurrency(item.price) + ' c/u</p>'
+      + obsLine
       + '</div>'
       + '<div class="flex items-center gap-1">'
       + '<button class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm" onclick="window.updatePOSQty(' + idx + ', -1)">-</button>'
@@ -961,18 +954,151 @@ window.updatePOSQty = function (idx, delta) {
   renderPOSOrder();
 }
 
-// editPOSObservacion: abre un prompt para añadir/editar la observacion
-// de un item del pedido (ej. "sin cebolla", "termino medio", etc.)
+// ============================================
+// Modal de observacion del item (reemplaza el prompt nativo).
+// Para platos con receta muestra los ingredientes como chips para
+// marcar "sin X"; siempre permite escribir una nota adicional libre.
+// ============================================
+
+var _obsEditIndex = -1;
+
+function getDishIngredients(item) {
+  if (!item || item.type !== 'dish') return [];
+  var dish = (state._posDishes || []).find(function (d) { return d.id === (item.platoId || item.id); });
+  if (!dish || !Array.isArray(dish.ingredientes)) return [];
+  var seen = {};
+  return dish.ingredientes
+    .map(function (ing) { return (ing.nombre || '').trim(); })
+    .filter(function (name) {
+      if (!name || seen[name.toLowerCase()]) return false;
+      seen[name.toLowerCase()] = true;
+      return true;
+    });
+}
+
+function updateObsCharCount() {
+  var input = document.getElementById('obsInput');
+  var counter = document.getElementById('obsCharCount');
+  if (!input || !counter) return;
+  var max = parseInt(input.getAttribute('maxlength'), 10) || 200;
+  counter.textContent = (input.value || '').length + '/' + max;
+}
+
+function refreshObsChipStates() {
+  var input = document.getElementById('obsInput');
+  var value = ((input && input.value) || '').toLowerCase();
+  document.querySelectorAll('.obs-chip').forEach(function (chip) {
+    var ing = (chip.getAttribute('data-ing') || '').toLowerCase();
+    var active = value.indexOf('sin ' + ing) !== -1;
+    chip.classList.toggle('is-active', active);
+    chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function renderObsIngredientChips(item) {
+  var wrap = document.getElementById('obsIngredientsWrap');
+  var box = document.getElementById('obsIngredients');
+  if (!wrap || !box) return;
+  var names = getDishIngredients(item);
+  if (names.length === 0) {
+    wrap.classList.add('hidden');
+    box.innerHTML = '';
+    return;
+  }
+  box.innerHTML = names.map(function (name) {
+    return '<button type="button" class="obs-chip" data-ing="' + escapeHtml(name) + '" aria-pressed="false">' + escapeHtml(name) + '</button>';
+  }).join('');
+  wrap.classList.remove('hidden');
+  refreshObsChipStates();
+}
+
+function toggleObsIngredient(name) {
+  var input = document.getElementById('obsInput');
+  if (!input || !name) return;
+  var phrase = 'sin ' + name.toLowerCase();
+  var parts = (input.value || '').split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+  var found = -1;
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i].toLowerCase() === phrase) { found = i; break; }
+  }
+  if (found >= 0) parts.splice(found, 1);
+  else parts.push(phrase);
+  input.value = parts.join(', ');
+  updateObsCharCount();
+  refreshObsChipStates();
+}
+
+// editPOSObservacion: abre el modal de observacion de un item del pedido.
 window.editPOSObservacion = function (idx) {
   var item = state.posItems[idx];
   if (!item) return;
-  var current = item.observacion || '';
-  var obs = prompt('Observacion para "' + item.name + '":', current);
-  if (obs === null) return; // cancelado
-  item.observacion = obs.trim() || null;
+  _obsEditIndex = idx;
+
+  var nameEl = document.getElementById('obsItemName');
+  if (nameEl) nameEl.textContent = item.name || 'Producto';
+
+  var input = document.getElementById('obsInput');
+  if (input) input.value = item.observacion || '';
+
+  renderObsIngredientChips(item);
+  updateObsCharCount();
+
+  var clearBtn = document.getElementById('obsClearBtn');
+  if (clearBtn) clearBtn.classList.toggle('hidden', !item.observacion);
+
+  openModal('posObsModal');
+  setTimeout(function () { if (input) input.focus(); }, 60);
+};
+
+// Click en un chip de ingrediente: alterna "sin <ingrediente>" en la nota
+on('.obs-chip', function (e, chip) {
+  toggleObsIngredient(chip.getAttribute('data-ing'));
+});
+
+// Guardar la observacion en el item
+on('#obsSaveBtn', function () {
+  var item = state.posItems[_obsEditIndex];
+  var input = document.getElementById('obsInput');
+  var value = ((input && input.value) || '').trim();
+  closeModal('posObsModal');
+  if (!item) return;
+  item.observacion = value || null;
   renderPOSOrder();
   persistPOSOrder();
-}
+  showToast(value ? 'Observacion guardada' : 'Observacion eliminada', 'success');
+});
+
+// Quitar la observacion del item
+on('#obsClearBtn', function () {
+  var item = state.posItems[_obsEditIndex];
+  closeModal('posObsModal');
+  if (!item) return;
+  item.observacion = null;
+  renderPOSOrder();
+  persistPOSOrder();
+  showToast('Observacion eliminada', 'success');
+});
+
+// Contador de caracteres + estado de chips en vivo
+document.addEventListener('input', function (e) {
+  if (e.target && e.target.id === 'obsInput') {
+    updateObsCharCount();
+    refreshObsChipStates();
+  }
+});
+
+// Teclado dentro del modal: Escape cierra, Ctrl/Cmd+Enter guarda
+document.addEventListener('keydown', function (e) {
+  var modal = document.getElementById('posObsModal');
+  if (!modal || modal.classList.contains('hidden')) return;
+  if (e.key === 'Escape') {
+    closeModal('posObsModal');
+  } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    var saveBtn = document.getElementById('obsSaveBtn');
+    if (saveBtn) saveBtn.click();
+  }
+});
 
 window.openPOS = function () {
   location.hash = '#pos';
@@ -1130,47 +1256,66 @@ function buildPrintDocument(opts) {
     + 'th,td{padding:2px 0;text-align:left}'
     + 'th:last-child,td:last-child{text-align:right}'
     + '.total{font-size:13px;font-weight:700}'
-    + '.kitchen-item{padding:6px 0;border-bottom:1px solid #000}'
+    + 'body.kitchen-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}'
+    + '.comanda-title{font-size:22px;font-weight:800;letter-spacing:3px;margin:2px 0}'
+    + '.comanda-dest{display:inline-block;background:#fef3c7;color:#92400e;font-weight:800;font-size:12px;padding:3px 12px;border-radius:999px;margin:4px 0 2px;letter-spacing:0.5px}'
+    + '.kitchen-item{padding:9px 0;border-bottom:1px dashed #d1d5db}'
     + '.kitchen-item:last-child{border-bottom:none}'
-    + '.kitchen-qty{font-size:18px;font-weight:700;margin-right:6px}'
+    + '.kitchen-line{display:flex;align-items:baseline;gap:8px}'
+    + '.kitchen-qty{font-size:19px;font-weight:800;color:#111827;min-width:34px}'
+    + '.kitchen-name{font-size:13px;font-weight:700}'
+    + '.kitchen-obs{margin:5px 0 0 2px;font-size:11px;color:#92400e;background:#fffbeb;border-left:3px solid #f59e0b;padding:4px 8px;border-radius:4px}'
     + '@media print{body{padding:0;margin:0}@page{margin:8mm;size:80mm auto}}'
-    + '</style></head><body>';
+    + '</style></head><body' + (kind === 'kitchen' ? ' class="kitchen-body"' : '') + '>';
 
   if (kind === 'kitchen') {
     // ============ COMANDA DE COCINA ============
-    html += '<div class="center bold" style="font-size:16px;margin-bottom:4px">COMANDA</div>';
+    // Solo plato + cantidad + observaciones del cliente (sin precios).
+    // Lleva los datos de la empresa, titulo COMANDA y fecha/hora.
+    var horaStr = fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    var fechaSolo = fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
     var destinoLabel = sale.paymentMethod || 'cocina';
     if (destinoLabel === 'domicilio') destinoLabel = '🛵 DOMICILIO';
     else if (destinoLabel === 'recogido') destinoLabel = '🏠 PARA RECOGER';
     else if (sale.mesaNombre) destinoLabel = sale.mesaNombre;
-    html += '<div class="center" style="font-size:11px;margin-bottom:4px">' + escapeHtml(destinoLabel) + '</div>';
+    else destinoLabel = 'EN MESA';
+
+    // Datos de la empresa
+    html += '<div class="center">';
+    html += '<h1>CORNER HOUSE</h1>';
+    html += '<h2>Sabores que unen</h2>';
+    html += '<div class="meta">NIT 900.000.000-1</div>';
+    html += '<div class="meta">Calle 123 #45-67, Bogota</div>';
+    html += '<div class="meta">Tel: (601) 555-0100</div>';
+    html += '</div>';
     html += '<div class="sep-double"></div>';
+
+    // Titulo + destino
+    html += '<div class="center comanda-title">COMANDA</div>';
+    html += '<div class="center"><span class="comanda-dest">' + escapeHtml(destinoLabel) + '</span></div>';
+    html += '<div class="sep"></div>';
+
+    // Datos del pedido
     html += '<div class="row bold"><span>Pedido:</span><span>' + escapeHtml(sale.numero_venta || '') + '</span></div>';
-    html += '<div class="row"><span>Fecha:</span><span>' + escapeHtml(fechaStr) + '</span></div>';
+    html += '<div class="row"><span>Fecha:</span><span>' + escapeHtml(fechaSolo) + '</span></div>';
+    html += '<div class="row"><span>Hora:</span><span>' + escapeHtml(horaStr) + '</span></div>';
     if (sale.mesaNombre) {
       html += '<div class="row bold"><span>Mesa:</span><span>' + escapeHtml(sale.mesaNombre) + '</span></div>';
     }
     html += '<div class="sep-double"></div>';
+
+    // Items: plato + cantidad + observacion (sin precios ni ingredientes)
     items.forEach(function (it) {
       var qty = it.cantidadPresentacion && it.factorConversion !== 1 ? it.cantidadPresentacion : it.quantity;
-      var unit = it.unidadPresentacion || '';
-      var platoTag = it.esPlato ? ' <span class="item-meta">[PLATO]</span>' : '';
       html += '<div class="kitchen-item">'
-        + '<span class="kitchen-qty">' + qty + 'x</span>'
-        + '<span class="item-name">' + escapeHtml(it.productName) + '</span>' + platoTag;
-      if (it.observacion) html += '<div class="item-meta" style="font-weight:700">Obs: ' + escapeHtml(it.observacion) + '</div>';
+        + '<div class="kitchen-line">'
+        + '<span class="kitchen-qty">' + qty + '&times;</span>'
+        + '<span class="kitchen-name">' + escapeHtml(it.productName) + '</span>'
+        + '</div>';
+      if (it.observacion) html += '<div class="kitchen-obs">&#128221; ' + escapeHtml(it.observacion) + '</div>';
       html += '</div>';
     });
-    // Ingredientes consumidos (del nivel sale, no del item)
-    if (sale.ingredientesConsumidos && sale.ingredientesConsumidos.length > 0) {
-      html += '<div class="sep"></div>';
-      html += '<div class="item-meta" style="font-size:10px;font-weight:700">Ingredientes:</div>';
-      sale.ingredientesConsumidos.forEach(function (ing) {
-        html += '<div class="item-meta" style="font-size:10px">'
-          + escapeHtml(ing.nombre) + ' (' + ing.cantidad + ' ' + (ing.unidad || '') + ') - ' + escapeHtml(ing.por || '')
-          + '</div>';
-      });
-    }
+
     html += '<div class="sep-double"></div>';
     html += '<div class="center meta">Impreso: ' + escapeHtml(new Date().toLocaleString('es-CO')) + '</div>';
   } else {
@@ -1197,6 +1342,11 @@ function buildPrintDocument(opts) {
     html += '<tr><td>Destino:</td><td>' + escapeHtml(destino) + '</td></tr>';
     if (sale.mesaNombre) html += '<tr><td>Mesa:</td><td>' + escapeHtml(sale.mesaNombre) + '</td></tr>';
     html += '<tr><td>Cliente:</td><td>' + escapeHtml(sale.clienteNombre || 'Consumidor final') + '</td></tr>';
+    if (sale.direccionEntrega) {
+      html += '<tr><td>Direccion:</td><td>' + escapeHtml(sale.direccionEntrega) + '</td></tr>';
+      if (sale.barrioEntrega) html += '<tr><td>Barrio:</td><td>' + escapeHtml(sale.barrioEntrega) + '</td></tr>';
+      if (sale.cliente_documento) html += '<tr><td>Telefono:</td><td>' + escapeHtml(sale.cliente_documento) + '</td></tr>';
+    }
     html += '<tr><td>Atendido por:</td><td>' + escapeHtml(sale.usuario_nombre || sale.username || '') + '</td></tr>';
     html += '</table>';
 
@@ -1422,6 +1572,16 @@ on('#printBrowserBtn', function () {
     return;
   }
   printTicket(sale);
+});
+
+// Imprimir comanda de cocina en navegador (sin precios, con observaciones)
+on('#printKitchenBtn', function () {
+  var sale = getCurrentSale();
+  if (!sale) {
+    showToast('No hay un pedido activo para imprimir', 'error');
+    return;
+  }
+  printKitchen(sale);
 });
 
 // Imprimir en termica LAN: envia al backend /api/print

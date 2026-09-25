@@ -4,9 +4,13 @@ const supabase = require('../lib/supabase');
 const { requirePermission } = require('../middleware/auth');
 const { applyBogotaDateFilter } = require('../lib/timezone');
 
+// Estados del flujo de pedidos (preparando fue eliminado del flujo)
+const ACTIVE_KITCHEN_STATES = ['pendiente', 'listo', 'entregado'];
+const CLOSED_KITCHEN_STATES = ['confirmada', 'cortesia', 'cancelada'];
+
 router.get('/', async (req, res) => {
   try {
-    const { from, to, page, limit, mesa, modo, search, estado } = req.query;
+    const { from, to, page, limit, mesa, modo, search, estado, scope } = req.query;
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
     const offset = (pageNum - 1) * limitNum;
@@ -19,13 +23,15 @@ router.get('/', async (req, res) => {
     if (mesa) countQuery = countQuery.eq('mesa_id', mesa);
     if (modo) countQuery = countQuery.eq('metodo_pago', modo);
     if (estado) countQuery = countQuery.eq('estado', estado);
+    if (scope === 'activos') countQuery = countQuery.in('estado_cocina', ACTIVE_KITCHEN_STATES);
+    else if (scope === 'historico') countQuery = countQuery.in('estado_cocina', CLOSED_KITCHEN_STATES);
 
     const { count, error: countError } = await countQuery;
     if (countError) throw countError;
 
     let query = supabase
       .from('ventas')
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
+      .select('*, venta_detalles(*), perfiles!ventas_usuario_id_fkey(username, nombre_completo), mesas(nombre)')
       .order('creado_en', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
@@ -33,6 +39,8 @@ router.get('/', async (req, res) => {
     if (mesa) query = query.eq('mesa_id', mesa);
     if (modo) query = query.eq('metodo_pago', modo);
     if (estado) query = query.eq('estado', estado);
+    if (scope === 'activos') query = query.in('estado_cocina', ACTIVE_KITCHEN_STATES);
+    else if (scope === 'historico') query = query.in('estado_cocina', CLOSED_KITCHEN_STATES);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -58,6 +66,8 @@ router.get('/', async (req, res) => {
       mesaNombre: sale.mesas?.nombre || null,
       direccionEntrega: sale.direccion_entrega || null,
       barrioEntrega: sale.barrio_entrega || null,
+      motivoCierre: sale.motivo_cierre || null,
+      cerradoEn: sale.cerrado_en || null,
       costoDomicilio: parseFloat(sale.costo_domicilio) || 0,
       propina: parseFloat(sale.propina) || 0,
       bonoDescuento: parseFloat(sale.bono_descuento) || 0,
@@ -66,6 +76,7 @@ router.get('/', async (req, res) => {
       username: sale.perfiles?.username || 'Desconocido',
       usuario_nombre: sale.perfiles?.nombre_completo || sale.perfiles?.username || 'Desconocido',
       clienteNombre: sale.cliente_nombre,
+      cliente_documento: sale.cliente_documento || null,
       createdAt: sale.creado_en,
       items: (sale.venta_detalles || []).map(item => ({
         productId: item.producto_id,
@@ -100,7 +111,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('ventas')
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
+      .select('*, venta_detalles(*), perfiles!ventas_usuario_id_fkey(username, nombre_completo), mesas(nombre)')
       .eq('id', req.params.id)
       .single();
 
@@ -144,6 +155,8 @@ router.get('/:id', async (req, res) => {
       mesaNombre: data.mesas?.nombre || null,
       direccionEntrega: data.direccion_entrega || null,
       barrioEntrega: data.barrio_entrega || null,
+      motivoCierre: data.motivo_cierre || null,
+      cerradoEn: data.cerrado_en || null,
       costoDomicilio: parseFloat(data.costo_domicilio) || 0,
       propina: parseFloat(data.propina) || 0,
       bonoDescuento: parseFloat(data.bono_descuento) || 0,
@@ -151,6 +164,7 @@ router.get('/:id', async (req, res) => {
       userId: data.usuario_id,
       username: data.perfiles?.username || 'Desconocido',
       clienteNombre: data.cliente_nombre,
+      cliente_documento: data.cliente_documento || null,
       createdAt: data.creado_en,
       items: (data.venta_detalles || []).map(item => ({
         productId: item.producto_id,
@@ -446,7 +460,7 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
         forma_pago: req.body.formaPago || original.forma_pago || null
       })
       .eq('id', req.params.id)
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
+      .select('*, venta_detalles(*), perfiles!ventas_usuario_id_fkey(username, nombre_completo), mesas(nombre)')
       .single();
     if (updateError) throw updateError;
 
@@ -469,34 +483,11 @@ router.delete('/:id', requirePermission('puede_eliminar_salidas'), async (req, r
       return res.status(404).json({ success: false, message: 'Salida no encontrada' });
     }
 
-    // Revertir stock segun tipo de venta
-    for (const d of original.venta_detalles) {
-      if (d.es_plato && d.plato_id) {
-        const { data: receta } = await supabase
-          .from('plato_ingredientes')
-          .select('producto_id, cantidad')
-          .eq('plato_id', d.plato_id);
-        if (receta) {
-          for (const ing of receta) {
-            await supabase.rpc('registrar_movimiento', {
-              p_producto_id: ing.producto_id,
-              p_tipo: 'entrada',
-              p_cantidad: ing.cantidad * d.cantidad,
-              p_motivo: 'Eliminacion de venta ' + original.numero_venta,
-              p_usuario_id: req.user ? req.user.id : null
-            });
-          }
-        }
-      } else if (d.producto_id) {
-        await supabase.rpc('registrar_movimiento', {
-          p_producto_id: d.producto_id,
-          p_tipo: 'entrada',
-          p_cantidad: d.cantidad,
-          p_motivo: 'Eliminacion de venta ' + original.numero_venta,
-          p_usuario_id: req.user ? req.user.id : null
-        });
-      }
-    }
+    // Revertir stock SOLO por el neto realmente descontado (salidas - entradas).
+    // Antes se recalculaba la receta sin conversion de unidades y se revertia
+    // siempre, incluso si la venta estaba cancelada o nunca se desconto:
+    // eso inflaba el stock. revertSaleStock usa los movimientos reales.
+    await revertSaleStock(original, req.user ? req.user.id : null);
 
     await supabase.from('venta_detalles').delete().eq('venta_id', req.params.id);
     const { error: delError } = await supabase.from('ventas').delete().eq('id', req.params.id);
@@ -566,7 +557,8 @@ router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
     if (paymentMethod === 'domicilio' && direccionEntregaPost) {
       await supabase.from('ventas').update({
         direccion_entrega: direccionEntregaPost,
-        barrio_entrega: barrioEntregaPost || null
+        barrio_entrega: barrioEntregaPost || null,
+        cliente_documento: (req.body.cliente_documento || req.body.clienteDocumento || '').toString().trim() || null
       }).eq('id', saleId);
     }
 
@@ -617,7 +609,11 @@ function mapSaleResponse(sale) {
     userId: sale.usuario_id,
     username: sale.perfiles ? sale.perfiles.username : 'Desconocido',
     usuario_nombre: sale.perfiles ? (sale.perfiles.nombre_completo || sale.perfiles.username) : 'Desconocido',
-    clienteNombre: sale.cliente_nombre, createdAt: sale.creado_en,
+    clienteNombre: sale.cliente_nombre,
+    cliente_documento: sale.cliente_documento || null,
+    direccionEntrega: sale.direccion_entrega || null,
+    barrioEntrega: sale.barrio_entrega || null,
+    createdAt: sale.creado_en,
     mesaId: sale.mesa_id || null,
     mesaNombre: sale.mesas ? sale.mesas.nombre : null,
     items: (sale.venta_detalles || []).map(function (item) {
@@ -642,6 +638,14 @@ async function handleDishSale(req, res) {
     var clienteNombre = req.body.clienteNombre;
     if (!paymentMethod) return res.status(400).json({ success: false, message: 'Cocina requerida' });
     var saleEstado = req.body.estado || 'completada';
+
+    // Domicilio: direccion obligatoria (misma validacion que la venta de productos)
+    var direccionEntregaPost = (req.body.direccionEntrega || req.body.direccion_entrega || '').toString().trim();
+    var barrioEntregaPost = (req.body.barrioEntrega || req.body.barrio_entrega || '').toString().trim();
+    var clienteDocumento = (req.body.cliente_documento || req.body.clienteDocumento || '').toString().trim();
+    if (paymentMethod === 'domicilio' && direccionEntregaPost.length < 5) {
+      return res.status(400).json({ success: false, message: 'La direccion de entrega es obligatoria para domicilios' });
+    }
 
     var ingredientesTotales = {};
     var insumosTanda = []; // Tipo C: insumos compartidos por tanda
@@ -714,7 +718,7 @@ async function handleDishSale(req, res) {
     var totalFinal = totalVenta + costoDomicilio - bonoDescuento + propina;
     var { data: venta, error: ventaErr } = await supabase.from('ventas').insert({
       numero_venta: numVenta, metodo_pago: paymentMethod, usuario_id: req.user ? req.user.id : null,
-      cliente_nombre: clienteNombre || null, estado: saleEstado,
+      cliente_nombre: clienteNombre || null, cliente_documento: clienteDocumento || null, estado: saleEstado,
       mesa_id: req.body.mesa_id || null,
       direccion_entrega: paymentMethod === 'domicilio' ? direccionEntregaPost : null,
       barrio_entrega: paymentMethod === 'domicilio' ? (barrioEntregaPost || null) : null,
@@ -810,7 +814,7 @@ async function handleDishSale(req, res) {
     }
 
     var { data: saleFull } = await supabase.from('ventas')
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
+      .select('*, venta_detalles(*), perfiles!ventas_usuario_id_fkey(username, nombre_completo), mesas(nombre)')
       .eq('id', venta.id).single();
 
     res.status(201).json({ success: true, data: mapSaleResponse(saleFull),
@@ -821,28 +825,190 @@ async function handleDishSale(req, res) {
   }
 }
 
-// Avanzar estado de cocina
+// ============================================================
+// Cierre de pedidos: helpers de stock
+// ============================================================
+
+// Movimientos de stock asociados a una venta (por numero_venta en el motivo)
+async function getSaleStockMovements(numeroVenta) {
+  var { data, error } = await supabase
+    .from('movimientos_inventario')
+    .select('producto_id, cantidad, tipo')
+    .ilike('motivo', '%' + numeroVenta + '%');
+  if (error) throw error;
+  return data || [];
+}
+
+// Revierte el stock descontado de una venta (neto salidas - entradas).
+// Devuelve la cantidad de productos revertidos.
+async function revertSaleStock(venta, userId) {
+  var movs = await getSaleStockMovements(venta.numero_venta);
+  var net = {};
+  movs.forEach(function (m) {
+    var q = parseFloat(m.cantidad) || 0;
+    net[m.producto_id] = (net[m.producto_id] || 0) + (m.tipo === 'salida' ? q : -q);
+  });
+  var revertidos = 0;
+  var pids = Object.keys(net);
+  for (var i = 0; i < pids.length; i++) {
+    if (net[pids[i]] > 0) {
+      await supabase.rpc('registrar_movimiento', {
+        p_producto_id: pids[i],
+        p_tipo: 'entrada',
+        p_cantidad: net[pids[i]],
+        p_motivo: 'Cancelacion pedido ' + venta.numero_venta,
+        p_usuario_id: userId
+      });
+      revertidos++;
+    }
+  }
+  return revertidos;
+}
+
+// Asegura que la venta tenga el stock descontado. Si no tiene movimientos,
+// los genera a partir de la receta de los platos y los productos directos.
+// Devuelve true si genero movimientos nuevos.
+async function ensureSaleStockDiscounted(venta, motivo, userId) {
+  var movs = await getSaleStockMovements(venta.numero_venta);
+  var netTotal = 0;
+  movs.forEach(function (m) {
+    var q = parseFloat(m.cantidad) || 0;
+    netTotal += (m.tipo === 'salida' ? q : -q);
+  });
+  if (movs.length > 0 && netTotal > 0) return false;
+
+  var { data: detalles } = await supabase
+    .from('venta_detalles')
+    .select('producto_id, plato_id, cantidad')
+    .eq('venta_id', venta.id);
+
+  var totales = {};
+  var tandas = [];
+  var items = detalles || [];
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    var cant = Math.max(1, parseInt(it.cantidad) || 1);
+    if (it.plato_id) {
+      var { data: receta } = await supabase
+        .from('plato_ingredientes')
+        .select('producto_id, cantidad, unidad, rendimiento_por_tanda, cantidad_tanda, productos!inner(nombre, unidad_medida)')
+        .eq('plato_id', it.plato_id);
+      (receta || []).forEach(function (ing) {
+        var prodUnidad = ing.productos ? (ing.productos.unidad_medida || '') : '';
+        if (ing.rendimiento_por_tanda > 1 && ing.cantidad_tanda > 0) {
+          tandas.push({
+            producto_id: ing.producto_id,
+            porciones: cant,
+            rendimiento: parseInt(ing.rendimiento_por_tanda),
+            cantidad_tanda: parseFloat(ing.cantidad_tanda)
+          });
+          return;
+        }
+        var converted = convertToBaseUnit(ing.cantidad * cant, ing.unidad, prodUnidad);
+        totales[ing.producto_id] = (totales[ing.producto_id] || 0) + converted;
+      });
+    } else if (it.producto_id) {
+      totales[it.producto_id] = (totales[it.producto_id] || 0) + cant;
+    }
+  }
+
+  var pids = Object.keys(totales);
+  for (var j = 0; j < pids.length; j++) {
+    await supabase.rpc('registrar_movimiento', {
+      p_producto_id: pids[j],
+      p_tipo: 'salida',
+      p_cantidad: totales[pids[j]],
+      p_motivo: motivo + ' ' + venta.numero_venta,
+      p_usuario_id: userId
+    });
+  }
+  for (var t = 0; t < tandas.length; t++) {
+    await supabase.rpc('procesar_tanda_insumo', {
+      p_producto_id: tandas[t].producto_id,
+      p_porciones_vendidas: tandas[t].porciones,
+      p_rendimiento_por_tanda: tandas[t].rendimiento,
+      p_cantidad_tanda: tandas[t].cantidad_tanda,
+      p_venta_id: venta.id,
+      p_usuario_id: userId,
+      p_motivo: motivo + ' ' + venta.numero_venta
+    });
+  }
+  return pids.length > 0 || tandas.length > 0;
+}
+
+// ============================================================
+// Cambiar estado del pedido.
+// Operativos: pendiente | listo | entregado
+// Cierre:     confirmada (pago) | cortesia | cancelada
+// ============================================================
 router.patch('/:id/estado-cocina', requirePermission('puede_crear_salidas'), async (req, res) => {
   try {
-    var { estado } = req.body;
-    var validos = ['pendiente', 'preparando', 'listo', 'entregado'];
-    if (!estado || !validos.includes(estado)) {
-      return res.status(400).json({ success: false, message: 'Estado invalido. Valores: pendiente, preparando, listo, entregado' });
+    var { estado, motivo } = req.body;
+    var validos = ACTIVE_KITCHEN_STATES.concat(CLOSED_KITCHEN_STATES);
+    if (!estado || validos.indexOf(estado) === -1) {
+      return res.status(400).json({ success: false, message: 'Estado invalido. Valores: ' + validos.join(', ') });
     }
 
-    var { data: venta } = await supabase.from('ventas').select('estado_cocina').eq('id', req.params.id).single();
+    var { data: venta } = await supabase
+      .from('ventas')
+      .select('id, numero_venta, estado, estado_cocina')
+      .eq('id', req.params.id)
+      .single();
     if (!venta) return res.status(404).json({ success: false, message: 'Pedido no encontrado' });
 
-    var secuencia = { pendiente: 'preparando', preparando: 'listo', listo: 'entregado' };
     var actual = venta.estado_cocina || 'pendiente';
-    if (estado !== secuencia[actual]) {
-      return res.status(400).json({ success: false, message: 'Transicion invalida de ' + actual + ' a ' + estado });
+    if (CLOSED_KITCHEN_STATES.indexOf(actual) !== -1) {
+      return res.status(400).json({ success: false, message: 'El pedido ya esta cerrado (' + actual + ')' });
     }
 
-    var { error } = await supabase.from('ventas').update({ estado_cocina: estado }).eq('id', req.params.id);
-    if (error) throw error;
+    var userId = req.user ? req.user.id : null;
 
-    res.json({ success: true, data: { estadoCocina: estado }, message: 'Estado actualizado a ' + estado });
+    // --- Estados operativos: solo actualizan estado_cocina ---
+    if (ACTIVE_KITCHEN_STATES.indexOf(estado) !== -1) {
+      var { error } = await supabase.from('ventas').update({ estado_cocina: estado }).eq('id', venta.id);
+      if (error) throw error;
+      return res.json({ success: true, data: { estadoCocina: estado }, message: 'Estado actualizado a ' + estado });
+    }
+
+    // --- Cierre ---
+    var nowIso = new Date().toISOString();
+
+    if (estado === 'cancelada') {
+      // El motivo es opcional: si viene vacio se guarda un texto por defecto
+      var motivoTxt = (motivo || '').toString().trim() || 'Sin motivo especificado';
+      var revertidos = await revertSaleStock(venta, userId);
+      var { error: cancelErr } = await supabase.from('ventas').update({
+        estado_cocina: 'cancelada',
+        estado: 'cancelada',
+        motivo_cierre: motivoTxt,
+        cerrado_en: nowIso,
+        cerrado_por: userId
+      }).eq('id', venta.id);
+      if (cancelErr) throw cancelErr;
+      return res.json({
+        success: true,
+        data: { estadoCocina: 'cancelada', productosRevertidos: revertidos },
+        message: 'Pedido cancelado' + (revertidos > 0 ? ' (stock revertido)' : '')
+      });
+    }
+
+    // confirmada (paga) | cortesia
+    var esCortesia = estado === 'cortesia';
+    await ensureSaleStockDiscounted(venta, esCortesia ? 'Cortesia pedido' : 'Confirmacion pedido', userId);
+    var { error: closeErr } = await supabase.from('ventas').update({
+      estado_cocina: estado,
+      estado: esCortesia ? 'cortesia' : 'completada',
+      motivo_cierre: (motivo || '').toString().trim() || null,
+      cerrado_en: nowIso,
+      cerrado_por: userId
+    }).eq('id', venta.id);
+    if (closeErr) throw closeErr;
+
+    return res.json({
+      success: true,
+      data: { estadoCocina: estado },
+      message: esCortesia ? 'Pedido marcado como cortesia' : 'Pedido confirmado (pago registrado)'
+    });
   } catch (err) {
     console.error('PATCH estado-cocina error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });
@@ -1005,7 +1171,7 @@ router.post('/comanda', requirePermission('puede_crear_salidas'), async (req, re
 
     const { data: sale } = await supabase
       .from('ventas')
-      .select('*, venta_detalles(*), perfiles(username, nombre_completo), mesas(nombre)')
+      .select('*, venta_detalles(*), perfiles!ventas_usuario_id_fkey(username, nombre_completo), mesas(nombre)')
       .eq('id', saleId)
       .single();
 

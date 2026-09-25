@@ -89,6 +89,15 @@ function buildTicketCommands(sale, kind) {
     push('Cliente: ' + (sale.clienteNombre || sale.cliente_nombre || 'Consumidor final') + '\n');
     var cajero = sale.usuario_nombre || sale.username || '';
     if (cajero) push('Atendido: ' + cajero + '\n');
+    // Envio a domicilio: direccion, barrio y telefono en la factura
+    var dirEntrega = sale.direccionEntrega || sale.direccion_entrega || '';
+    if (dirEntrega) {
+      push('Direccion: ' + dirEntrega + '\n');
+      var barrioEnt = sale.barrioEntrega || sale.barrio_entrega || '';
+      if (barrioEnt) push('Barrio: ' + barrioEnt + '\n');
+      var telEnt = sale.cliente_documento || '';
+      if (telEnt) push('Tel: ' + telEnt + '\n');
+    }
   }
   push('-'.repeat(LINE_WIDTH) + '\n');
 
