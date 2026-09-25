@@ -8,6 +8,8 @@
 // NUNCA se cancela ni se le muestra un error al usuario; solo se
 // registra el problema en consola.
 
+const { normalizePhone, formatPhone } = require('./phone');
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
 
@@ -33,7 +35,16 @@ function buildOrderMessage(order) {
   lines.push('*Destino:* ' + esc(order.destino || '—'));
   if (order.personas) lines.push('👥 *Personas:* ' + esc(order.personas));
   if (order.cliente) lines.push('*Cliente:* ' + esc(order.cliente));
-  if (order.telefono) lines.push('*Teléfono:* ' + esc(order.telefono));
+  if (order.telefono) {
+    // Telefono con link directo al chat de WhatsApp (wa.me)
+    var telNorm = normalizePhone(order.telefono);
+    if (telNorm) {
+      var waDigits = telNorm.replace(/\D/g, '');
+      lines.push('*Teléfono:* [' + esc(formatPhone(telNorm)) + '](https://wa.me/' + waDigits + ')');
+    } else {
+      lines.push('*Teléfono:* ' + esc(order.telefono));
+    }
+  }
   if (order.direccion) lines.push('*Dirección:* ' + esc(order.direccion));
   if (order.barrio) lines.push('*Barrio:* ' + esc(order.barrio));
   lines.push('');
