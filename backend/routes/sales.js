@@ -3,6 +3,7 @@ const router = express.Router();
 const supabase = require('../lib/supabase');
 const { requirePermission } = require('../middleware/auth');
 const { applyBogotaDateFilter } = require('../lib/timezone');
+const { notifyNewOrder } = require('../lib/telegram');
 
 // Estados del flujo de pedidos (preparando fue eliminado del flujo)
 const ACTIVE_KITCHEN_STATES = ['pendiente', 'listo', 'entregado'];
@@ -569,6 +570,7 @@ router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
       .single();
 
     const response = mapSaleResponse(sale);
+    await notifySaleToTelegram(response);
     res.status(201).json({ success: true, data: response, message: 'Venta registrada' });
   } catch (err) {
     console.error('Sale create error:', err);
@@ -629,6 +631,27 @@ function mapSaleResponse(sale) {
       };
     })
   };
+}
+
+// Avisa a Telegram que entro un pedido nuevo (nunca lanza excepciones)
+async function notifySaleToTelegram(mapped) {
+  var destino;
+  if (mapped.paymentMethod === 'domicilio') destino = '🛵 Domicilio';
+  else if (mapped.paymentMethod === 'recogido') destino = '🏠 Recoger';
+  else destino = '🍽️ ' + (mapped.mesaNombre || 'Mesa');
+  await notifyNewOrder({
+    numero_venta: mapped.numero_venta,
+    destino: destino,
+    cliente: mapped.clienteNombre,
+    telefono: mapped.cliente_documento,
+    direccion: mapped.direccionEntrega,
+    barrio: mapped.barrioEntrega,
+    items: (mapped.items || []).map(function (it) {
+      return { cantidad: it.quantity, nombre: it.productName, observacion: it.observacion };
+    }),
+    total: mapped.total,
+    hora: new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+  });
 }
 
 async function handleDishSale(req, res) {
@@ -817,7 +840,9 @@ async function handleDishSale(req, res) {
       .select('*, venta_detalles(*), perfiles!ventas_usuario_id_fkey(username, nombre_completo), mesas(nombre)')
       .eq('id', venta.id).single();
 
-    res.status(201).json({ success: true, data: mapSaleResponse(saleFull),
+    var mappedSale = mapSaleResponse(saleFull);
+    await notifySaleToTelegram(mappedSale);
+    res.status(201).json({ success: true, data: mappedSale,
       message: saleEstado === 'pendiente' ? 'Pedido creado (pendiente)' : 'Pedido confirmado' });
   } catch (err) {
     console.error('handleDishSale error:', err);
@@ -1175,7 +1200,9 @@ router.post('/comanda', requirePermission('puede_crear_salidas'), async (req, re
       .eq('id', saleId)
       .single();
 
-    res.status(201).json({ success: true, data: mapSaleResponse(sale), message: 'Comanda registrada (pendiente)' });
+    var mappedComanda = mapSaleResponse(sale);
+    await notifySaleToTelegram(mappedComanda);
+    res.status(201).json({ success: true, data: mappedComanda, message: 'Comanda registrada (pendiente)' });
   } catch (err) {
     console.error('POST comanda error:', err);
     res.status(500).json({ success: false, message: err.message || 'Error del servidor' });

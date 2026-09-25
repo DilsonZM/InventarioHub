@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
 const { convertToBaseUnit } = require('../lib/reservation-orders');
+const { notifyNewOrder } = require('../lib/telegram');
 
 // Calcula, para cada plato, si hay inventario suficiente para preparar la
 // cantidad solicitada. Reutiliza la conversion de unidades de
@@ -411,6 +412,24 @@ router.post('/reservas', async (req, res) => {
       var { error: itemsErr } = await supabase.from('reserva_items').insert(itemsConReserva);
       if (itemsErr) console.error('[public/reservas] error items:', itemsErr.message);
     }
+
+    // Aviso a Telegram (no bloqueante: notifyNewOrder nunca lanza)
+    await notifyNewOrder({
+      numero_venta: 'Reserva ' + String(reserva.id).slice(-6).toUpperCase(),
+      destino: tipoPedido === 'domicilio'
+        ? '🛵 Domicilio'
+        : ('🍽️ ' + (mesaNombre || 'Mesa (reserva)')),
+      cliente: nombre,
+      telefono: telefono,
+      direccion: tipoPedido === 'domicilio' ? direccionEntrega : null,
+      barrio: tipoPedido === 'domicilio' ? barrioEntrega : null,
+      items: itemsValidados.map(function (it) {
+        return { cantidad: it.cantidad, nombre: it.plato_nombre, observacion: it.notas };
+      }),
+      total: Math.round((subtotalPlatos + (tipoPedido === 'domicilio' ? 3000 : 0)) * 100) / 100,
+      notas: notas,
+      hora: fecha + ' ' + hora
+    });
 
     return res.json({
       success: true,
