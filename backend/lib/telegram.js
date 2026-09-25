@@ -70,7 +70,14 @@ async function sendTelegramMessage(text) {
     const res = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'MarkdownV2' })
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: text,
+        parse_mode: 'MarkdownV2',
+        // Evita la tarjeta de preview del link de WhatsApp (ocupa mucho espacio)
+        disable_web_page_preview: true,
+        link_preview_options: { is_disabled: true }
+      })
     });
     if (!res.ok) {
       const body = await res.text();
