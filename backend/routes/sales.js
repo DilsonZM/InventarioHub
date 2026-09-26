@@ -660,11 +660,14 @@ async function notifySaleToTelegram(mapped) {
 
 // Aviso de "pedido listo" a Telegram cuando el pedido pasa a estado listo.
 // Nunca lanza excepciones (no debe bloquear el cambio de estado).
+//
+// Mesero: el usuario que registro el pedido (POS) o que acepto la reserva web.
+// WhatsApp: solo se incluye si el pedido vino de la web publica (reserva).
 async function notifyOrderReadyForSale(saleId) {
   try {
     const { data: sale } = await supabase
       .from('ventas')
-      .select('numero_venta, metodo_pago, personas, mesas(nombre), venta_detalles(producto_nombre, cantidad)')
+      .select('numero_venta, metodo_pago, personas, cliente_documento, mesas(nombre), perfiles!ventas_usuario_id_fkey(nombre_completo, username), venta_detalles(producto_nombre, cantidad)')
       .eq('id', saleId)
       .single();
     if (!sale) return;
@@ -677,9 +680,27 @@ async function notifyOrderReadyForSale(saleId) {
       if (sale.personas) destino += ' · ' + sale.personas + ' pers.';
     }
 
+    // Mesero / quien atendio
+    var mesero = null;
+    if (sale.perfiles) mesero = sale.perfiles.nombre_completo || sale.perfiles.username || null;
+
+    // El pedido viene de la web publica si existe una reserva con ese numero_venta
+    var esWeb = false;
+    try {
+      const { data: reserva } = await supabase
+        .from('reservas')
+        .select('id')
+        .eq('numero_venta', sale.numero_venta)
+        .limit(1);
+      esWeb = !!(reserva && reserva.length > 0);
+    } catch (e) { /* noop */ }
+
     await notifyOrderReady({
       destino: destino,
       numero_venta: sale.numero_venta,
+      mesero: mesero,
+      // WhatsApp del cliente SOLO si el pedido se hizo por fuera (web publica)
+      telefono: esWeb ? sale.cliente_documento : null,
       items: (sale.venta_detalles || []).map(function (d) {
         return { cantidad: d.cantidad, nombre: d.producto_nombre };
       })

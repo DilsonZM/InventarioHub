@@ -127,6 +127,7 @@ function buildOrderMessage(order) {
 }
 
 // PEDIDO LISTO: banner verde con texto limpio (sin bloques de codigo)
+// Incluye el mesero que atendio y, solo para pedidos web, el WhatsApp del cliente.
 function buildReadyMessage(order) {
   const lines = [];
   lines.push('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩');
@@ -135,13 +136,24 @@ function buildReadyMessage(order) {
   lines.push('');
   lines.push('📍 *Mesa / Destino:* ' + esc(order.destino || '—'));
   lines.push('🔢 *Pedido:* ' + esc(order.numero_venta || '-'));
+  if (order.mesero) lines.push('🙋 *Mesero:* ' + esc(order.mesero));
+  if (order.telefono) {
+    // Solo pedidos de la web publica: WhatsApp del cliente con link directo
+    var telNorm = normalizePhone(order.telefono);
+    if (telNorm) {
+      var waDigits = telNorm.replace(/\D/g, '');
+      lines.push('📞 *WhatsApp cliente:* [' + esc(formatPhone(telNorm)) + '](https://wa.me/' + waDigits + ')');
+    } else {
+      lines.push('📞 *WhatsApp cliente:* ' + esc(order.telefono));
+    }
+  }
   lines.push('');
   lines.push('🛎️ *Retirar de cocina:*');
   (order.items || []).forEach(function (it) {
     lines.push('• ' + esc((it.cantidad || 1) + 'x ' + (it.nombre || '')));
   });
   lines.push('');
-  lines.push('🏃💨 *Mesero asignado: favor pasar a recoger y servir\\.*');
+  lines.push('🏃💨 Favor pasar a recoger y servir\\.');
   return lines.join('\n');
 }
 
