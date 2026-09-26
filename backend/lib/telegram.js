@@ -615,10 +615,18 @@ async function handleTelegramCallback(data) {
         await updateBotSetting({ notify_low_stock: !s.notifyLowStock });
         toast = s.notifyLowStock ? '🔇 Stock desactivado' : '🔔 Stock activado';
         break;
-      case 'all':
-        await updateBotSetting({ notifications_active: !s.notificationsActive });
-        toast = s.notificationsActive ? '⏸️ Todo pausado' : '▶️ Todo activado';
+      case 'all': {
+        // "Todo" activa/desactiva TODAS las opciones a la vez
+        const nuevo = !s.notificationsActive;
+        await updateBotSetting({
+          notifications_active: nuevo,
+          notify_pos_orders: nuevo,
+          notify_ready_orders: nuevo,
+          notify_low_stock: nuevo
+        });
+        toast = nuevo ? '▶️ Todo activado' : '⏸️ Todo pausado';
         break;
+      }
       case 'refresh':
         toast = '🔄 Actualizado';
         break;
