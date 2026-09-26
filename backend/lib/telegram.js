@@ -1130,14 +1130,25 @@ async function handleTelegramCommand(text, ctx) {
     };
   }
 
-  // /start: bienvenida (en privado) + ayuda filtrada
+  // /start: bienvenida (en privado). Si no esta vinculado, avisa a los admins.
   if (cmd === '/start') {
     if (context.isPrivate) {
-      const who = context.actor ? '<b>' + escHtml(context.actor.username) + '</b>' : '';
+      if (!context.actor) {
+        if (context.fromId) notifyAdminsTelegramId(context).catch(function () { /* no bloqueante */ });
+        return {
+          text: '👋 <b>¡Bienvenido al bot de Corner House!</b>\n\n'
+            + 'Para vincular tu cuenta:\n'
+            + '1️⃣ Ya avisamos a los administradores\n'
+            + '2️⃣ Ellos vinculan tu Telegram con tu usuario\n\n'
+            + '🆔 Tu Telegram ID: <code>' + String(context.fromId || '?') + '</code>\n\n'
+            + 'Cuando te vinculen vas a poder consultar según tu rol.\n'
+            + 'Los comandos contables funcionan <b>solo por privado</b>.',
+          html: true
+        };
+      }
       return {
-        text: '👋 ¡Hola' + (who ? ' ' + who : '') + '!\n\n'
-          + 'Este es el bot interno de Corner House.\n'
-          + 'Acá podés consultar información según tu rol. Los comandos contables funcionan solo por privado.\n\n'
+        text: '👋 ¡Hola <b>' + escHtml(context.actor.username) + '</b>!\n\n'
+          + 'Rol: <b>' + escHtml(context.actor.roleName || context.actor.roleId || '-') + '</b>\n\n'
           + buildHelpText(context.actor, true),
         html: true
       };
