@@ -233,6 +233,8 @@ const API = (() => {
         request('/dishes/' + id, { method: 'PUT', body: JSON.stringify(dish) }),
       delete: (id) =>
         request('/dishes/' + id, { method: 'DELETE' }),
+      deletePermanent: (id) =>
+        request('/dishes/' + id + '?permanente=1', { method: 'DELETE' }),
     },
 
     mesas: {

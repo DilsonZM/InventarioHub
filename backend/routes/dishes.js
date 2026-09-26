@@ -331,16 +331,55 @@ router.put('/:id', requirePermission('puede_editar_productos'), async (req, res)
   }
 });
 
-// Soft-delete plato
+// DELETE /api/dishes/:id          → soft-delete (archiva el plato)
+// DELETE /api/dishes/:id?permanente=1 → elimina el plato de verdad.
+//   Solo si ya está archivado. El historial de ventas/reservas se conserva
+//   (las referencias quedan en NULL y los nombres denormalizados se mantienen).
 router.delete('/:id', requirePermission('puede_eliminar_productos'), async (req, res) => {
   try {
-    const { error } = await supabase.from('platos').update({ activo: false }).eq('id', req.params.id);
+    const permanente = req.query.permanente === '1' || req.query.permanente === 'true';
+
+    const { data: plato, error: getError } = await supabase
+      .from('platos')
+      .select('id, nombre, activo')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (getError) throw getError;
+    if (!plato) {
+      return res.status(404).json({ success: false, message: 'Plato no encontrado' });
+    }
+
+    // Archivar (soft-delete)
+    if (!permanente) {
+      const { error } = await supabase.from('platos').update({ activo: false }).eq('id', req.params.id);
+      if (error) throw error;
+      return res.json({ success: true, message: 'Plato desactivado' });
+    }
+
+    // Eliminar permanentemente: solo platos archivados
+    if (plato.activo) {
+      return res.status(400).json({ success: false, message: 'Archivá el plato antes de eliminarlo permanentemente' });
+    }
+
+    const [ventasRef, reservasRef] = await Promise.all([
+      supabase.from('venta_detalles').select('id', { count: 'exact', head: true }).eq('plato_id', req.params.id),
+      supabase.from('reserva_items').select('id', { count: 'exact', head: true }).eq('plato_id', req.params.id)
+    ]);
+
+    const { error } = await supabase.from('platos').delete().eq('id', req.params.id);
     if (error) throw error;
 
-    res.json({ success: true, message: 'Plato desactivado' });
+    const ventas = ventasRef.count || 0;
+    const reservas = reservasRef.count || 0;
+    res.json({
+      success: true,
+      message: 'Plato eliminado' + ((ventas || reservas)
+        ? ' (historial conservado: ' + ventas + ' ventas, ' + reservas + ' reservas)'
+        : '')
+    });
   } catch (err) {
     console.error('DELETE /api/dishes/:id error:', err);
-    res.status(500).json({ success: false, message: 'Error al desactivar plato' });
+    res.status(500).json({ success: false, message: 'Error al eliminar plato' });
   }
 });
 
