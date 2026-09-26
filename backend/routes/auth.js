@@ -2,12 +2,14 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const supabase = require('../lib/supabase');
+const supabaseAuth = require('../lib/supabase-auth');
 const { generateToken, authMiddleware } = require('../middleware/auth');
 
 const SALT_ROUNDS = 10;
+const APP_URL = process.env.APP_URL || 'https://inventory-app-one-azure.vercel.app';
 
 // RBAC: el usuario hereda los permisos de su rol
-const USER_SELECT = 'id, username, role, role_id, roles(id, name, permissions), email, nombre_completo, estado_aprobacion';
+const USER_SELECT = 'id, username, role, role_id, roles(id, name, permissions), email, nombre_completo, estado_aprobacion, auth_id';
 
 async function hashPassword(password) {
   return bcrypt.hash(password, SALT_ROUNDS);
@@ -88,13 +90,29 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await hashPassword(password);
 
-    // Los nuevos registros SIEMPRE quedan en estado 'pendiente' con rol 'vendedor' y permisos minimos.
-    // El admin debe aprobarlos desde el panel y asignar el rol/permisos finales.
+    // 1) Crear el usuario en Supabase Auth (credenciales)
+    let authUser;
+    try {
+      authUser = await supabaseAuth.adminCreateUser({
+        email: emailNorm,
+        password: password,
+        email_confirm: true,
+        user_metadata: { username: username, nombre_completo: nombreCompleto || null }
+      });
+    } catch (authErr) {
+      if (/already|registered|exists/i.test(authErr.message)) {
+        return res.status(400).json({ success: false, message: 'Ya existe una cuenta registrada con ese correo' });
+      }
+      throw authErr;
+    }
+
+    // 2) Crear el perfil (rol/RBAC), pendiente de aprobacion
     const { data: user, error } = await supabase
       .from('perfiles')
       .insert({
         username,
         password_hash: passwordHash,
+        auth_id: authUser.id,
         role: 'vendedor',
         role_id: 'vendedor',
         email: emailNorm,
@@ -105,7 +123,11 @@ router.post('/register', async (req, res) => {
       .select('id, username, role, email, nombre_completo, estado_aprobacion')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Rollback del usuario de Auth para no dejar cuentas huerfanas
+      try { await supabaseAuth.adminDeleteUser(authUser.id); } catch (e) { /* noop */ }
+      throw error;
+    }
 
     res.status(201).json({
       success: true,
@@ -147,7 +169,23 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Tu solicitud de registro fue rechazada. Contacta al administrador.' });
     }
 
-    const { match, upgradedHash } = await comparePassword(password, user.password_hash);
+    // Credenciales: Supabase Auth si el perfil esta vinculado;
+    // fallback local (bcrypt) para perfiles sin vincular.
+    let match = false;
+    let upgradedHash = null;
+    if (user.auth_id) {
+      try {
+        await supabaseAuth.signInWithPassword(user.email, password);
+        match = true;
+      } catch (authErr) {
+        match = false;
+      }
+    } else {
+      const result = await comparePassword(password, user.password_hash);
+      match = result.match;
+      upgradedHash = result.upgradedHash;
+    }
+
     if (!match) {
       return res.status(401).json({ success: false, message: 'Credenciales invalidas' });
     }
@@ -186,10 +224,15 @@ router.post('/forgot-password', async (req, res) => {
       .single();
 
     // Por seguridad, no exponemos si el correo existe.
-    // No hay servicio de correo configurado: avisamos al grupo interno de
-    // Telegram para que el Super Admin restablezca la contrasena desde la BD.
+    // El correo de recuperacion lo envia Supabase Auth.
     if (user) {
       console.log('[forgot-password] Solicitud de recuperacion para:', user.username, '<-', user.email);
+      try {
+        await supabaseAuth.sendRecovery(user.email, APP_URL + '/views/reset-password.html');
+      } catch (mailErr) {
+        console.error('[forgot-password] error enviando correo:', mailErr.message);
+      }
+      // Aviso interno (auditoria) al grupo de Telegram
       const safeUser = String(user.username || '').replace(/[<>&]/g, '');
       const safeEmail = String(user.email || '').replace(/[<>&]/g, '');
       try {
@@ -198,7 +241,7 @@ router.post('/forgot-password', async (req, res) => {
           '🔑 <b>Solicitud de restablecimiento</b>\n\n'
           + 'Usuario: <b>' + safeUser + '</b>\n'
           + 'Correo: ' + safeEmail + '\n\n'
-          + 'Un Super Admin debe restablecer la contraseña desde la base de datos.',
+          + 'Se envió el enlace de recuperación por correo.',
           { html: true }
         ).catch(function () { /* no bloqueante */ });
       } catch (e) { /* no bloqueante */ }
@@ -212,6 +255,42 @@ router.post('/forgot-password', async (req, res) => {
     });
   } catch (err) {
     console.error('Forgot password error:', err);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+});
+
+// POST /api/auth/reset-password
+// Recibe el access_token del enlace de recuperacion (Supabase) y la nueva
+// contrasena. Actualiza la credencial en Supabase Auth y el hash local.
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { access_token, password } = req.body || {};
+    if (!access_token || !password) {
+      return res.status(400).json({ success: false, message: 'Token y nueva contrasena requeridos' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'La contrasena debe tener al menos 6 caracteres' });
+    }
+
+    let authUser;
+    try {
+      authUser = await supabaseAuth.updateUserPassword(access_token, password);
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: 'El enlace expiro o es invalido. Solicita uno nuevo.'
+      });
+    }
+
+    // Mantener el hash local (respaldo) en sincronia
+    try {
+      const passwordHash = await hashPassword(password);
+      await supabase.from('perfiles').update({ password_hash: passwordHash }).eq('auth_id', authUser.id);
+    } catch (e) { /* no bloqueante */ }
+
+    res.json({ success: true, data: { message: 'Contrasena actualizada. Ya puedes iniciar sesion.' } });
+  } catch (err) {
+    console.error('Reset password error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });
   }
 });

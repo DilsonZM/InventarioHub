@@ -15,7 +15,7 @@ No test, lint, typecheck, or build step exists. No frontend build — Tailwind a
 Single Express server (`backend/server.js`) serves both the API and the frontend as static files from `../frontend`. There is no separate frontend dev server.
 
 - **Persistence**: Supabase PostgreSQL (`https://zosuleqcmhwoivbjurew.supabase.co`). All CRUD operations use the `@supabase/supabase-js` client with service role key. The legacy `db.json` file has been removed.
-- **Auth**: JWT in `Authorization: Bearer <token>`. Passwords use bcrypt (bcryptjs). Middleware in `backend/middleware/auth.js`.
+- **Auth**: credenciales y correos en **Supabase Auth** (`auth.users`, vinculado por `perfiles.auth_id`); la sesion de la app sigue siendo un JWT propio (`Authorization: Bearer <token>`). Login por usuario: el backend resuelve el email y valida contra Supabase (`signInWithPassword`). Recuperacion de contrasena: Supabase envia el correo y `views/reset-password.html` completa el cambio. Middleware RBAC en `backend/middleware/auth.js`.
 - **Roles**: `admin` (full CRUD on products) and `vendedor` (read products, create sales). Product create/update/delete routes use `adminOnly` middleware.
 - **Frontend**: Vanilla JS **ES modules** (no framework, no build step). Single-page app with hash routing (`#dashboard`, `#inventory`, `#sales`, `#entradas`, `#movimientos`, `#dishes`, `#users`, `#config`, `#pos`). The app is organized in 5 layers:
   - `js/core/` — primitives (DOM, store, events, permissions, router, PWA).

@@ -7,6 +7,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const supabase = require('../lib/supabase');
 const { authMiddleware, requirePermission } = require('../middleware/auth');
+const supabaseAuth = require('../lib/supabase-auth');
 
 const SALT_ROUNDS = 10;
 
@@ -46,6 +47,13 @@ async function getRoleIdOf(userId) {
 // puede archivarla/eliminarla. Solo un Super Admin puede asignar ese rol.
 const SUPERADMIN = 'superadmin';
 
+// Email efectivo para Supabase Auth (los perfiles sin correo usan placeholder)
+function effectiveEmail(username, email) {
+  const mail = String(email || '').trim().toLowerCase();
+  if (mail) return mail;
+  return String(username || '').toLowerCase() + '@cornerhouse.local';
+}
+
 // GET /api/users - listar usuarios
 router.get('/', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
@@ -80,9 +88,11 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
       return res.status(403).json({ success: false, message: 'Solo un Super Admin puede asignar ese rol' });
     }
 
+    const authEmail = effectiveEmail(username, email);
+
     const { data: existing } = await supabase
       .from('perfiles')
-      .select('id, activo')
+      .select('id, activo, auth_id')
       .eq('username', username)
       .single();
 
@@ -90,14 +100,28 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
       if (existing.activo) {
         return res.status(400).json({ success: false, message: 'El nombre de usuario ya existe y esta activo' });
       }
+      // Reactivar: sincronizar credenciales en Supabase Auth
+      let authId = existing.auth_id;
+      try {
+        if (authId) {
+          await supabaseAuth.adminUpdateUser(authId, { password: password, email: authEmail, email_confirm: true });
+        } else {
+          const created = await supabaseAuth.adminCreateUser({ email: authEmail, password: password, email_confirm: true });
+          authId = created.id;
+        }
+      } catch (authErr) {
+        console.error('Reactivar: error en Supabase Auth:', authErr.message);
+      }
+
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
       const { data: reactivated, error: reactError } = await supabase
         .from('perfiles')
         .update({
           password_hash: passwordHash,
+          auth_id: authId || null,
           role_id: userRoleId,
           role: userRoleId,
-          email: email || null,
+          email: authEmail,
           nombre_completo: nombreCompleto || null,
           activo: true,
           estado_aprobacion: 'aprobado'
@@ -110,21 +134,41 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
       return res.status(200).json({ success: true, data: userPublic(reactivated), message: 'Usuario reactivado (ya existia inactivo)' });
     }
 
+    // Nuevo usuario: primero Supabase Auth, luego el perfil
+    let authUser;
+    try {
+      authUser = await supabaseAuth.adminCreateUser({
+        email: authEmail,
+        password: password,
+        email_confirm: true,
+        user_metadata: { username: username, nombre_completo: nombreCompleto || null }
+      });
+    } catch (authErr) {
+      if (/already|registered|exists/i.test(authErr.message)) {
+        return res.status(400).json({ success: false, message: 'Ya existe una cuenta con ese correo' });
+      }
+      throw authErr;
+    }
+
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const { data: user, error } = await supabase
       .from('perfiles')
       .insert({
         username,
         password_hash: passwordHash,
+        auth_id: authUser.id,
         role_id: userRoleId,
         role: userRoleId,
-        email: email || null,
+        email: authEmail,
         nombre_completo: nombreCompleto || null,
         estado_aprobacion: 'aprobado'
       })
       .select(USER_SELECT)
       .single();
-    if (error) throw error;
+    if (error) {
+      try { await supabaseAuth.adminDeleteUser(authUser.id); } catch (e) { /* noop */ }
+      throw error;
+    }
 
     res.status(201).json({ success: true, data: userPublic(user) });
   } catch (err) {
@@ -140,7 +184,7 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
 
     const { data: target, error: targetError } = await supabase
       .from('perfiles')
-      .select('id, role_id')
+      .select('id, role_id, auth_id, username')
       .eq('id', req.params.id)
       .maybeSingle();
     if (targetError) throw targetError;
@@ -184,6 +228,23 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
       updateData.password_hash = await bcrypt.hash(password, SALT_ROUNDS);
     }
 
+    // Sincronizar credenciales con Supabase Auth
+    if (target.auth_id && (password || email !== undefined)) {
+      const authPatch = {};
+      if (password) authPatch.password = password;
+      if (email !== undefined) {
+        authPatch.email = effectiveEmail(target.username, email);
+        authPatch.email_confirm = true;
+        updateData.email = authPatch.email;
+      }
+      try {
+        await supabaseAuth.adminUpdateUser(target.auth_id, authPatch);
+      } catch (authErr) {
+        console.error('User update: error en Supabase Auth:', authErr.message);
+        return res.status(400).json({ success: false, message: 'No se pudo actualizar el correo/clave en Auth: ' + authErr.message });
+      }
+    }
+
     const { data, error } = await supabase
       .from('perfiles')
       .update(updateData)
@@ -211,7 +272,7 @@ router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (
 
     const { data: user, error: getError } = await supabase
       .from('perfiles')
-      .select('id, username, role_id, activo')
+      .select('id, username, role_id, activo, auth_id')
       .eq('id', req.params.id)
       .maybeSingle();
     if (getError) throw getError;
@@ -246,6 +307,11 @@ router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (
       if ((count || 0) <= 1) {
         return res.status(400).json({ success: false, message: 'No se puede eliminar el ultimo administrador' });
       }
+    }
+
+    // Borrar tambien el usuario de Supabase Auth (credenciales)
+    if (user.auth_id) {
+      try { await supabaseAuth.adminDeleteUser(user.auth_id); } catch (e) { /* noop */ }
     }
 
     const { error } = await supabase.from('perfiles').delete().eq('id', req.params.id);

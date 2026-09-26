@@ -97,6 +97,8 @@ const API = (() => {
       me: () => request('/auth/me'),
       forgotPassword: (email) =>
         request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+      resetPassword: (accessToken, password) =>
+        request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ access_token: accessToken, password }) }),
     },
 
     config: {
