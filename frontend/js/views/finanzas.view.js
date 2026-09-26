@@ -62,6 +62,11 @@ function initFinanzas() {
       }
     });
   }
+  // Auto-aplicar al cambiar cualquiera de las dos fechas (sin esperar a "Consultar")
+  ['finFilterDateFrom', 'finFilterDateTo'].forEach(function (id) {
+    var el = $('#' + id);
+    if (el) el.addEventListener('change', loadFinanzas);
+  });
   // Rango por defecto: este mes
   var fromEl = $('#finFilterDateFrom');
   var toEl = $('#finFilterDateTo');
@@ -94,8 +99,15 @@ function setText(id, value) {
   if (el) el.textContent = value;
 }
 
+function fmtDateEs(iso) {
+  if (!iso) return '';
+  var p = String(iso).slice(0, 10).split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+}
+
 function renderSummary() {
   var s = state.summary || {};
+  setText('finAppliedRange', s.from && s.to ? '· ' + fmtDateEs(s.from) + ' → ' + fmtDateEs(s.to) : '');
   setText('finKpiFacturado', formatCurrency(s.facturado || 0));
   setText('finKpiCosto', formatCurrency(s.costoVentas || 0));
   setText('finKpiMargen', formatCurrency(s.margen || 0));

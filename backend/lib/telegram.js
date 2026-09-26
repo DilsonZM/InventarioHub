@@ -297,13 +297,19 @@ async function answerCallbackQuery(callbackQueryId, text) {
   }
 }
 
-// Edita un mensaje ya enviado (para el panel de notificaciones). No lanza.
+// Edita un mensaje ya enviado (paneles y reportes con botones). No lanza.
+// options.html: true para parse_mode HTML (tiene prioridad sobre markdown)
 async function editTelegramMessage(text, messageId, options) {
   if (!isConfigured() || !messageId) return { ok: false };
-  const useMarkdown = !options || options.markdown !== false;
+  const useHtml = !!(options && options.html);
+  const useMarkdown = !useHtml && (!options || options.markdown !== false);
   try {
     const payload = { chat_id: CHAT_ID, message_id: messageId, text: text };
-    if (useMarkdown) {
+    if (useHtml) {
+      payload.parse_mode = 'HTML';
+      payload.disable_web_page_preview = true;
+      payload.link_preview_options = { is_disabled: true };
+    } else if (useMarkdown) {
       payload.parse_mode = 'MarkdownV2';
       payload.disable_web_page_preview = true;
       payload.link_preview_options = { is_disabled: true };
@@ -662,9 +668,10 @@ function buildFinanceReportText(s) {
   lines.push('• Margen bruto: ' + formatCurrency(s.margen) + ' (' + s.margenPct + '%)');
   lines.push('');
   lines.push('🛒 <b>EGRESOS</b>');
-  lines.push('• Compras: ' + formatCurrency(s.comprasTotal) + ' (' + s.comprasCount + ')');
-  lines.push('• Mermas: ' + formatCurrency(s.mermasTotal) + ' (' + s.mermasCount + ')');
-  lines.push('• Gastos operativos: ' + formatCurrency(s.gastosTotal) + ' (' + s.gastosCount + ')');
+  lines.push('• Compras de inventario: ' + formatCurrency(s.comprasTotal) + ' · ' + s.comprasCount + (s.comprasCount === 1 ? ' compra' : ' compras'));
+  lines.push('• Mermas: ' + formatCurrency(s.mermasTotal) + ' · ' + s.mermasCount + (s.mermasCount === 1 ? ' merma' : ' mermas'));
+  lines.push('• Gastos operativos: ' + formatCurrency(s.gastosTotal) + ' · ' + s.gastosCount + (s.gastosCount === 1 ? ' gasto' : ' gastos'));
+  lines.push('<i>Gastos operativos: arriendo, servicios, nómina, etc. Se registran con /gasto</i>');
   lines.push('');
   lines.push('📈 <b>RESULTADO</b>');
   lines.push('• Utilidad bruta: ' + formatCurrency(s.utilidadBruta));
@@ -716,6 +723,141 @@ function financeRange(action) {
 }
 
 // ============================================================
+// Wizard de gasto (/gasto): preguntas guiadas por el chat
+// ============================================================
+
+const CAT_LABELS = {
+  arriendo: '🏠 Arriendo',
+  servicios: '💡 Servicios',
+  nomina: '👷 Nómina',
+  transporte: '🚚 Transporte',
+  mantenimiento: '🔧 Mantenimiento',
+  otros: '📌 Otros'
+};
+
+function catLabel(cat) {
+  return CAT_LABELS[cat] || cat;
+}
+
+function categoriasKeyboard() {
+  const cats = finance.CATEGORIAS_GASTO;
+  const rows = [];
+  for (let i = 0; i < cats.length; i += 2) {
+    rows.push(cats.slice(i, i + 2).map(function (c) {
+      return { text: catLabel(c), callback_data: 'gas:cat:' + c };
+    }));
+  }
+  rows.push([{ text: '❌ Cancelar', callback_data: 'gas:cancel' }]);
+  return { inline_keyboard: rows };
+}
+
+async function getEstado(chatId) {
+  try {
+    const { data } = await supabase
+      .from('telegram_estado')
+      .select('estado, datos')
+      .eq('chat_id', chatId)
+      .maybeSingle();
+    return data || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function setEstado(chatId, estado, datos) {
+  await supabase.from('telegram_estado').upsert({
+    chat_id: chatId,
+    estado: estado,
+    datos: datos || {},
+    actualizado_en: new Date().toISOString()
+  }, { onConflict: 'chat_id' });
+}
+
+async function clearEstado(chatId) {
+  try {
+    await supabase.from('telegram_estado').delete().eq('chat_id', chatId);
+  } catch (e) { /* noop */ }
+}
+
+// Inicia el formulario guiado de gasto (paso 1: monto)
+async function startGastoWizard(chatId) {
+  await setEstado(chatId, 'gasto_monto', {});
+  return {
+    text: '💸 <b>Nuevo gasto operativo</b>\n\n1️⃣ Enviá el <b>monto</b> (solo el número, ej: 150000).\n\nPara cancelar enviá /cancelar.',
+    html: true
+  };
+}
+
+// Procesa un texto libre mientras hay un wizard activo. Devuelve null si
+// el chat no tiene ningún flujo pendiente (o si el texto es un comando).
+async function handleGastoFlowText(text, chatId) {
+  if (!chatId) return null;
+  const clean = String(text || '').trim();
+  if (!clean || clean.charAt(0) === '/') return null;
+  const estado = await getEstado(chatId);
+  if (!estado || String(estado.estado).indexOf('gasto_') !== 0) return null;
+
+  // Paso 1: monto
+  if (estado.estado === 'gasto_monto') {
+    const monto = parseFloat(clean.replace(/[^0-9.,]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
+    if (!monto || monto <= 0 || monto > 999999999) {
+      return {
+        text: '⚠️ No entendí el monto. Enviá solo el número (ej: <code>150000</code>) o /cancelar.',
+        html: true
+      };
+    }
+    await setEstado(chatId, 'gasto_categoria', { monto: Math.round(monto * 100) / 100 });
+    return {
+      text: '💵 Monto: <b>' + formatCurrency(monto) + '</b>\n\n2️⃣ Elegí la <b>categoría</b>:',
+      html: true,
+      replyMarkup: categoriasKeyboard()
+    };
+  }
+
+  // Paso 3: descripción (texto libre)
+  if (estado.estado === 'gasto_descripcion') {
+    const d = estado.datos || {};
+    return await guardarGastoWizard(chatId, d.monto, d.categoria, clean.slice(0, 300));
+  }
+
+  return null;
+}
+
+// Guarda el gasto del wizard y devuelve el mensaje de confirmación.
+// edit=true cuando se responde a un botón (edita el mensaje en el lugar).
+async function guardarGastoWizard(chatId, monto, categoria, descripcion, edit) {
+  const { error } = await supabase.from('gastos').insert({
+    fecha: todayBogota(),
+    categoria: categoria,
+    descripcion: descripcion || null,
+    monto: monto,
+    usuario_id: null
+  });
+  if (error) throw error;
+  await clearEstado(chatId);
+  const lines = [
+    '✅ <b>Gasto registrado</b>',
+    '',
+    '• Fecha: ' + formatDateEs(todayBogota()),
+    '• Categoría: ' + catLabel(categoria),
+    '• Monto: ' + formatCurrency(monto)
+  ];
+  if (descripcion) lines.push('• Descripción: ' + escHtml(descripcion));
+  return {
+    text: lines.join('\n'),
+    html: true,
+    edit: !!edit,
+    toast: '✅ Gasto registrado',
+    replyMarkup: {
+      inline_keyboard: [[
+        { text: '📊 Ver informe de hoy', callback_data: 'fin:hoy' },
+        { text: '➕ Otro gasto', callback_data: 'gas:nuevo' }
+      ]]
+    }
+  };
+}
+
+// ============================================================
 // Comandos del chat
 // ============================================================
 
@@ -726,7 +868,8 @@ const HELP_TEXT = [
   '/inventario — Reportes PDF (productos, platos, bebidas, stock bajo)',
   '/stockbajos — Ver los productos bajo mínimo ahora',
   '/finanzas — Informe contable (ingresos, egresos, utilidad)',
-  '/gasto 150000 arriendo — Registrar un gasto operativo',
+  '/gasto — Registrar un gasto operativo (formulario guiado)',
+  '/cancelar — Cancelar la operación en curso',
   '/estado — Ver el estado actual (texto)',
   '/hoy — Resumen de ventas de hoy',
   '/rango — Resumen por rango de fechas (con selector)',
@@ -778,8 +921,15 @@ async function handleTelegramCommand(text) {
         replyMarkup: { inline_keyboard: [[{ text: '📄 Generar PDF', callback_data: 'fin:pdf:' + d1 + ':' + d2 }]] }
       };
     }
+    case '/cancelar':
+    case '/cancel': {
+      await clearEstado(getConfiguredChatId());
+      return { text: '❌ Operación cancelada.', html: true };
+    }
     case '/gasto': {
       const args = clean.split(/\s+/).slice(1);
+      // Sin argumentos: formulario guiado por pasos
+      if (args.length === 0) return await startGastoWizard(getConfiguredChatId());
       const monto = parseFloat(String(args[0] || '').replace(/[^0-9.]/g, ''));
       const categoria = String(args[1] || 'otros').toLowerCase();
       const descripcion = args.slice(2).join(' ') || null;
@@ -983,6 +1133,52 @@ async function handleTelegramCallback(data) {
     };
   }
 
+  // --- Wizard de gasto (/gasto) ---
+  if (key === 'gas') {
+    const action = parts[1];
+    const chatId = getConfiguredChatId();
+
+    if (action === 'nuevo') {
+      return await startGastoWizard(chatId);
+    }
+
+    if (action === 'cancel') {
+      await clearEstado(chatId);
+      return { text: '❌ Registro cancelado.', html: true, edit: true, toast: 'Cancelado' };
+    }
+
+    if (action === 'cat') {
+      const cat = parts[2];
+      const estado = await getEstado(chatId);
+      if (!estado || estado.estado !== 'gasto_categoria' || finance.CATEGORIAS_GASTO.indexOf(cat) === -1) {
+        return { text: '⚠️ La sesión expiró. Enviá /gasto para empezar de nuevo.', html: true, toast: 'Sesión expirada' };
+      }
+      await setEstado(chatId, 'gasto_descripcion', { monto: estado.datos.monto, categoria: cat });
+      return {
+        text: '💵 Monto: <b>' + formatCurrency(estado.datos.monto) + '</b>\n🏷️ Categoría: <b>' + catLabel(cat) + '</b>\n\n3️⃣ Escribí una <b>descripción</b> (opcional) o tocá el botón:',
+        html: true,
+        edit: true,
+        toast: 'Categoría: ' + catLabel(cat),
+        replyMarkup: {
+          inline_keyboard: [[
+            { text: '⏭️ Sin descripción', callback_data: 'gas:skip' },
+            { text: '❌ Cancelar', callback_data: 'gas:cancel' }
+          ]]
+        }
+      };
+    }
+
+    if (action === 'skip') {
+      const estado = await getEstado(chatId);
+      if (!estado || estado.estado !== 'gasto_descripcion') {
+        return { text: '⚠️ La sesión expiró. Enviá /gasto para empezar de nuevo.', html: true, toast: 'Sesión expirada' };
+      }
+      return await guardarGastoWizard(chatId, estado.datos.monto, estado.datos.categoria, null, true);
+    }
+
+    return null;
+  }
+
   // --- Panel de notificaciones (/notificaciones) ---
   if (key === 'ntf') {
     const action = parts[1];
@@ -1041,12 +1237,14 @@ module.exports = {
   buildOrderMessage,
   buildReadyMessage,
   buildDailySummaryRange,
+  buildFinanceReportText,
   buildNotificationsPanel,
   buildInventoryPanel,
   buildLowStockText,
   buildLowStockReport,
   handleTelegramCommand,
   handleTelegramCallback,
+  handleGastoFlowText,
   answerCallbackQuery,
   getBotSettings,
   updateBotSetting,

@@ -12,6 +12,7 @@ const router = express.Router();
 const {
   handleTelegramCommand,
   handleTelegramCallback,
+  handleGastoFlowText,
   answerCallbackQuery,
   sendTelegramMessage,
   sendTelegramDocument,
@@ -53,20 +54,22 @@ router.post('/webhook', async (req, res) => {
       await answerCallbackQuery(cb.id, cbResp && cbResp.toast);
       if (cbResp) {
         const useMarkdown = cbResp.markdown === true;
+        const useHtml = cbResp.html === true;
         // Reportes PDF (solo Productos: la lista larga)
         if (cbResp.document) {
           await sendTelegramDocument(cbResp.document.buffer, cbResp.document.filename, cbResp.document.caption);
-        // El panel de notificaciones se edita en el lugar (no llena el chat)
+        // Los paneles/reportes se editan en el lugar (no llenan el chat)
         } else if (cbResp.edit && cb.message && cb.message.message_id) {
           const edited = await editTelegramMessage(cbResp.text, cb.message.message_id, {
             markdown: useMarkdown,
+            html: useHtml,
             replyMarkup: cbResp.replyMarkup
           });
           if (!edited || !edited.ok) {
-            await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, replyMarkup: cbResp.replyMarkup });
+            await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, html: useHtml, replyMarkup: cbResp.replyMarkup });
           }
         } else {
-          await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, replyMarkup: cbResp.replyMarkup });
+          await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, html: useHtml, replyMarkup: cbResp.replyMarkup });
         }
       } else if (cbError) {
         await sendTelegramMessage('⚠️ No se pudo procesar la solicitud: ' + cbError.message, { markdown: false });
@@ -88,7 +91,9 @@ router.post('/webhook', async (req, res) => {
       return res.sendStatus(200);
     }
 
-    const response = await handleTelegramCommand(text);
+    let response = await handleTelegramCommand(text);
+    // Si no fue un comando, puede ser un paso del formulario de /gasto
+    if (!response) response = await handleGastoFlowText(text, chatId);
     if (response) {
       if (typeof response === 'string') {
         await sendTelegramMessage(response, { markdown: false });

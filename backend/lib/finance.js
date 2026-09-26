@@ -24,7 +24,9 @@ function todayBogota() {
 
 async function getFinanceSummary(from, to) {
   const { applyBogotaDateFilter } = require('./timezone');
-  if (!from || !to) { from = to = todayBogota(); }
+  if (!from && !to) { from = to = todayBogota(); }
+  else if (!from) { from = to; }
+  else if (!to) { to = from; }
   if (from > to) { const t = from; from = to; to = t; }
 
   // --- Costos de referencia (platos por receta, productos por precio_compra)
