@@ -627,11 +627,13 @@ function buildLowStockReport(bajos, title) {
 
   if (criticos.length > 0) {
     lines.push('🔴 <b>CRÍTICO / AGOTADO</b>');
+    lines.push('');
     criticos.forEach(function (it) { lines.push(itemLine(it)); });
     lines.push('');
   }
   if (alerta.length > 0) {
     lines.push('🟡 <b>EN ALERTA</b>');
+    lines.push('');
     alerta.forEach(function (it) { lines.push(itemLine(it)); });
     lines.push('');
   }
@@ -656,24 +658,29 @@ function buildFinanceReportText(s) {
   const esDia = s.from === s.to;
   const lines = [];
   lines.push('📊 <b>INFORME FINANCIERO</b>');
+  lines.push('');
   lines.push('📅 ' + escHtml(esDia ? formatDateEsLong(s.from) : ('Del ' + formatDateEs(s.from) + ' al ' + formatDateEs(s.to))));
   lines.push('');
   lines.push('💵 <b>INGRESOS</b>');
+  lines.push('');
   lines.push('• Facturado: ' + formatCurrency(s.facturado));
   lines.push('• Pedidos: ' + s.pedidos + ' · Ticket promedio: ' + formatCurrency(s.ticketPromedio));
   lines.push('• Cortesías: ' + s.cortesias + ' · Cancelados: ' + s.canceladas);
   lines.push('');
   lines.push('📦 <b>COSTO Y MARGEN</b>');
+  lines.push('');
   lines.push('• Costo de insumos: ' + formatCurrency(s.costoVentas));
   lines.push('• Margen bruto: ' + formatCurrency(s.margen) + ' (' + s.margenPct + '%)');
   lines.push('');
   lines.push('🛒 <b>EGRESOS</b>');
+  lines.push('');
   lines.push('• Compras de inventario: ' + formatCurrency(s.comprasTotal) + ' · ' + s.comprasCount + (s.comprasCount === 1 ? ' compra' : ' compras'));
   lines.push('• Mermas: ' + formatCurrency(s.mermasTotal) + ' · ' + s.mermasCount + (s.mermasCount === 1 ? ' merma' : ' mermas'));
   lines.push('• Gastos operativos: ' + formatCurrency(s.gastosTotal) + ' · ' + s.gastosCount + (s.gastosCount === 1 ? ' gasto' : ' gastos'));
   lines.push('<i>Gastos operativos: arriendo, servicios, nómina, etc. Se registran con /gasto</i>');
   lines.push('');
   lines.push('📈 <b>RESULTADO</b>');
+  lines.push('');
   lines.push('• Utilidad bruta: ' + formatCurrency(s.utilidadBruta));
   lines.push('• Flujo de caja: ' + formatCurrency(s.flujoCaja));
   lines.push('• <b>Utilidad neta:</b> ' + formatCurrency(s.utilidadNeta));
@@ -681,6 +688,7 @@ function buildFinanceReportText(s) {
   if ((s.topPlatos || []).length > 0) {
     const medals = ['🥇', '🥈', '🥉'];
     lines.push('🏆 <b>Top 5 Platos más vendidos:</b>');
+    lines.push('');
     s.topPlatos.forEach(function (p, i) {
       lines.push((i + 1) + '. ' + (medals[i] || '') + ' ' + escHtml(p.nombre) + ' (' + p.cant + 'x)');
     });
