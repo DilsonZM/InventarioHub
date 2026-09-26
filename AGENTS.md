@@ -47,12 +47,10 @@ Schema managed via Supabase CLI migrations in `supabase/migrations/`. Tables:
 Functions: `registrar_movimiento()` for stock operations, `procesar_venta()` for atomic sale creation.
 RLS enabled on all tables with permissive `Allow backend access` policies.
 
-## Demo credentials
+## Usuarios
 
-| User | Password | Role |
-|------|----------|------|
-| `admin` | `admin123` | admin |
-| `vendedor1` | `admin123` | vendedor |
+No hay credenciales demo: las cuentas se gestionan desde la vista **Usuarios y Roles** (RBAC).
+El rol `superadmin` (titular `DilsonZM`) está protegido: no se puede archivar, eliminar ni editar por terceros.
 
 ## Conventions
 
