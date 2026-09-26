@@ -84,7 +84,7 @@ async function loadDashboard() {
     animateKPI('#stat-revenue', stats.periodRevenue || 0, true);
     animateKPI('#stat-lowstock', stats.lowStockCount);
     animateKPI('#stat-value', stats.inventoryValue, true);
-    animateKPI('#stat-investment', stats.periodInvestment || stats.totalEntradas || 0, true);
+    animateKPI('#stat-investment', stats.purchaseInvestment || 0, true);
     var revLabel = $('#stat-revenue-label');
     if (revLabel && stats.periodLabel) {
       revLabel.textContent = 'Salidas ' + stats.periodLabel.toLowerCase();
@@ -153,16 +153,15 @@ async function loadDashboard() {
     if (subInvestment) {
       subInvestment.classList.remove('hidden');
       var purchaseCount = stats.periodPurchaseCount || 0;
-      var openingText = (stats.openingInvestment || 0) > 0 ? 'Inicial + ' : '';
-      subInvestment.textContent = openingText + purchaseCount + (purchaseCount === 1 ? ' entrada' : ' entradas') + ' · ' + (stats.periodLabel || 'Período');
+      subInvestment.textContent = purchaseCount + (purchaseCount === 1 ? ' compra' : ' compras') + ' · ' + (stats.periodLabel || 'Período');
     }
-    if (badgeVal && stats.inventoryValue > 0 && stats.periodInvestment > 0) {
+    if (badgeVal && stats.inventoryValue > 0 && stats.purchaseInvestment > 0) {
       badgeVal.classList.remove('hidden');
-      var pctInv = (stats.inventoryValue / stats.periodInvestment) * 100;
+      var pctInv = (stats.inventoryValue / stats.purchaseInvestment) * 100;
       if (pctInv <= 100) {
         badgeVal.textContent = pctInv.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '% en stock';
       } else {
-        badgeVal.textContent = 'Revisar apertura';
+        badgeVal.textContent = 'Incluye stock previo';
       }
       badgeVal.style.cssText = pctInv >= 70 && pctInv <= 100
         ? 'background:rgba(26,138,102,0.15);color:#1a8a66;'
