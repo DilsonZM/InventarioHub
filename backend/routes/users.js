@@ -37,6 +37,15 @@ async function roleExists(roleId) {
   return !!data;
 }
 
+async function getRoleIdOf(userId) {
+  const { data } = await supabase.from('perfiles').select('role_id').eq('id', userId).maybeSingle();
+  return data ? data.role_id : null;
+}
+
+// La cuenta Super Admin solo puede ser editada por su titular y nadie
+// puede archivarla/eliminarla. Solo un Super Admin puede asignar ese rol.
+const SUPERADMIN = 'superadmin';
+
 // GET /api/users - listar usuarios
 router.get('/', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
@@ -67,6 +76,9 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
       return res.status(400).json({ success: false, message: 'La contrasena debe tener al menos 6 caracteres' });
     }
     const userRoleId = (await roleExists(roleId)) ? roleId : 'vendedor';
+    if (userRoleId === SUPERADMIN && (await getRoleIdOf(req.user.id)) !== SUPERADMIN) {
+      return res.status(403).json({ success: false, message: 'Solo un Super Admin puede asignar ese rol' });
+    }
 
     const { data: existing } = await supabase
       .from('perfiles')
@@ -125,6 +137,34 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
 router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
     const { username, password, nombreCompleto, email, roleId, activo } = req.body;
+
+    const { data: target, error: targetError } = await supabase
+      .from('perfiles')
+      .select('id, role_id')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (targetError) throw targetError;
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    const isSelf = req.user.id === req.params.id;
+    const requesterRoleId = await getRoleIdOf(req.user.id);
+
+    // Cuenta Super Admin: solo su titular puede editarla
+    if (target.role_id === SUPERADMIN) {
+      if (!isSelf) {
+        return res.status(403).json({ success: false, message: 'La cuenta Super Admin solo puede ser editada por su titular' });
+      }
+      if (roleId && roleId !== SUPERADMIN) {
+        return res.status(400).json({ success: false, message: 'No se puede cambiar el rol de la cuenta Super Admin' });
+      }
+    }
+    // Solo un Super Admin puede asignar el rol Super Admin
+    if (roleId === SUPERADMIN && requesterRoleId !== SUPERADMIN) {
+      return res.status(403).json({ success: false, message: 'Solo un Super Admin puede asignar ese rol' });
+    }
+
     const updateData = {};
     if (username) updateData.username = username;
     if (email !== undefined) updateData.email = email || null;
@@ -177,6 +217,11 @@ router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (
     if (getError) throw getError;
     if (!user) {
       return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    // La cuenta Super Admin no se puede archivar ni eliminar (nadie, ni su titular)
+    if (user.role_id === SUPERADMIN) {
+      return res.status(403).json({ success: false, message: 'La cuenta Super Admin no se puede archivar ni eliminar' });
     }
 
     if (!permanente) {

@@ -1538,3 +1538,12 @@
 .estado-select--cancelada { background-color: #fee2e2; color: #991b1b; }
 
 [data-theme="dark"] .estado-select--entregado { background-color: #334155; color: #cbd5e1; }
+
+/* ===== Roles y permisos (RBAC) ===== */
+/* Hover sutil de las filas de la matriz: oscuro en dark, tenue en claro */
+.role-matrix-row:hover { background-color: rgb(30 41 59 / 0.4); } /* slate-800/40 */
+[data-theme="light"] .role-matrix-row:hover { background-color: rgb(241 245 249 / 0.7); }
+
+/* Rol seleccionado en la lista (verde tenue, coherente en ambos temas) */
+.role-item-selected { background-color: rgb(13 107 78 / 0.22); }
+[data-theme="light"] .role-item-selected { background-color: rgb(230 245 239 / 0.6); }

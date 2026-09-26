@@ -124,6 +124,18 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
       });
     }
 
+    // El rol Super Admin solo lo puede editar su titular (otro Super Admin)
+    if (role.id === 'superadmin') {
+      const { data: requester } = await supabase
+        .from('perfiles')
+        .select('role_id')
+        .eq('id', req.user.id)
+        .maybeSingle();
+      if (!requester || requester.role_id !== 'superadmin') {
+        return res.status(403).json({ success: false, message: 'Solo un Super Admin puede editar el rol Super Admin' });
+      }
+    }
+
     const update = { actualizado_en: new Date().toISOString() };
     if (name !== undefined) {
       const nombre = String(name || '').trim();
@@ -135,11 +147,11 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
     if (description !== undefined) update.description = String(description || '').trim() || null;
     if (permissions !== undefined) {
       const permisosFinales = sanitizePermissions(permissions);
-      // El rol Administrador no puede quedarse sin gestion de usuarios (evita lockout)
-      if (role.id === 'admin' && permisosFinales.indexOf('users.manage') === -1) {
+      // Los roles raiz no pueden quedarse sin gestion de usuarios (evita lockout)
+      if ((role.id === 'admin' || role.id === 'superadmin') && permisosFinales.indexOf('users.manage') === -1) {
         return res.status(400).json({
           success: false,
-          message: 'El rol Administrador debe conservar el permiso "Gestionar usuarios y roles".'
+          message: 'El rol ' + (role.id === 'superadmin' ? 'Super Admin' : 'Administrador') + ' debe conservar el permiso "Gestionar usuarios y roles".'
         });
       }
       update.permissions = permisosFinales;

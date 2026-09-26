@@ -19,16 +19,20 @@ var ui = {
   selectedRoleId: null,
   draftPermissions: [],
   dirty: false,
+  matrixReadonly: false,
   roleSearch: '',
   tab: 'users'
 };
 
 var ROLE_BADGE = {
+  superadmin: 'bg-brand-800 text-white',
   admin: 'bg-violet-100 text-violet-800',
   vendedor: 'bg-brand-100 text-brand-800',
   cocina: 'bg-amber-100 text-amber-800',
   cajero: 'bg-sky-100 text-sky-800'
 };
+
+var ICON_LOCK = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>';
 
 function roleBadge(roleId, roleName) {
   var cls = ROLE_BADGE[roleId] || 'bg-slate-200 text-slate-700';
@@ -210,6 +214,17 @@ function renderUsers() {
 
 function userActions(u, mobile) {
   var btn = 'p-1.5 rounded-lg transition-colors touch-target ';
+  var myId = store.state.user && store.state.user.id;
+
+  // Cuenta Super Admin: solo su titular puede editar su perfil; nadie
+  // puede archivarla ni eliminarla.
+  if (u.roleId === 'superadmin') {
+    if (u.id === myId) {
+      return '<button onclick="window.editUser(\'' + u.id + '\')" class="' + btn + 'text-brand-600 hover:bg-brand-100" title="Editar mi perfil">' + ICON_EDIT + '</button>';
+    }
+    return '<span class="p-1.5 text-slate-400" title="Cuenta Super Admin protegida">' + ICON_LOCK + '</span>';
+  }
+
   if (u.estadoAprobacion === 'pendiente') {
     return '<button onclick="window.approveUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="' + btn + 'text-brand-600 bg-brand-100 hover:bg-brand-200" title="Aprobar">' + ICON_APPROVE + '</button>'
       + '<button onclick="window.rejectUser(\'' + u.id + '\', \'' + escapeHtml(u.username) + '\')" class="' + btn + 'text-red-600 bg-red-100 hover:bg-red-200" title="Rechazar">' + ICON_REJECT + '</button>';
@@ -225,11 +240,16 @@ function userActions(u, mobile) {
 function fillRoleSelect(selectedId) {
   var sel = $('#userRole');
   if (!sel) return;
-  if (ui.roles.length === 0) {
+  var myRole = store.state.user && store.state.user.roleId;
+  // El rol Super Admin solo se ofrece a un Super Admin (o al editar su propia cuenta)
+  var roles = (ui.roles || []).filter(function (r) {
+    return r.id !== 'superadmin' || myRole === 'superadmin' || selectedId === 'superadmin';
+  });
+  if (roles.length === 0) {
     sel.innerHTML = '<option value="vendedor">Vendedor / Mesero</option><option value="admin">Administrador</option>';
   } else {
-    sel.innerHTML = ui.roles.map(function (r) {
-      return '<option value="' + escapeHtml(r.id) + '">' + escapeHtml(r.name) + (r.isSystem ? '' : '') + '</option>';
+    sel.innerHTML = roles.map(function (r) {
+      return '<option value="' + escapeHtml(r.id) + '">' + escapeHtml(r.name) + '</option>';
     }).join('');
   }
   if (selectedId) sel.value = selectedId;
@@ -251,6 +271,11 @@ function openUserModal(user) {
   $('#userEmail').value = isEdit ? (user.email || '') : '';
   fillRoleSelect(isEdit ? (user.roleId || user.role) : 'vendedor');
   $('#userEstado').value = (isEdit && user.activo === false) ? 'archivado' : 'activo';
+
+  // Cuenta Super Admin: rol y estado bloqueados (no se puede degradar ni archivar)
+  var isSuper = isEdit && user.roleId === 'superadmin';
+  $('#userRole').disabled = isSuper;
+  $('#userEstado').disabled = isSuper;
   openModal('userModal');
 }
 
@@ -339,8 +364,8 @@ function renderRolesList() {
   }
   wrap.innerHTML = roles.map(function (r) {
     var selected = r.id === ui.selectedRoleId;
-    return '<button type="button" data-role-id="' + escapeHtml(r.id) + '" class="w-full text-left p-3 rounded-xl border transition-colors ' +
-      (selected ? 'border-brand-500 bg-brand-50/60 ring-1 ring-brand-500/30' : 'border-slate-200 bg-white hover:bg-slate-50') + '">'
+    return '<button type="button" data-role-id="' + escapeHtml(r.id) + '" class="role-item w-full text-left p-3 rounded-xl border transition-colors ' +
+      (selected ? 'role-item-selected border-brand-500 ring-1 ring-brand-500/30' : 'border-slate-200 bg-white hover:bg-slate-50') + '">'
       + '<div class="flex items-center justify-between gap-2">'
       + '<span class="text-sm font-semibold text-slate-800 truncate">' + escapeHtml(r.name) + '</span>'
       + (r.isSystem ? '<span class="shrink-0 text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">SISTEMA</span>' : '')
@@ -373,6 +398,10 @@ function renderMatrix() {
   if (empty) empty.classList.add('hidden');
   if (wrap) wrap.classList.remove('hidden');
 
+  // El rol Super Admin solo lo puede editar su titular
+  var myRole = store.state.user && store.state.user.roleId;
+  ui.matrixReadonly = role.id === 'superadmin' && myRole !== 'superadmin';
+
   $('#roleMatrixTitle').innerHTML = escapeHtml(role.name) + (role.isSystem ? ' <span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded align-middle">SISTEMA</span>' : '');
   $('#roleMatrixDesc').textContent = role.description || 'Sin descripción';
   $('#roleMatrixUsers').textContent = (role.userCount || 0) + (role.userCount === 1 ? ' usuario con este rol' : ' usuarios con este rol') + ' — los cambios impactan de inmediato al guardar.';
@@ -404,7 +433,7 @@ function renderMatrix() {
       if (p.type === 'action') actions.push(p);
       else byType[p.type] = p;
     });
-    html += '<tr class="hover:bg-slate-50/60 transition-colors">'
+    html += '<tr class="role-matrix-row transition-colors">'
       + '<td class="px-5 py-3 whitespace-nowrap"><span class="text-sm font-semibold text-slate-700">' + (mod.icon || '') + ' ' + escapeHtml(mod.name) + '</span></td>'
       + cols.map(function (c) {
         var p = byType[c.type];
@@ -424,16 +453,19 @@ function renderMatrix() {
 
 function checkbox(key) {
   var checked = ui.draftPermissions.indexOf(key) !== -1;
-  return '<label class="inline-flex items-center justify-center cursor-pointer p-1">'
-    + '<input type="checkbox" class="role-perm w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer" data-perm="' + key + '"' + (checked ? ' checked' : '') + '>'
+  var disabled = ui.matrixReadonly ? ' disabled' : '';
+  return '<label class="inline-flex items-center justify-center ' + (ui.matrixReadonly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer') + ' p-1">'
+    + '<input type="checkbox" class="role-perm w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" data-perm="' + key + '"' + (checked ? ' checked' : '') + disabled + '>'
     + '</label>';
 }
 
 function chip(p) {
   var checked = ui.draftPermissions.indexOf(p.key) !== -1;
-  return '<label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs cursor-pointer transition-colors ' +
+  var disabled = ui.matrixReadonly ? ' disabled' : '';
+  return '<label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors ' +
+    (ui.matrixReadonly ? 'cursor-not-allowed opacity-60 ' : 'cursor-pointer ') +
     (checked ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50') + '">'
-    + '<input type="checkbox" class="role-perm w-3.5 h-3.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer" data-perm="' + p.key + '"' + (checked ? ' checked' : '') + '>'
+    + '<input type="checkbox" class="role-perm w-3.5 h-3.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" data-perm="' + p.key + '"' + (checked ? ' checked' : '') + disabled + '>'
     + '<span>' + escapeHtml(p.label) + '</span></label>';
 }
 
@@ -448,7 +480,16 @@ function togglePermission(key, checked) {
 
 function updateSaveState() {
   var btn = $('#saveRolePermsBtn');
-  if (btn) btn.disabled = !ui.dirty;
+  if (btn) {
+    btn.disabled = !ui.dirty || !!ui.matrixReadonly;
+    btn.classList.toggle('hidden', !!ui.matrixReadonly);
+  }
+  var footer = $('#roleMatrixFooterText');
+  if (footer) {
+    footer.textContent = ui.matrixReadonly
+      ? 'Solo un Super Admin puede editar este rol.'
+      : 'Los cambios impactan a todos los usuarios con este rol.';
+  }
 }
 
 async function saveRolePermissions() {
