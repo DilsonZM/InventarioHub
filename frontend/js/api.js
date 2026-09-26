@@ -170,6 +170,26 @@ const API = (() => {
         request(`/sales/${id}/payment`, { method: 'PUT', body: JSON.stringify(data) }),
     },
 
+    gastos: {
+      list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/gastos${qs ? '?' + qs : ''}`);
+      },
+      create: (gasto) =>
+        request('/gastos', { method: 'POST', body: JSON.stringify(gasto) }),
+      update: (id, gasto) =>
+        request(`/gastos/${id}`, { method: 'PUT', body: JSON.stringify(gasto) }),
+      delete: (id) =>
+        request(`/gastos/${id}`, { method: 'DELETE' }),
+    },
+
+    finanzas: {
+      resumen: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return request(`/finanzas/resumen${qs ? '?' + qs : ''}`);
+      },
+    },
+
     stats: (params = {}) => {
       var qs = new URLSearchParams(params).toString();
       return request('/stats' + (qs ? '?' + qs : ''));

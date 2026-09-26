@@ -159,6 +159,14 @@
             </div>
             <span class="sidebar-label">Histórico</span>
           </a>
+          <a href="#finanzas" data-nav="finanzas" data-requires-permission="puedeVerFinanzas" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium group touch-target">
+            <div class="nav-icon-bg w-9 h-9 rounded-lg flex items-center justify-center transition-colors shrink-0">
+              <svg class="nav-icon w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <span class="sidebar-label">Finanzas</span>
+          </a>
         </div>
       </div>
 
@@ -720,6 +728,124 @@
               </tbody>
             </table>
             <div id="historicoCards" class="table-card-mobile p-4 space-y-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Finanzas: informe contable + gastos operativos -->
+      <div id="view-finanzas" class="view-section hidden">
+        <!-- Filtros -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
+          <div class="flex flex-wrap sm:flex-nowrap sm:items-end gap-3">
+            <div class="basis-full sm:basis-auto sm:flex-1 min-w-0">
+              <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Rango de fechas</label>
+              <div class="flex items-stretch border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:border-brand-500/50 transition-all">
+                <input type="date" id="finFilterDateFrom" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Desde">
+                <div class="w-px bg-slate-200 self-stretch"></div>
+                <input type="date" id="finFilterDateTo" class="flex-1 min-w-0 bg-slate-50 px-3 py-2.5 text-sm focus:outline-none transition-colors focus:bg-white border-0" title="Hasta">
+              </div>
+            </div>
+            <div class="basis-[calc(50%-0.375rem)] sm:basis-auto sm:shrink-0 sm:w-40">
+              <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Periodo</label>
+              <select id="finFilterPeriod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 focus:bg-white transition-all touch-target">
+                <option value="">Seleccionar</option>
+                <option value="today">Hoy</option>
+                <option value="week">Esta semana</option>
+                <option value="month">Este mes</option>
+                <option value="quarter">Este trimestre</option>
+                <option value="year">Este año</option>
+              </select>
+            </div>
+            <button type="button" id="finApplyBtn" class="basis-[calc(50%-0.375rem)] sm:basis-auto shrink-0 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors touch-target">Consultar</button>
+            <button type="button" id="finExportBtn" class="basis-full sm:basis-auto shrink-0 px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors touch-target">Exportar PDF</button>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Facturado</p>
+            <p class="text-xl font-bold text-brand-700 font-mono" id="finKpiFacturado">$0</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Costo insumos</p>
+            <p class="text-xl font-bold text-slate-700 font-mono" id="finKpiCosto">$0</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Margen bruto</p>
+            <p class="text-xl font-bold text-emerald-600 font-mono" id="finKpiMargen">$0</p>
+            <p class="text-[10px] text-slate-400 mt-0.5" id="finKpiMargenPct">0%</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Compras</p>
+            <p class="text-xl font-bold text-amber-600 font-mono" id="finKpiCompras">$0</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Gastos operativos</p>
+            <p class="text-xl font-bold text-rose-600 font-mono" id="finKpiGastos">$0</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Utilidad neta</p>
+            <p class="text-xl font-bold text-slate-800 font-mono" id="finKpiNeta">$0</p>
+          </div>
+        </div>
+
+        <!-- Resultado detallado -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6">
+          <h3 class="text-sm font-semibold text-slate-800 mb-4">Resultado del período</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Utilidad bruta</p>
+              <p class="text-lg font-bold text-slate-800 font-mono" id="finResBruta">$0</p>
+              <p class="text-[10px] text-slate-400 mt-1">Margen − mermas</p>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Flujo de caja</p>
+              <p class="text-lg font-bold text-slate-800 font-mono" id="finResFlujo">$0</p>
+              <p class="text-[10px] text-slate-400 mt-1">Facturado − compras</p>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Utilidad neta</p>
+              <p class="text-lg font-bold text-slate-800 font-mono" id="finResNeta">$0</p>
+              <p class="text-[10px] text-slate-400 mt-1">− gastos operativos</p>
+            </div>
+          </div>
+          <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-slate-500">
+            <div>🧾 Pedidos: <span class="font-semibold text-slate-700" id="finResPedidos">0</span></div>
+            <div>🎫 Ticket promedio: <span class="font-semibold text-slate-700" id="finResTicket">$0</span></div>
+            <div>🎁 Cortesías: <span class="font-semibold text-slate-700" id="finResCortesias">0</span></div>
+            <div>❌ Cancelados: <span class="font-semibold text-slate-700" id="finResCancelados">0</span></div>
+          </div>
+        </div>
+
+        <!-- Gastos operativos -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-800">Gastos operativos</h3>
+              <p class="text-[11px] text-slate-400 mt-0.5" id="finGastosCount">Sin gastos en el período</p>
+            </div>
+            <button type="button" id="finNewGastoBtn" class="px-3.5 py-2 text-xs font-semibold text-brand-600 bg-brand-100 hover:bg-brand-200 rounded-xl transition-colors touch-target inline-flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Nuevo gasto
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full table-desktop">
+              <thead class="bg-slate-100">
+                <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th class="px-6 py-3">Fecha</th>
+                  <th class="px-6 py-3">Categoría</th>
+                  <th class="px-6 py-3">Descripción</th>
+                  <th class="px-6 py-3 text-right">Monto</th>
+                  <th class="px-6 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="finGastosTable" class="divide-y divide-slate-100">
+                <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Cargando...</td></tr>
+              </tbody>
+            </table>
+            <div id="finGastosCards" class="table-card-mobile p-4 space-y-3"></div>
           </div>
         </div>
       </div>
@@ -2084,6 +2210,51 @@
           <button type="button" id="orderStateCancelBtn" class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
           <button type="button" id="orderStateOk" class="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Confirmar</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: gasto operativo (finanzas) -->
+  <div id="gastoModal" class="hidden fixed inset-0 z-[60] overflow-y-auto">
+    <div class="flex items-center justify-center min-h-[100dvh] px-4">
+      <div class="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in" data-close-modal></div>
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto z-10 animate-scale-in p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4" id="gastoModalTitle">Nuevo gasto</h3>
+        <form id="gastoForm" class="space-y-4">
+          <input type="hidden" id="gastoId">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1.5">Fecha *</label>
+              <input type="date" id="gastoFecha" required class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1.5">Categoría *</label>
+              <select id="gastoCategoria" required class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                <option value="arriendo">Arriendo</option>
+                <option value="servicios">Servicios</option>
+                <option value="nomina">Nómina</option>
+                <option value="transporte">Transporte</option>
+                <option value="mantenimiento">Mantenimiento</option>
+                <option value="otros">Otros</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1.5">Monto *</label>
+            <input type="number" id="gastoMonto" required min="1" step="1" placeholder="150000" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1.5">Descripción <span class="text-slate-400 font-normal">(opcional)</span></label>
+            <textarea id="gastoDescripcion" rows="2" maxlength="300" placeholder="Ej: Arriendo de septiembre" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/50"></textarea>
+          </div>
+          <div id="gastoError" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p class="text-sm text-red-600"></p>
+          </div>
+          <div class="flex gap-3">
+            <button type="button" data-close-modal class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors text-sm touch-target">Cancelar</button>
+            <button type="submit" class="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm text-sm touch-target">Guardar</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

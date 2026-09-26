@@ -20,6 +20,7 @@ const TITLES = {
   users: 'Usuarios',
   reservas: 'Reservas',
   historico: 'Histórico',
+  finanzas: 'Finanzas',
   config: 'Configuracion'
 };
 
@@ -35,6 +36,7 @@ const LOADERS = {
   users: 'loadUsers',
   reservas: 'loadReservas',
   historico: 'loadHistorico',
+  finanzas: 'loadFinanzas',
   config: 'loadConfig',
   pos: 'loadPOS'
 };

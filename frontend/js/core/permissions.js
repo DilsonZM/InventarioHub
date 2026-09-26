@@ -27,7 +27,8 @@ export const PERM_LABELS = {
   puede_gestionar_usuarios: 'Gestionar usuarios',
   puede_ver_inventario: 'Ver inventario y platos',
   puede_ver_movimientos: 'Ver movimientos',
-  puede_ver_dashboard: 'Ver dashboard'
+  puede_ver_dashboard: 'Ver dashboard',
+  puede_ver_finanzas: 'Ver finanzas'
 };
 
 export function buildPermsObj(perms) {
@@ -45,7 +46,8 @@ export function plantillaPorRolFrontend(role) {
       puede_crear_salidas: true, puede_editar_salidas: true, puede_eliminar_salidas: true,
       puede_crear_entradas: true, puede_editar_entradas: true, puede_eliminar_entradas: true,
       puede_gestionar_usuarios: true,
-      puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true
+      puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true,
+      puede_ver_finanzas: true
     });
   }
   return buildPermsObj({
@@ -69,7 +71,8 @@ export function applyPermissionsToUI() {
     users: 'puedeGestionarUsuarios',
     config: 'puedeGestionarUsuarios',
     dishes: 'puedeVerInventario',
-    pos: 'puedeCrearSalidas'
+    pos: 'puedeCrearSalidas',
+    finanzas: 'puedeVerFinanzas'
   };
   Object.keys(navItems).forEach(function (view) {
     var link = document.querySelector('a[data-nav="' + view + '"]');

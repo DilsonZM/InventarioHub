@@ -285,10 +285,87 @@ function buildDishesPdf(dishes, title) {
   });
 }
 
+// PDF del informe financiero (resultados + gastos + top platos)
+function buildFinancePdf(summary, title) {
+  const s = summary || {};
+  return renderPdf(function (doc) {
+    drawHeader(doc, title || 'Informe Financiero');
+    drawSummary(doc, [
+      { value: formatCurrency(s.facturado), label: 'Facturado' },
+      { value: formatCurrency(s.margen), label: 'Margen bruto' },
+      { value: formatCurrency(s.utilidadNeta), label: 'Utilidad neta' }
+    ]);
+
+    // Resultados
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a').text('Resultados del periodo');
+    doc.moveDown(0.4);
+    const resultRows = [
+      { cells: { concepto: 'Facturado (' + (s.pedidos || 0) + ' pedidos)', monto: formatCurrency(s.facturado) }, colorFor: {} },
+      { cells: { concepto: 'Costo de insumos vendidos', monto: '-' + formatCurrency(s.costoVentas) }, colorFor: {} },
+      { cells: { concepto: 'Margen bruto (' + (s.margenPct || 0) + '%)', monto: formatCurrency(s.margen) }, colorFor: { monto: GREEN } },
+      { cells: { concepto: 'Mermas', monto: '-' + formatCurrency(s.mermasTotal) }, colorFor: {} },
+      { cells: { concepto: 'Utilidad bruta', monto: formatCurrency(s.utilidadBruta) }, colorFor: { monto: GREEN } },
+      { cells: { concepto: 'Compras de inventario (' + (s.comprasCount || 0) + ')', monto: '-' + formatCurrency(s.comprasTotal) }, colorFor: {} },
+      { cells: { concepto: 'Flujo de caja', monto: formatCurrency(s.flujoCaja) }, colorFor: { monto: s.flujoCaja >= 0 ? GREEN : RED } },
+      { cells: { concepto: 'Gastos operativos (' + (s.gastosCount || 0) + ')', monto: '-' + formatCurrency(s.gastosTotal) }, colorFor: {} },
+      { cells: { concepto: 'UTILIDAD NETA', monto: formatCurrency(s.utilidadNeta) }, colorFor: { monto: s.utilidadNeta >= 0 ? GREEN : RED } }
+    ];
+    drawTable(doc, [
+      { key: 'concepto', label: 'Concepto', x: 0, w: 330 },
+      { key: 'monto', label: 'Monto', x: 335, w: 180, align: 'right' }
+    ], resultRows);
+
+    // Gastos del periodo
+    if ((s.gastos || []).length > 0) {
+      doc.moveDown(0.6);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a').text('Gastos operativos del periodo');
+      doc.moveDown(0.4);
+      const gastoRows = (s.gastos || []).map(function (g) {
+        return {
+          cells: {
+            fecha: String(g.fecha || ''),
+            categoria: g.categoria || '',
+            descripcion: g.descripcion || '',
+            monto: formatCurrency(g.monto)
+          },
+          colorFor: {}
+        };
+      });
+      drawTable(doc, [
+        { key: 'fecha', label: 'Fecha', x: 0, w: 75 },
+        { key: 'categoria', label: 'Categoria', x: 80, w: 95 },
+        { key: 'descripcion', label: 'Descripcion', x: 180, w: 200 },
+        { key: 'monto', label: 'Monto', x: 385, w: 130, align: 'right' }
+      ], gastoRows);
+    }
+
+    // Top platos
+    if ((s.topPlatos || []).length > 0) {
+      doc.moveDown(0.6);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a').text('Top 5 platos mas vendidos');
+      doc.moveDown(0.4);
+      const topRows = (s.topPlatos || []).map(function (p, i) {
+        return {
+          cells: { puesto: '#' + (i + 1), plato: p.nombre, cant: p.cant + 'x' },
+          colorFor: {}
+        };
+      });
+      drawTable(doc, [
+        { key: 'puesto', label: '#', x: 0, w: 40 },
+        { key: 'plato', label: 'Plato', x: 45, w: 400 },
+        { key: 'cant', label: 'Vendidos', x: 450, w: 65, align: 'right' }
+      ], topRows);
+    }
+
+    drawFooter(doc);
+  });
+}
+
 module.exports = {
   getProductsData,
   getLowStockData,
   getDishesData,
   buildProductsPdf,
-  buildDishesPdf
+  buildDishesPdf,
+  buildFinancePdf
 };

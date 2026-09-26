@@ -21,7 +21,8 @@ export const PERM_LABELS = {
   puedeGestionarUsuarios: 'Gestionar usuarios',
   puedeVerInventario: 'Ver inventario y platos',
   puedeVerMovimientos: 'Ver movimientos',
-  puedeVerDashboard: 'Ver dashboard'
+  puedeVerDashboard: 'Ver dashboard',
+  puedeVerFinanzas: 'Ver finanzas'
 };
 
 export function buildPermsObj(perms) {
@@ -39,7 +40,8 @@ export function plantillaPorRolFrontend(role) {
       puedeCrearSalidas: true, puedeEditarSalidas: true, puedeEliminarSalidas: true,
       puedeCrearEntradas: true, puedeEditarEntradas: true, puedeEliminarEntradas: true,
       puedeGestionarUsuarios: true,
-      puedeVerInventario: true, puedeVerMovimientos: true, puedeVerDashboard: true
+      puedeVerInventario: true, puedeVerMovimientos: true, puedeVerDashboard: true,
+      puedeVerFinanzas: true
     });
   }
   return buildPermsObj({

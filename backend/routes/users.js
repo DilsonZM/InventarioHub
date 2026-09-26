@@ -10,7 +10,8 @@ const PERMISSION_COLS = `
   puede_crear_productos, puede_editar_productos, puede_eliminar_productos,
   puede_crear_salidas, puede_editar_salidas, puede_eliminar_salidas,
   puede_crear_entradas, puede_editar_entradas, puede_eliminar_entradas,
-  puede_gestionar_usuarios, puede_ver_inventario, puede_ver_movimientos, puede_ver_dashboard
+  puede_gestionar_usuarios, puede_ver_inventario, puede_ver_movimientos, puede_ver_dashboard,
+  puede_ver_finanzas
 `.replace(/\s+/g, ' ').trim();
 
 function userPublic(u) {
@@ -39,7 +40,8 @@ function userPublic(u) {
       puedeGestionarUsuarios: !!u.puede_gestionar_usuarios,
       puedeVerInventario: !!u.puede_ver_inventario,
       puedeVerMovimientos: !!u.puede_ver_movimientos,
-      puedeVerDashboard: !!u.puede_ver_dashboard
+      puedeVerDashboard: !!u.puede_ver_dashboard,
+      puedeVerFinanzas: !!u.puede_ver_finanzas
     }
   };
 }
@@ -50,7 +52,8 @@ function plantillaPorRol(role) {
       puede_crear_productos: true, puede_editar_productos: true, puede_eliminar_productos: true,
       puede_crear_salidas: true, puede_editar_salidas: true, puede_eliminar_salidas: true,
       puede_crear_entradas: true, puede_editar_entradas: true, puede_eliminar_entradas: true,
-      puede_gestionar_usuarios: true, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true
+      puede_gestionar_usuarios: true, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true,
+      puede_ver_finanzas: true
     };
   }
   return {
@@ -58,6 +61,33 @@ function plantillaPorRol(role) {
     puede_crear_entradas: false, puede_editar_entradas: false, puede_eliminar_entradas: false,
     puede_gestionar_usuarios: false, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true
   };
+}
+
+// Mapa camelCase (frontend) -> snake_case (DB) para permisos
+const PERM_MAP = {
+  puedeCrearProductos: 'puede_crear_productos',
+  puedeEditarProductos: 'puede_editar_productos',
+  puedeEliminarProductos: 'puede_eliminar_productos',
+  puedeCrearSalidas: 'puede_crear_salidas',
+  puedeEditarSalidas: 'puede_editar_salidas',
+  puedeEliminarSalidas: 'puede_eliminar_salidas',
+  puedeCrearEntradas: 'puede_crear_entradas',
+  puedeEditarEntradas: 'puede_editar_entradas',
+  puedeEliminarEntradas: 'puede_eliminar_entradas',
+  puedeGestionarUsuarios: 'puede_gestionar_usuarios',
+  puedeVerInventario: 'puede_ver_inventario',
+  puedeVerMovimientos: 'puede_ver_movimientos',
+  puedeVerDashboard: 'puede_ver_dashboard',
+  puedeVerFinanzas: 'puede_ver_finanzas'
+};
+
+function permisosToColumns(permisos) {
+  var out = {};
+  Object.keys(permisos || {}).forEach(function (k) {
+    var col = PERM_MAP[k] || k;
+    out[col] = !!permisos[k];
+  });
+  return out;
 }
 
 // GET /api/users - listar usuarios
@@ -110,7 +140,7 @@ router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), 
       // Usuario existe pero esta inactivo: reactivarlo en vez de crear uno nuevo
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
       const basePerms = plantillaPorRol(userRole);
-      const finalPerms = permisos ? { ...basePerms, ...permisos } : basePerms;
+      const finalPerms = permisos ? { ...basePerms, ...permisosToColumns(permisos) } : basePerms;
 
       const { data: reactivated, error: reactError } = await supabase
         .from('perfiles')
@@ -133,7 +163,7 @@ router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), 
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const basePerms = plantillaPorRol(userRole);
-    const finalPerms = permisos ? { ...basePerms, ...permisos } : basePerms;
+    const finalPerms = permisos ? { ...basePerms, ...permisosToColumns(permisos) } : basePerms;
 
     const { data: user, error } = await supabase
       .from('perfiles')
@@ -173,26 +203,7 @@ router.put('/:id', authMiddleware, requirePermission('puede_gestionar_usuarios')
       updateData.password_hash = await bcrypt.hash(password, SALT_ROUNDS);
     }
     if (permisos) {
-      // Convertir camelCase → snake_case (frontend envia camelCase, DB usa snake_case)
-      var PERM_MAP = {
-        puedeCrearProductos: 'puede_crear_productos',
-        puedeEditarProductos: 'puede_editar_productos',
-        puedeEliminarProductos: 'puede_eliminar_productos',
-        puedeCrearSalidas: 'puede_crear_salidas',
-        puedeEditarSalidas: 'puede_editar_salidas',
-        puedeEliminarSalidas: 'puede_eliminar_salidas',
-        puedeCrearEntradas: 'puede_crear_entradas',
-        puedeEditarEntradas: 'puede_editar_entradas',
-        puedeEliminarEntradas: 'puede_eliminar_entradas',
-        puedeGestionarUsuarios: 'puede_gestionar_usuarios',
-        puedeVerInventario: 'puede_ver_inventario',
-        puedeVerMovimientos: 'puede_ver_movimientos',
-        puedeVerDashboard: 'puede_ver_dashboard'
-      };
-      Object.keys(permisos).forEach(function (k) {
-        var col = PERM_MAP[k] || k;
-        updateData[col] = !!permisos[k];
-      });
+      Object.assign(updateData, permisosToColumns(permisos));
     }
 
     const { data, error } = await supabase

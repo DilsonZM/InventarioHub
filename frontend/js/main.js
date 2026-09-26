@@ -28,6 +28,7 @@ import './views/dishes.view.js';
 import './views/users.view.js';
 import './views/reservas.view.js';
 import './views/historico.view.js';
+import './views/finanzas.view.js';
 import './views/config.view.js';
 import './views/pos.view.js';
 
@@ -94,6 +95,7 @@ async function bootstrap() {
   callIfExists('initDishes');
   callIfExists('initUsers');
   callIfExists('initHistorico');
+  callIfExists('initFinanzas');
   callIfExists('initModals');
   callIfExists('loadPrinterConfigUI');
 

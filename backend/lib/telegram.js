@@ -15,6 +15,7 @@
 const supabase = require('./supabase');
 const { normalizePhone, formatPhone } = require('./phone');
 const stockReport = require('./stock-report');
+const finance = require('./finance');
 
 // Preferir IPv4 al conectar con la API de Telegram: en algunas redes el
 // enrutamiento IPv6 es inestable y produce "fetch failed" intermitentes.
@@ -642,6 +643,79 @@ async function buildLowStockText() {
 }
 
 // ============================================================
+// Finanzas (/finanzas) - informe contable con selector de fechas
+// ============================================================
+
+function buildFinanceReportText(s) {
+  const esDia = s.from === s.to;
+  const lines = [];
+  lines.push('📊 <b>INFORME FINANCIERO</b>');
+  lines.push('📅 ' + escHtml(esDia ? formatDateEsLong(s.from) : ('Del ' + formatDateEs(s.from) + ' al ' + formatDateEs(s.to))));
+  lines.push('');
+  lines.push('💵 <b>INGRESOS</b>');
+  lines.push('• Facturado: ' + formatCurrency(s.facturado));
+  lines.push('• Pedidos: ' + s.pedidos + ' · Ticket promedio: ' + formatCurrency(s.ticketPromedio));
+  lines.push('• Cortesías: ' + s.cortesias + ' · Cancelados: ' + s.canceladas);
+  lines.push('');
+  lines.push('📦 <b>COSTO Y MARGEN</b>');
+  lines.push('• Costo de insumos: ' + formatCurrency(s.costoVentas));
+  lines.push('• Margen bruto: ' + formatCurrency(s.margen) + ' (' + s.margenPct + '%)');
+  lines.push('');
+  lines.push('🛒 <b>EGRESOS</b>');
+  lines.push('• Compras: ' + formatCurrency(s.comprasTotal) + ' (' + s.comprasCount + ')');
+  lines.push('• Mermas: ' + formatCurrency(s.mermasTotal) + ' (' + s.mermasCount + ')');
+  lines.push('• Gastos operativos: ' + formatCurrency(s.gastosTotal) + ' (' + s.gastosCount + ')');
+  lines.push('');
+  lines.push('📈 <b>RESULTADO</b>');
+  lines.push('• Utilidad bruta: ' + formatCurrency(s.utilidadBruta));
+  lines.push('• Flujo de caja: ' + formatCurrency(s.flujoCaja));
+  lines.push('• <b>Utilidad neta:</b> ' + formatCurrency(s.utilidadNeta));
+  lines.push('');
+  if ((s.topPlatos || []).length > 0) {
+    const medals = ['🥇', '🥈', '🥉'];
+    lines.push('🏆 <b>Top 5 Platos más vendidos:</b>');
+    s.topPlatos.forEach(function (p, i) {
+      lines.push((i + 1) + '. ' + (medals[i] || '') + ' ' + escHtml(p.nombre) + ' (' + p.cant + 'x)');
+    });
+  }
+  return lines.join('\n');
+}
+
+async function buildFinancePanel() {
+  return {
+    text: '📊 <b>INFORME FINANCIERO</b>\n\nElegí el período:',
+    html: true,
+    replyMarkup: {
+      inline_keyboard: [
+        [
+          { text: '📆 Hoy', callback_data: 'fin:hoy' },
+          { text: '📆 Ayer', callback_data: 'fin:ayer' }
+        ],
+        [
+          { text: '🗓️ Últimos 7 días', callback_data: 'fin:7d' },
+          { text: '🗓️ Este mes', callback_data: 'fin:mes' }
+        ],
+        [
+          { text: '🗓️ Mes pasado', callback_data: 'fin:mespasado' }
+        ]
+      ]
+    }
+  };
+}
+
+function financeRange(action) {
+  const hoy = todayBogota();
+  switch (action) {
+    case 'hoy': return { from: hoy, to: hoy };
+    case 'ayer': return { from: addDaysBogota(hoy, -1), to: addDaysBogota(hoy, -1) };
+    case '7d': return { from: addDaysBogota(hoy, -6), to: hoy };
+    case 'mes': return { from: startOfMonthBogota(), to: hoy };
+    case 'mespasado': return prevMonthRangeBogota();
+    default: return null;
+  }
+}
+
+// ============================================================
 // Comandos del chat
 // ============================================================
 
@@ -651,6 +725,8 @@ const HELP_TEXT = [
   '/notificaciones — Panel para activar/silenciar avisos',
   '/inventario — Reportes PDF (productos, platos, bebidas, stock bajo)',
   '/stockbajos — Ver los productos bajo mínimo ahora',
+  '/finanzas — Informe contable (ingresos, egresos, utilidad)',
+  '/gasto 150000 arriendo — Registrar un gasto operativo',
   '/estado — Ver el estado actual (texto)',
   '/hoy — Resumen de ventas de hoy',
   '/rango — Resumen por rango de fechas (con selector)',
@@ -679,7 +755,47 @@ async function handleTelegramCommand(text) {
     }
     case '/stockbajos':
     case '/bajos': {
-      return { text: await buildLowStockText(), html: true };
+      return {
+        text: await buildLowStockText(),
+        html: true,
+        replyMarkup: {
+          inline_keyboard: [[
+            { text: '📄 Generar PDF', callback_data: 'inv:bajos' }
+          ]]
+        }
+      };
+    }
+    case '/finanzas': {
+      const args = clean.split(/\s+/).slice(1);
+      if (args.length === 0) return await buildFinancePanel();
+      const d1 = parseDateArg(args[0]);
+      const d2 = args[1] ? parseDateArg(args[1]) : d1;
+      if (!d1 || !d2) return '⚠️ Formato inválido. Ej: /finanzas 20/09/2026 26/09/2026';
+      const summary = await finance.getFinanceSummary(d1, d2);
+      return {
+        text: buildFinanceReportText(summary),
+        html: true,
+        replyMarkup: { inline_keyboard: [[{ text: '📄 Generar PDF', callback_data: 'fin:pdf:' + d1 + ':' + d2 }]] }
+      };
+    }
+    case '/gasto': {
+      const args = clean.split(/\s+/).slice(1);
+      const monto = parseFloat(String(args[0] || '').replace(/[^0-9.]/g, ''));
+      const categoria = String(args[1] || 'otros').toLowerCase();
+      const descripcion = args.slice(2).join(' ') || null;
+      if (!monto || monto <= 0) return '⚠️ Uso: /gasto 150000 arriendo [descripción]';
+      if (finance.CATEGORIAS_GASTO.indexOf(categoria) === -1) {
+        return '⚠️ Categoría inválida. Opciones: ' + finance.CATEGORIAS_GASTO.join(', ');
+      }
+      const { error } = await supabase.from('gastos').insert({
+        fecha: todayBogota(),
+        categoria: categoria,
+        descripcion: descripcion,
+        monto: Math.round(monto * 100) / 100,
+        usuario_id: null
+      });
+      if (error) throw error;
+      return '✅ Gasto registrado: ' + formatCurrency(monto) + ' · ' + categoria + (descripcion ? ' · ' + descripcion : '');
     }
     case '/hoy':
     case '/resumen': {
@@ -836,6 +952,35 @@ async function handleTelegramCallback(data) {
     }
 
     return null;
+  }
+
+  // --- Finanzas (/finanzas): informe contable + PDF ---
+  if (key === 'fin') {
+    const action = parts[1];
+    if (action === 'pdf') {
+      const from = parts[2];
+      const to = parts[3];
+      const summary = await finance.getFinanceSummary(from, to);
+      const pdf = await stockReport.buildFinancePdf(summary, 'Informe Financiero');
+      return {
+        document: {
+          buffer: pdf,
+          filename: 'informe-financiero.pdf',
+          caption: '📊 Informe financiero ' + from + ' → ' + to
+        },
+        toast: '📄 Generando informe...'
+      };
+    }
+    const range = financeRange(action);
+    if (!range) return null;
+    const summary = await finance.getFinanceSummary(range.from, range.to);
+    return {
+      text: buildFinanceReportText(summary),
+      html: true,
+      replyMarkup: { inline_keyboard: [[{ text: '📄 Generar PDF', callback_data: 'fin:pdf:' + range.from + ':' + range.to }]] },
+      edit: true,
+      toast: '📊 Informe listo'
+    };
   }
 
   // --- Panel de notificaciones (/notificaciones) ---

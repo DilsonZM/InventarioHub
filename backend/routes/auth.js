@@ -10,7 +10,8 @@ const PERMISSION_COLS = `
   puede_crear_productos, puede_editar_productos, puede_eliminar_productos,
   puede_crear_salidas, puede_editar_salidas, puede_eliminar_salidas,
   puede_crear_entradas, puede_editar_entradas, puede_eliminar_entradas,
-  puede_gestionar_usuarios, puede_ver_inventario, puede_ver_movimientos, puede_ver_dashboard
+  puede_gestionar_usuarios, puede_ver_inventario, puede_ver_movimientos, puede_ver_dashboard,
+  puede_ver_finanzas
 `.replace(/\s+/g, ' ').trim();
 
 async function hashPassword(password) {
@@ -52,7 +53,8 @@ function userResponse(user) {
       puedeGestionarUsuarios: !!user.puede_gestionar_usuarios,
       puedeVerInventario: !!user.puede_ver_inventario,
       puedeVerMovimientos: !!user.puede_ver_movimientos,
-      puedeVerDashboard: !!user.puede_ver_dashboard
+      puedeVerDashboard: !!user.puede_ver_dashboard,
+      puedeVerFinanzas: !!user.puede_ver_finanzas
     }
   };
 }
