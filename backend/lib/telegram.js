@@ -1023,17 +1023,19 @@ async function guardarGastoWizard(chatId, monto, categoria, descripcion, edit) {
 // Comandos que requieren permiso. `sensitive` = solo por privado
 // (lo contable/admin nunca se responde en el grupo).
 const COMMAND_RULES = {
-  '/notificaciones': { perm: 'users.manage', sensitive: true },
-  '/notif': { perm: 'users.manage', sensitive: true },
-  '/estado': { perm: 'users.manage', sensitive: true },
-  '/pausar': { perm: 'users.manage', sensitive: true },
-  '/reanudar': { perm: 'users.manage', sensitive: true },
-  '/silenciar_pos': { perm: 'users.manage', sensitive: true },
-  '/activar_pos': { perm: 'users.manage', sensitive: true },
-  '/silenciar_listos': { perm: 'users.manage', sensitive: true },
-  '/activar_listos': { perm: 'users.manage', sensitive: true },
-  '/silenciar_stock': { perm: 'users.manage', sensitive: true },
-  '/activar_stock': { perm: 'users.manage', sensitive: true },
+  // Notificaciones: se pueden usar en el grupo (los admins de Telegram del
+  // grupo tambien pueden, aunque no tengan vinculo con la app)
+  '/notificaciones': { perm: 'users.manage', groupOk: true },
+  '/notif': { perm: 'users.manage', groupOk: true },
+  '/estado': { perm: 'users.manage', groupOk: true },
+  '/pausar': { perm: 'users.manage', groupOk: true },
+  '/reanudar': { perm: 'users.manage', groupOk: true },
+  '/silenciar_pos': { perm: 'users.manage', groupOk: true },
+  '/activar_pos': { perm: 'users.manage', groupOk: true },
+  '/silenciar_listos': { perm: 'users.manage', groupOk: true },
+  '/activar_listos': { perm: 'users.manage', groupOk: true },
+  '/silenciar_stock': { perm: 'users.manage', groupOk: true },
+  '/activar_stock': { perm: 'users.manage', groupOk: true },
   '/gestionusers': { perm: 'users.manage', sensitive: true },
   '/usuarios': { perm: 'users.manage', sensitive: true },
   '/vincular': { perm: 'users.manage', sensitive: true },
@@ -1047,6 +1049,27 @@ const COMMAND_RULES = {
   '/resumen': { perm: 'finance.view', sensitive: true },
   '/rango': { perm: 'finance.view', sensitive: true }
 };
+
+// Cache de admins de Telegram del grupo (5 min)
+const _tgAdminCache = {};
+
+// Devuelve true si el usuario es administrador/creador del chat indicado
+async function isTelegramGroupAdmin(chatId, userId) {
+  if (!chatId || !userId) return false;
+  const key = chatId + ':' + userId;
+  const hit = _tgAdminCache[key];
+  if (hit && (Date.now() - hit.ts) < 5 * 60 * 1000) return hit.ok;
+  try {
+    const res = await fetchWithRetry('https://api.telegram.org/bot' + BOT_TOKEN + '/getChatMember?chat_id=' + chatId + '&user_id=' + userId, { method: 'GET' });
+    const data = await res.json().catch(function () { return {}; });
+    const status = data && data.result && data.result.status;
+    const ok = status === 'administrator' || status === 'creator';
+    _tgAdminCache[key] = { ok: ok, ts: Date.now() };
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
 
 // Resuelve el actor de Telegram (perfil + permisos) por su Telegram ID
 async function getTelegramActor(fromId) {
@@ -1097,8 +1120,8 @@ function buildHelpText(actor, isPrivate) {
   }
   if (can('finance.gastos')) lines.push('/gasto — Registrar un gasto operativo' + priv);
   if (can('users.manage')) {
-    lines.push('/notificaciones — Panel para activar/silenciar avisos' + priv);
-    lines.push('/estado — Ver el estado del bot' + priv);
+    lines.push('/notificaciones — Panel para activar/silenciar avisos');
+    lines.push('/estado — Ver el estado del bot');
   }
   lines.push('/ayuda — Ver esta ayuda');
   lines.push('');
@@ -1164,10 +1187,19 @@ async function handleTelegramCommand(text, ctx) {
   // Control de acceso por comando
   const rule = COMMAND_RULES[cmd];
   if (rule) {
-    if (!context.actor) {
-      return denyResponse('🔒 Tu Telegram no está vinculado a una cuenta.\nAbrí el chat privado del bot y enviá /id para vincularte.', dmKeyboard('💬 Abrir el bot y enviar /id'));
+    let allowed = false;
+    if (context.actor && context.actor.permissions.indexOf(rule.perm) !== -1) {
+      allowed = true;
     }
-    if (context.actor.permissions.indexOf(rule.perm) === -1) {
+    // En el grupo configurado, los admins de Telegram pueden usar los
+    // comandos de notificaciones sin necesidad de vincular su cuenta.
+    if (!allowed && rule.groupOk && !context.isPrivate && context.fromId) {
+      allowed = await isTelegramGroupAdmin(getConfiguredChatId(), context.fromId);
+    }
+    if (!allowed) {
+      if (!context.actor && context.isPrivate) {
+        return denyResponse('🔒 Tu Telegram no está vinculado a una cuenta.\nEnviá /id y pedile al administrador que cargue ese número en tu usuario.');
+      }
       return denyResponse('⛔ No tenés permiso para este comando.');
     }
     if (rule.sensitive && !context.isPrivate) {
