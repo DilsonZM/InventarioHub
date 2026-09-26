@@ -1025,10 +1025,18 @@ router.patch('/:id/estado-cocina', requirePermission('puede_crear_salidas'), asy
 
     // --- Estados operativos: solo actualizan estado_cocina ---
     if (ACTIVE_KITCHEN_STATES.indexOf(estado) !== -1) {
-      var { error } = await supabase.from('ventas').update({ estado_cocina: estado }).eq('id', venta.id);
+      // Update atomico: solo aplica si el estado es realmente distinto.
+      // Asi dos peticiones simultaneas no disparan la notificacion dos veces.
+      var { data: updatedRows, error } = await supabase
+        .from('ventas')
+        .update({ estado_cocina: estado })
+        .eq('id', venta.id)
+        .or('estado_cocina.neq.' + estado + ',estado_cocina.is.null')
+        .select('id');
       if (error) throw error;
-      // Aviso a meseros: solo en la transicion hacia "listo"
-      if (estado === 'listo' && actual !== 'listo') {
+      var huboCambio = !!(updatedRows && updatedRows.length > 0);
+      // Aviso a meseros: solo en la transicion real hacia "listo"
+      if (huboCambio && estado === 'listo' && actual !== 'listo') {
         await notifyOrderReadyForSale(venta.id);
       }
       return res.json({ success: true, data: { estadoCocina: estado }, message: 'Estado actualizado a ' + estado });

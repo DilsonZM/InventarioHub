@@ -39,11 +39,6 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
-// Escapa solo lo necesario dentro de bloques de codigo
-function escCode(s) {
-  return String(s == null ? '' : s).replace(/([`\\])/g, '\\$1');
-}
-
 // ============================================================
 // Configuracion del bot (app_config) con cache corta
 // ============================================================
@@ -91,32 +86,31 @@ async function updateBotSetting(patch) {
 // Mensajes
 // ============================================================
 
-// NUEVO PEDIDO: banner naranja + bloque yaml con datos clave
+// NUEVO PEDIDO: banner naranja con texto limpio (sin bloques de codigo)
 function buildOrderMessage(order) {
   const lines = [];
-  lines.push('🟧 NUEVO PEDIDO REGISTRADO 🟧');
+  lines.push('🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧');
+  lines.push('🔥 *NUEVO PEDIDO REGISTRADO* 🔥');
+  lines.push('🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧');
   lines.push('');
-  lines.push('```yaml');
-  lines.push('Destino: ' + escCode(order.destino || '—'));
-  lines.push('Pedido: ' + escCode(order.numero_venta || order.numero || '-'));
-  if (order.personas) lines.push('Personas: ' + escCode(order.personas));
-  lines.push('```');
-  lines.push('');
-  if (order.cliente) lines.push('*Cliente:* ' + esc(order.cliente));
+  lines.push('📍 *Destino:* ' + esc(order.destino || '—'));
+  lines.push('🔢 *Pedido:* ' + esc(order.numero_venta || order.numero || '-'));
+  if (order.personas) lines.push('👥 *Personas:* ' + esc(order.personas));
+  if (order.cliente) lines.push('👤 *Cliente:* ' + esc(order.cliente));
   if (order.telefono) {
     // Telefono con link directo al chat de WhatsApp (wa.me)
     var telNorm = normalizePhone(order.telefono);
     if (telNorm) {
       var waDigits = telNorm.replace(/\D/g, '');
-      lines.push('*Teléfono:* [' + esc(formatPhone(telNorm)) + '](https://wa.me/' + waDigits + ')');
+      lines.push('📞 *Teléfono:* [' + esc(formatPhone(telNorm)) + '](https://wa.me/' + waDigits + ')');
     } else {
-      lines.push('*Teléfono:* ' + esc(order.telefono));
+      lines.push('📞 *Teléfono:* ' + esc(order.telefono));
     }
   }
-  if (order.direccion) lines.push('*Dirección:* ' + esc(order.direccion));
-  if (order.barrio) lines.push('*Barrio:* ' + esc(order.barrio));
+  if (order.direccion) lines.push('🏠 *Dirección:* ' + esc(order.direccion));
+  if (order.barrio) lines.push('🗺️ *Barrio:* ' + esc(order.barrio));
   lines.push('');
-  lines.push('*Productos:*');
+  lines.push('📋 *Productos:*');
   (order.items || []).forEach(function (it) {
     lines.push('• ' + esc((it.cantidad || 1) + 'x ' + (it.nombre || '')));
     if (it.observacion) lines.push('   📝 ' + esc(it.observacion));
@@ -125,30 +119,29 @@ function buildOrderMessage(order) {
     lines.push('• (sin platos, solo reserva de mesa)');
   }
   lines.push('');
-  lines.push('*Total:* ' + esc(formatCurrency(order.total)));
-  if (order.notas) lines.push('*Notas:* ' + esc(order.notas));
+  lines.push('💰 *Total:* ' + esc(formatCurrency(order.total)));
+  if (order.notas) lines.push('📝 *Notas:* ' + esc(order.notas));
   lines.push('');
-  lines.push('🕐 ' + esc(order.hora || new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })));
+  lines.push('🕒 ' + esc(order.hora || new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })));
   return lines.join('\n');
 }
 
-// PEDIDO LISTO: banner verde + bloque diff (lineas + en verde) para meseros
+// PEDIDO LISTO: banner verde con texto limpio (sin bloques de codigo)
 function buildReadyMessage(order) {
   const lines = [];
-  lines.push('🟩 ¡PLATO LISTO PARA SERVIR\\! 🟩');
+  lines.push('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩');
+  lines.push('🍽️ *¡PLATO LISTO PARA SERVIR\\!* 🍽️');
+  lines.push('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩');
   lines.push('');
-  lines.push('```diff');
-  lines.push('+ LISTO EN COCINA');
-  lines.push('+ Destino: ' + escCode(order.destino || '—'));
-  lines.push('+ Pedido: ' + escCode(order.numero_venta || '-'));
-  lines.push('```');
+  lines.push('📍 *Mesa / Destino:* ' + esc(order.destino || '—'));
+  lines.push('🔢 *Pedido:* ' + esc(order.numero_venta || '-'));
   lines.push('');
-  lines.push('🍽️ *Retirar de cocina:*');
+  lines.push('🛎️ *Retirar de cocina:*');
   (order.items || []).forEach(function (it) {
     lines.push('• ' + esc((it.cantidad || 1) + 'x ' + (it.nombre || '')));
   });
   lines.push('');
-  lines.push('🏃💨 Favor pasar a recoger y servir\\.');
+  lines.push('🏃💨 *Mesero asignado: favor pasar a recoger y servir\\.*');
   return lines.join('\n');
 }
 
