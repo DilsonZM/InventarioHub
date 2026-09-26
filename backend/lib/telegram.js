@@ -17,6 +17,7 @@ const { normalizePhone, formatPhone } = require('./phone');
 const stockReport = require('./stock-report');
 const finance = require('./finance');
 const { getUserPermissions } = require('../middleware/auth');
+const tgCommands = require('./telegram-commands');
 
 // Preferir IPv4 al conectar con la API de Telegram: en algunas redes el
 // enrutamiento IPv6 es inestable y produce "fetch failed" intermitentes.
@@ -873,12 +874,20 @@ async function linkTelegramId(perfilId, telegramId) {
     if (error.code === '23505') return { text: '⚠️ Ese Telegram ID ya está vinculado a otro usuario.', html: true };
     return { text: '⚠️ No se pudo guardar: ' + escHtml(error.message), html: true };
   }
+  // Refrescar el menu privado del usuario con sus permisos
+  try {
+    const info = await getUserPermissions(perfilId);
+    await tgCommands.setUserCommands(tgId, info.permissions);
+  } catch (e) { /* no bloqueante */ }
   return { text: '✅ <b>' + escHtml(u.username) + '</b> quedó vinculado al Telegram ID <code>' + tgId + '</code>.\nYa puede usar los comandos de su rol (los contables, por privado).', html: true };
 }
 
 async function unlinkTelegramId(perfilId) {
-  const { data: u } = await supabase.from('perfiles').select('id, username').eq('id', perfilId).maybeSingle();
+  const { data: u } = await supabase.from('perfiles').select('id, username, telegram_user_id').eq('id', perfilId).maybeSingle();
   if (!u) return { text: '⚠️ Usuario no encontrado.', html: true };
+  if (u.telegram_user_id) {
+    await tgCommands.clearUserCommands(u.telegram_user_id).catch(function () { /* noop */ });
+  }
   await supabase.from('perfiles').update({ telegram_user_id: null }).eq('id', perfilId);
   return { text: '🗑️ Vínculo de <b>' + escHtml(u.username) + '</b> eliminado.', html: true };
 }
@@ -1036,6 +1045,7 @@ const COMMAND_RULES = {
   '/activar_listos': { perm: 'users.manage', groupOk: true },
   '/silenciar_stock': { perm: 'users.manage', groupOk: true },
   '/activar_stock': { perm: 'users.manage', groupOk: true },
+  '/syncmenu': { perm: 'users.manage', sensitive: true },
   '/gestionusers': { perm: 'users.manage', sensitive: true },
   '/usuarios': { perm: 'users.manage', sensitive: true },
   '/vincular': { perm: 'users.manage', sensitive: true },
@@ -1169,6 +1179,8 @@ async function handleTelegramCommand(text, ctx) {
           html: true
         };
       }
+      // Refrescar el menu privado del usuario segun su rol
+      tgCommands.setUserCommands(context.fromId, context.actor.permissions).catch(function () { /* noop */ });
       return {
         text: '👋 ¡Hola <b>' + escHtml(context.actor.username) + '</b>!\n\n'
           + 'Rol: <b>' + escHtml(context.actor.roleName || context.actor.roleId || '-') + '</b>\n\n'
@@ -1253,6 +1265,18 @@ async function handleTelegramCommand(text, ctx) {
     case '/vincular': {
       const panel = await buildUsersLinkPanel();
       return { text: panel.text, html: true, replyMarkup: panel.replyMarkup };
+    }
+    case '/syncmenu': {
+      const global = await tgCommands.syncGlobalCommands();
+      const users = await tgCommands.syncAllUserCommands();
+      const okGlobal = [global.default === true, global.private === true, global.groupAdmins === true].filter(Boolean).length;
+      return {
+        text: '🔄 <b>Menús actualizados</b>\n\n'
+          + 'Globales: <b>' + okGlobal + '/3</b> (default, privados, admins del grupo)\n'
+          + 'Usuarios vinculados: <b>' + users.ok + '/' + users.total + '</b>'
+          + (users.fail ? '\n<i>' + users.fail + ' sin chat iniciado (abren el bot y tocan Start)</i>' : ''),
+        html: true
+      };
     }
     case '/gasto': {
       const args = clean.split(/\s+/).slice(1);

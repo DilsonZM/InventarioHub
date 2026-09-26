@@ -23,6 +23,8 @@ const {
   getConfiguredChatId
 } = require('../lib/telegram');
 
+const tgCommands = require('../lib/telegram-commands');
+
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
 
 router.post('/webhook', async (req, res) => {
@@ -37,6 +39,9 @@ router.post('/webhook', async (req, res) => {
     }
 
     const update = req.body || {};
+
+    // Mantener los menus de comandos sincronizados (TTL interno)
+    tgCommands.ensureCommandsSynced().catch(function () { /* noop */ });
 
     // ---------- Botones (callback_query) ----------
     const cb = update.callback_query;

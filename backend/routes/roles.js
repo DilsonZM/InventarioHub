@@ -8,6 +8,7 @@ const router = express.Router();
 const supabase = require('../lib/supabase');
 const { authMiddleware, requirePermission } = require('../middleware/auth');
 const { CATALOG, sanitizePermissions } = require('../lib/permissions');
+const tgCommands = require('../lib/telegram-commands');
 
 function slugify(text) {
   return String(text || '')
@@ -164,6 +165,20 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
       .select()
       .single();
     if (error) throw error;
+
+    // Refrescar los menus de Telegram de los usuarios vinculados con este rol
+    if (update.permissions) {
+      try {
+        const { data: linked } = await supabase
+          .from('perfiles')
+          .select('telegram_user_id')
+          .eq('role_id', req.params.id)
+          .not('telegram_user_id', 'is', null);
+        for (const l of (linked || [])) {
+          await tgCommands.setUserCommands(l.telegram_user_id, update.permissions);
+        }
+      } catch (e) { /* no bloqueante */ }
+    }
 
     res.json({ success: true, data: rolePublic(data), message: 'Rol actualizado' });
   } catch (err) {

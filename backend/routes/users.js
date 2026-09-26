@@ -8,6 +8,8 @@ const bcrypt = require('bcryptjs');
 const supabase = require('../lib/supabase');
 const { authMiddleware, requirePermission } = require('../middleware/auth');
 const supabaseAuth = require('../lib/supabase-auth');
+const tgCommands = require('../lib/telegram-commands');
+const { getUserPermissions } = require('../middleware/auth');
 
 const SALT_ROUNDS = 10;
 
@@ -47,6 +49,15 @@ async function getRoleIdOf(userId) {
 // La cuenta Super Admin solo puede ser editada por su titular y nadie
 // puede archivarla/eliminarla. Solo un Super Admin puede asignar ese rol.
 const SUPERADMIN = 'superadmin';
+
+// Refresca el menu de Telegram del usuario (si esta vinculado)
+async function refreshTelegramMenu(userId, telegramId) {
+  if (!telegramId) return;
+  try {
+    const info = await getUserPermissions(userId);
+    await tgCommands.setUserCommands(telegramId, info.permissions);
+  } catch (e) { /* no bloqueante */ }
+}
 
 // Telegram ID: numero entero positivo o null
 function normalizeTelegramId(value) {
@@ -144,6 +155,7 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
         .single();
 
       if (reactError) throw reactError;
+      refreshTelegramMenu(reactivated.id, reactivated.telegram_user_id).catch(function () { /* noop */ });
       return res.status(200).json({ success: true, data: userPublic(reactivated), message: 'Usuario reactivado (ya existia inactivo)' });
     }
 
@@ -184,6 +196,7 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
       throw error;
     }
 
+    refreshTelegramMenu(user.id, user.telegram_user_id).catch(function () { /* noop */ });
     res.status(201).json({ success: true, data: userPublic(user) });
   } catch (err) {
     console.error('User create error:', err);
@@ -272,6 +285,7 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
       .single();
     if (error) throw error;
 
+    refreshTelegramMenu(data.id, data.telegram_user_id).catch(function () { /* noop */ });
     res.json({ success: true, data: userPublic(data) });
   } catch (err) {
     console.error('User update error:', err);
