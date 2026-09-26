@@ -6,13 +6,8 @@ const { generateToken, authMiddleware } = require('../middleware/auth');
 
 const SALT_ROUNDS = 10;
 
-const PERMISSION_COLS = `
-  puede_crear_productos, puede_editar_productos, puede_eliminar_productos,
-  puede_crear_salidas, puede_editar_salidas, puede_eliminar_salidas,
-  puede_crear_entradas, puede_editar_entradas, puede_eliminar_entradas,
-  puede_gestionar_usuarios, puede_ver_inventario, puede_ver_movimientos, puede_ver_dashboard,
-  puede_ver_finanzas
-`.replace(/\s+/g, ' ').trim();
+// RBAC: el usuario hereda los permisos de su rol
+const USER_SELECT = 'id, username, role, role_id, roles(id, name, permissions), email, nombre_completo, estado_aprobacion';
 
 async function hashPassword(password) {
   return bcrypt.hash(password, SALT_ROUNDS);
@@ -33,29 +28,17 @@ async function comparePassword(password, storedHash) {
 }
 
 function userResponse(user) {
+  const role = user.roles || null;
   return {
     id: user.id,
     username: user.username,
     role: user.role,
+    roleId: user.role_id,
+    roleName: role ? role.name : null,
     email: user.email,
     nombreCompleto: user.nombre_completo,
     estadoAprobacion: user.estado_aprobacion || 'aprobado',
-    permisos: {
-      puedeCrearProductos: !!user.puede_crear_productos,
-      puedeEditarProductos: !!user.puede_editar_productos,
-      puedeEliminarProductos: !!user.puede_eliminar_productos,
-      puedeCrearSalidas: !!user.puede_crear_salidas,
-      puedeEditarSalidas: !!user.puede_editar_salidas,
-      puedeEliminarSalidas: !!user.puede_eliminar_salidas,
-      puedeCrearEntradas: !!user.puede_crear_entradas,
-      puedeEditarEntradas: !!user.puede_editar_entradas,
-      puedeEliminarEntradas: !!user.puede_eliminar_entradas,
-      puedeGestionarUsuarios: !!user.puede_gestionar_usuarios,
-      puedeVerInventario: !!user.puede_ver_inventario,
-      puedeVerMovimientos: !!user.puede_ver_movimientos,
-      puedeVerDashboard: !!user.puede_ver_dashboard,
-      puedeVerFinanzas: !!user.puede_ver_finanzas
-    }
+    permissions: role && Array.isArray(role.permissions) ? role.permissions : []
   };
 }
 
@@ -113,22 +96,13 @@ router.post('/register', async (req, res) => {
         username,
         password_hash: passwordHash,
         role: 'vendedor',
+        role_id: 'vendedor',
         email: emailNorm,
         nombre_completo: nombreCompleto || null,
         estado_aprobacion: 'pendiente',
-        solicitado_en: new Date().toISOString(),
-        puede_crear_salidas: true,
-        puede_editar_salidas: false,
-        puede_eliminar_salidas: false,
-        puede_crear_entradas: false,
-        puede_editar_entradas: false,
-        puede_eliminar_entradas: false,
-        puede_gestionar_usuarios: false,
-        puede_ver_inventario: true,
-        puede_ver_movimientos: true,
-        puede_ver_dashboard: true
+        solicitado_en: new Date().toISOString()
       })
-      .select('id, username, role, email, nombre_completo, estado_aprobacion, ' + PERMISSION_COLS)
+      .select('id, username, role, email, nombre_completo, estado_aprobacion')
       .single();
 
     if (error) throw error;
@@ -157,7 +131,7 @@ router.post('/login', async (req, res) => {
 
     const { data: user, error } = await supabase
       .from('perfiles')
-      .select('id, username, password_hash, role, email, nombre_completo, estado_aprobacion, ' + PERMISSION_COLS)
+      .select('password_hash, ' + USER_SELECT)
       .eq('username', username)
       .eq('activo', true)
       .single();
@@ -234,7 +208,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('perfiles')
-      .select('id, username, role, email, nombre_completo, estado_aprobacion, ' + PERMISSION_COLS)
+      .select(USER_SELECT)
       .eq('id', req.user.id)
       .single();
     if (error || !user) {

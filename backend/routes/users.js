@@ -1,3 +1,7 @@
+// routes/users.js
+// Gestion de usuarios (RBAC): cada usuario se vincula a un rol y hereda
+// estrictamente sus permisos. Ya no hay permisos individuales por usuario.
+
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -6,19 +10,16 @@ const { authMiddleware, requirePermission } = require('../middleware/auth');
 
 const SALT_ROUNDS = 10;
 
-const PERMISSION_COLS = `
-  puede_crear_productos, puede_editar_productos, puede_eliminar_productos,
-  puede_crear_salidas, puede_editar_salidas, puede_eliminar_salidas,
-  puede_crear_entradas, puede_editar_entradas, puede_eliminar_entradas,
-  puede_gestionar_usuarios, puede_ver_inventario, puede_ver_movimientos, puede_ver_dashboard,
-  puede_ver_finanzas
-`.replace(/\s+/g, ' ').trim();
+const USER_SELECT = 'id, username, role, role_id, roles(id, name), email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en';
 
 function userPublic(u) {
+  const role = u.roles || null;
   return {
     id: u.id,
     username: u.username,
     role: u.role,
+    roleId: u.role_id,
+    roleName: role ? role.name : null,
     email: u.email,
     nombreCompleto: u.nombre_completo,
     activo: u.activo,
@@ -26,83 +27,24 @@ function userPublic(u) {
     motivoRechazo: u.motivo_rechazo,
     solicitadoEn: u.solicitado_en,
     ultimoAcceso: u.ultimo_acceso,
-    creadoEn: u.creado_en,
-    permisos: {
-      puedeCrearProductos: !!u.puede_crear_productos,
-      puedeEditarProductos: !!u.puede_editar_productos,
-      puedeEliminarProductos: !!u.puede_eliminar_productos,
-      puedeCrearSalidas: !!u.puede_crear_salidas,
-      puedeEditarSalidas: !!u.puede_editar_salidas,
-      puedeEliminarSalidas: !!u.puede_eliminar_salidas,
-      puedeCrearEntradas: !!u.puede_crear_entradas,
-      puedeEditarEntradas: !!u.puede_editar_entradas,
-      puedeEliminarEntradas: !!u.puede_eliminar_entradas,
-      puedeGestionarUsuarios: !!u.puede_gestionar_usuarios,
-      puedeVerInventario: !!u.puede_ver_inventario,
-      puedeVerMovimientos: !!u.puede_ver_movimientos,
-      puedeVerDashboard: !!u.puede_ver_dashboard,
-      puedeVerFinanzas: !!u.puede_ver_finanzas
-    }
+    creadoEn: u.creado_en
   };
 }
 
-function plantillaPorRol(role) {
-  if (role === 'admin') {
-    return {
-      puede_crear_productos: true, puede_editar_productos: true, puede_eliminar_productos: true,
-      puede_crear_salidas: true, puede_editar_salidas: true, puede_eliminar_salidas: true,
-      puede_crear_entradas: true, puede_editar_entradas: true, puede_eliminar_entradas: true,
-      puede_gestionar_usuarios: true, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true,
-      puede_ver_finanzas: true
-    };
-  }
-  return {
-    puede_crear_salidas: true, puede_editar_salidas: false, puede_eliminar_salidas: false,
-    puede_crear_entradas: false, puede_editar_entradas: false, puede_eliminar_entradas: false,
-    puede_gestionar_usuarios: false, puede_ver_inventario: true, puede_ver_movimientos: true, puede_ver_dashboard: true
-  };
-}
-
-// Mapa camelCase (frontend) -> snake_case (DB) para permisos
-const PERM_MAP = {
-  puedeCrearProductos: 'puede_crear_productos',
-  puedeEditarProductos: 'puede_editar_productos',
-  puedeEliminarProductos: 'puede_eliminar_productos',
-  puedeCrearSalidas: 'puede_crear_salidas',
-  puedeEditarSalidas: 'puede_editar_salidas',
-  puedeEliminarSalidas: 'puede_eliminar_salidas',
-  puedeCrearEntradas: 'puede_crear_entradas',
-  puedeEditarEntradas: 'puede_editar_entradas',
-  puedeEliminarEntradas: 'puede_eliminar_entradas',
-  puedeGestionarUsuarios: 'puede_gestionar_usuarios',
-  puedeVerInventario: 'puede_ver_inventario',
-  puedeVerMovimientos: 'puede_ver_movimientos',
-  puedeVerDashboard: 'puede_ver_dashboard',
-  puedeVerFinanzas: 'puede_ver_finanzas'
-};
-
-function permisosToColumns(permisos) {
-  var out = {};
-  Object.keys(permisos || {}).forEach(function (k) {
-    var col = PERM_MAP[k] || k;
-    out[col] = !!permisos[k];
-  });
-  return out;
+async function roleExists(roleId) {
+  if (!roleId) return false;
+  const { data } = await supabase.from('roles').select('id').eq('id', roleId).maybeSingle();
+  return !!data;
 }
 
 // GET /api/users - listar usuarios
-router.get('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.get('/', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
-    var query = supabase
-      .from('perfiles')
-      .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS);
-
-    // Por defecto solo activos. Si ?todos=1, mostrar todos.
+    let query = supabase.from('perfiles').select(USER_SELECT);
     if (req.query.todos !== '1') {
       query = query.eq('activo', true);
     }
-
-    var { data, error } = await query.order('creado_en', { ascending: true });
+    const { data, error } = await query.order('creado_en', { ascending: true });
     if (error) throw error;
     res.json({ success: true, data: (data || []).map(userPublic) });
   } catch (err) {
@@ -111,10 +53,10 @@ router.get('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), a
   }
 });
 
-// POST /api/users - crear usuario
-router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+// POST /api/users - crear usuario (o reactivar uno inactivo con el mismo username)
+router.post('/', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
-    const { username, password, nombreCompleto, email, role, permisos } = req.body;
+    const { username, password, nombreCompleto, email, roleId } = req.body;
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Usuario y contrasena requeridos' });
     }
@@ -124,8 +66,7 @@ router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), 
     if (password.length < 6) {
       return res.status(400).json({ success: false, message: 'La contrasena debe tener al menos 6 caracteres' });
     }
-    const validRoles = ['admin', 'vendedor'];
-    const userRole = validRoles.includes(role) ? role : 'vendedor';
+    const userRoleId = (await roleExists(roleId)) ? roleId : 'vendedor';
 
     const { data: existing } = await supabase
       .from('perfiles')
@@ -137,24 +78,20 @@ router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), 
       if (existing.activo) {
         return res.status(400).json({ success: false, message: 'El nombre de usuario ya existe y esta activo' });
       }
-      // Usuario existe pero esta inactivo: reactivarlo en vez de crear uno nuevo
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-      const basePerms = plantillaPorRol(userRole);
-      const finalPerms = permisos ? { ...basePerms, ...permisosToColumns(permisos) } : basePerms;
-
       const { data: reactivated, error: reactError } = await supabase
         .from('perfiles')
         .update({
           password_hash: passwordHash,
-          role: userRole,
+          role_id: userRoleId,
+          role: userRoleId,
           email: email || null,
           nombre_completo: nombreCompleto || null,
           activo: true,
-          estado_aprobacion: 'aprobado',
-          ...finalPerms
+          estado_aprobacion: 'aprobado'
         })
         .eq('id', existing.id)
-        .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+        .select(USER_SELECT)
         .single();
 
       if (reactError) throw reactError;
@@ -162,20 +99,18 @@ router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), 
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const basePerms = plantillaPorRol(userRole);
-    const finalPerms = permisos ? { ...basePerms, ...permisosToColumns(permisos) } : basePerms;
-
     const { data: user, error } = await supabase
       .from('perfiles')
       .insert({
         username,
         password_hash: passwordHash,
-        role: userRole,
+        role_id: userRoleId,
+        role: userRoleId,
         email: email || null,
         nombre_completo: nombreCompleto || null,
-        ...finalPerms
+        estado_aprobacion: 'aprobado'
       })
-      .select('id, username, role, email, nombre_completo, activo, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+      .select(USER_SELECT)
       .single();
     if (error) throw error;
 
@@ -187,14 +122,20 @@ router.post('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), 
 });
 
 // PUT /api/users/:id - editar usuario
-router.put('/:id', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
-    const { username, password, nombreCompleto, email, role, permisos, activo } = req.body;
+    const { username, password, nombreCompleto, email, roleId, activo } = req.body;
     const updateData = {};
     if (username) updateData.username = username;
     if (email !== undefined) updateData.email = email || null;
     if (nombreCompleto !== undefined) updateData.nombre_completo = nombreCompleto || null;
-    if (role) updateData.role = role;
+    if (roleId) {
+      if (!(await roleExists(roleId))) {
+        return res.status(400).json({ success: false, message: 'Rol invalido' });
+      }
+      updateData.role_id = roleId;
+      updateData.role = roleId;
+    }
     if (typeof activo === 'boolean') updateData.activo = activo;
     if (password) {
       if (password.length < 6) {
@@ -202,15 +143,12 @@ router.put('/:id', authMiddleware, requirePermission('puede_gestionar_usuarios')
       }
       updateData.password_hash = await bcrypt.hash(password, SALT_ROUNDS);
     }
-    if (permisos) {
-      Object.assign(updateData, permisosToColumns(permisos));
-    }
 
     const { data, error } = await supabase
       .from('perfiles')
       .update(updateData)
       .eq('id', req.params.id)
-      .select('id, username, role, email, nombre_completo, activo, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+      .select(USER_SELECT)
       .single();
     if (error) throw error;
 
@@ -221,41 +159,77 @@ router.put('/:id', authMiddleware, requirePermission('puede_gestionar_usuarios')
   }
 });
 
-// DELETE /api/users/:id - eliminar (soft-delete: activo=false)
-router.delete('/:id', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+// DELETE /api/users/:id                → archivar (soft-delete: activo=false)
+// DELETE /api/users/:id?permanente=1   → eliminar de verdad (solo archivados).
+//   El historial (ventas, movimientos, compras) se conserva sin vinculo.
+router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
     if (req.params.id === req.user.id) {
       return res.status(400).json({ success: false, message: 'No puedes eliminarte a ti mismo' });
     }
-    const { error } = await supabase
+    const permanente = req.query.permanente === '1' || req.query.permanente === 'true';
+
+    const { data: user, error: getError } = await supabase
       .from('perfiles')
-      .update({ activo: false })
-      .eq('id', req.params.id);
+      .select('id, username, role_id, activo')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (getError) throw getError;
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    if (!permanente) {
+      const { error } = await supabase
+        .from('perfiles')
+        .update({ activo: false })
+        .eq('id', req.params.id);
+      if (error) throw error;
+      return res.json({ success: true, message: 'Usuario archivado' });
+    }
+
+    if (user.activo) {
+      return res.status(400).json({ success: false, message: 'Archivá el usuario antes de eliminarlo permanentemente' });
+    }
+
+    // No dejar el sistema sin administradores
+    if (user.role_id === 'admin') {
+      const { count } = await supabase
+        .from('perfiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('role_id', 'admin');
+      if ((count || 0) <= 1) {
+        return res.status(400).json({ success: false, message: 'No se puede eliminar el ultimo administrador' });
+      }
+    }
+
+    const { error } = await supabase.from('perfiles').delete().eq('id', req.params.id);
     if (error) throw error;
-    res.json({ success: true, message: 'Usuario desactivado' });
+    res.json({ success: true, message: 'Usuario eliminado' });
   } catch (err) {
     console.error('User delete error:', err);
     res.status(500).json({ success: false, message: 'Error del servidor' });
   }
 });
 
-// POST /api/users/:id/aprobar - aprobar usuario pendiente
-router.post('/:id/aprobar', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+// POST /api/users/:id/aprobar - aprobar usuario pendiente (rol por defecto: vendedor)
+router.post('/:id/aprobar', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
-    const { role, permisos, nombreCompleto } = req.body || {};
+    const { roleId, nombreCompleto } = req.body || {};
+    const finalRole = (await roleExists(roleId)) ? roleId : 'vendedor';
     const updateData = {
       estado_aprobacion: 'aprobado',
-      motivo_rechazo: null
+      motivo_rechazo: null,
+      role_id: finalRole,
+      role: finalRole
     };
-    if (role) updateData.role = role;
     if (nombreCompleto) updateData.nombre_completo = nombreCompleto;
-    if (permisos) updateData.permisos = permisos;
 
     const { data, error } = await supabase
       .from('perfiles')
       .update(updateData)
       .eq('id', req.params.id)
-      .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+      .select(USER_SELECT)
       .single();
     if (error) throw error;
     res.json({ success: true, data: userPublic(data) });
@@ -266,7 +240,7 @@ router.post('/:id/aprobar', authMiddleware, requirePermission('puede_gestionar_u
 });
 
 // POST /api/users/:id/rechazar - rechazar usuario pendiente
-router.post('/:id/rechazar', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.post('/:id/rechazar', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
     const { motivo } = req.body || {};
     const { data, error } = await supabase
@@ -276,7 +250,7 @@ router.post('/:id/rechazar', authMiddleware, requirePermission('puede_gestionar_
         motivo_rechazo: motivo || 'Sin motivo especificado'
       })
       .eq('id', req.params.id)
-      .select('id, username, role, email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, ' + PERMISSION_COLS)
+      .select(USER_SELECT)
       .single();
     if (error) throw error;
     res.json({ success: true, data: userPublic(data) });

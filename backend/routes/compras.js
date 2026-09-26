@@ -85,7 +85,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', requirePermission('puede_crear_entradas'), async (req, res) => {
+router.post('/', requirePermission('purchases.create'), async (req, res) => {
   try {
     const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion, cantidad_base } = req.body;
     const cantidadBase = resolveBaseQuantity(cantidad, cantidad_presentacion, factor_conversion, cantidad_base);
@@ -203,7 +203,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /api/compras/:id - editar entrada con recalculo de stock
-router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) => {
+router.put('/:id', requirePermission('purchases.edit'), async (req, res) => {
   try {
     const { producto_id, cantidad, valor_unitario, fecha_compra, proveedor_id, notas, cantidad_presentacion, unidad_presentacion, factor_conversion, cantidad_base } = req.body;
     const cantidadBase = resolveBaseQuantity(cantidad, cantidad_presentacion, factor_conversion, cantidad_base);
@@ -339,7 +339,7 @@ router.put('/:id', requirePermission('puede_editar_entradas'), async (req, res) 
 });
 
 // DELETE /api/compras/:id - eliminar entrada y revertir stock
-router.delete('/:id', requirePermission('puede_eliminar_entradas'), async (req, res) => {
+router.delete('/:id', requirePermission('purchases.delete'), async (req, res) => {
   try {
     const { data: original, error: origError } = await supabase
       .from('compras')

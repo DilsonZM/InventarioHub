@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const comprasRoutes = require('./routes/compras');
 const reportesRoutes = require('./routes/reportes');
 const usersRoutes = require('./routes/users');
+const rolesRoutes = require('./routes/roles');
 const configRoutes = require('./routes/config');
 const dishesRoutes = require('./routes/dishes');
 const mesasRoutes = require('./routes/mesas');
@@ -58,6 +59,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/public', publicRoutes);   // SIN auth: menu digital + reservas
 app.use('/api/config', configRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/roles', rolesRoutes);
 app.use('/api/products', authMiddleware, productRoutes);
 app.use('/api/sales', authMiddleware, salesRoutes);
 app.use('/api/compras', authMiddleware, comprasRoutes);

@@ -6,7 +6,7 @@ import { loadPrinterConfigUI } from '../services/config.js';
 // Vista extraida de app.js en el Sub-paso 3.4 (views).
 
 async function loadConfig() {
-  if (!window.can('puedeGestionarUsuarios')) return;
+  if (!window.can('users.manage')) return;
   try {
     var res = await API.config.get();
     $('#modoPublicoCheck').checked = !!res.data.modoPublico;

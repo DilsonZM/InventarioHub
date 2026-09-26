@@ -25,7 +25,6 @@ import { initFilters, openMobileFiltersModal, applyMobileFilters, updateClearBtn
 import { initCalendar, applyDateRange, renderCalendar } from './components/calendar.js';
 import { renderCategoryChart } from './components/chart.js';
 import { renderTicketFromData } from './components/ticket.js';
-import { renderPermsGrid, setPermsChecked, readPermsChecked, initPermsGridHandlers, PERM_LABELS, buildPermsObj, plantillaPorRolFrontend } from './components/permissions-grid.js';
 import { renderEmptyState, renderLoading, movimientoBadge, stockBadge, renderPagination } from './components/table.js';
 
 // Fachadas de servicios (cada services/*.js ya expone window.ServicesX,
@@ -80,13 +79,6 @@ if (typeof window !== 'undefined') {
   window.renderCalendar = renderCalendar;
   window.renderCategoryChart = renderCategoryChart;
   window.renderTicketFromData = renderTicketFromData;
-  window.renderPermsGrid = renderPermsGrid;
-  window.setPermsChecked = setPermsChecked;
-  window.readPermsChecked = readPermsChecked;
-  window.initPermsGridHandlers = initPermsGridHandlers;
-  window.PERM_LABELS = PERM_LABELS;
-  window.buildPermsObj = buildPermsObj;
-  window.plantillaPorRolFrontend = plantillaPorRolFrontend;
   window.renderEmptyState = renderEmptyState;
   window.renderLoading = renderLoading;
   window.movimientoBadge = movimientoBadge;

@@ -12,7 +12,7 @@ export function initUser() {
   var user = store.state.user;
   if (!user) return;
   var nameEl = $('#userName');
-  var roleEl = $('#userRole');
+  var roleEl = $('#userRoleLabel');
   var initialEl = $('#userInitial');
   if (nameEl) nameEl.textContent = user.username === 'visitante' ? 'Visitante' : user.username;
   if (roleEl) {
@@ -100,21 +100,9 @@ export function buildVisitorUser() {
   return {
     username: 'visitante',
     role: 'visitante',
-    permisos: {
-      puedeVerDashboard: true,
-      puedeVerInventario: true,
-      puedeVerMovimientos: false,
-      puedeCrearProductos: false,
-      puedeEditarProductos: false,
-      puedeEliminarProductos: false,
-      puedeCrearSalidas: false,
-      puedeEditarSalidas: false,
-      puedeEliminarSalidas: false,
-      puedeCrearEntradas: false,
-      puedeEditarEntradas: false,
-      puedeEliminarEntradas: false,
-      puedeGestionarUsuarios: false
-    }
+    roleId: 'visitante',
+    roleName: 'Visitante',
+    permissions: ['dashboard.view', 'products.view', 'reservations.view']
   };
 }
 

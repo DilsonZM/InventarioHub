@@ -1,6 +1,6 @@
 // routes/gastos.js
 // CRUD de gastos operativos (modulo Finanzas).
-// Acceso: permiso puede_ver_finanzas.
+// Acceso RBAC: finance.gastos.
 
 const express = require('express');
 const router = express.Router();
@@ -9,7 +9,7 @@ const { requirePermission } = require('../middleware/auth');
 const { CATEGORIAS_GASTO } = require('../lib/finance');
 
 // GET /api/gastos?from&to&categoria
-router.get('/', requirePermission('puede_ver_finanzas'), async (req, res) => {
+router.get('/', requirePermission('finance.gastos'), async (req, res) => {
   try {
     const { from, to, categoria } = req.query;
     let q = supabase
@@ -29,7 +29,7 @@ router.get('/', requirePermission('puede_ver_finanzas'), async (req, res) => {
 });
 
 // POST /api/gastos
-router.post('/', requirePermission('puede_ver_finanzas'), async (req, res) => {
+router.post('/', requirePermission('finance.gastos'), async (req, res) => {
   try {
     const { fecha, categoria, descripcion, monto } = req.body || {};
     const montoNum = parseFloat(monto);
@@ -57,7 +57,7 @@ router.post('/', requirePermission('puede_ver_finanzas'), async (req, res) => {
 });
 
 // PUT /api/gastos/:id
-router.put('/:id', requirePermission('puede_ver_finanzas'), async (req, res) => {
+router.put('/:id', requirePermission('finance.gastos'), async (req, res) => {
   try {
     const { fecha, categoria, descripcion, monto } = req.body || {};
     const update = {};
@@ -90,7 +90,7 @@ router.put('/:id', requirePermission('puede_ver_finanzas'), async (req, res) => 
 });
 
 // DELETE /api/gastos/:id
-router.delete('/:id', requirePermission('puede_ver_finanzas'), async (req, res) => {
+router.delete('/:id', requirePermission('finance.gastos'), async (req, res) => {
   try {
     const { error } = await supabase.from('gastos').delete().eq('id', req.params.id);
     if (error) throw error;

@@ -1,7 +1,7 @@
 // views/finanzas.view.js
 // Modulo Finanzas: informe contable (ingresos, costos, compras, mermas,
 // gastos operativos y resultados) + gestion de gastos.
-// Acceso: permiso puedeVerFinanzas.
+// Acceso: permiso finance.gastos.
 
 import { $, escapeHtml } from '../core/dom.js';
 import { showToast } from '../components/toast.js';
@@ -43,6 +43,21 @@ function periodRange(period) {
 }
 
 function initFinanzas() {
+  // RBAC: el modulo puede verse con finance.view (informe) y/o
+  // finance.gastos (registrar gastos). Se oculta lo que no corresponda.
+  var hasReport = window.can('finance.view');
+  var hasGastos = window.can('finance.gastos');
+  if (!hasReport) {
+    ['finFilters', 'finKpis', 'finResult'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+  }
+  if (!hasGastos) {
+    var gastosSection = document.getElementById('finGastosSection');
+    if (gastosSection) gastosSection.classList.add('hidden');
+  }
+
   var applyBtn = $('#finApplyBtn');
   if (applyBtn) applyBtn.addEventListener('click', loadFinanzas);
   var exportBtn = $('#finExportBtn');
@@ -81,14 +96,16 @@ async function loadFinanzas() {
   var from = $('#finFilterDateFrom') ? $('#finFilterDateFrom').value : '';
   var to = $('#finFilterDateTo') ? $('#finFilterDateTo').value : '';
   try {
-    var res = await Promise.all([
-      API.finanzas.resumen({ from: from, to: to }),
-      API.gastos.list({ from: from, to: to })
-    ]);
-    state.summary = res[0].data || null;
-    state.gastos = res[1].data || [];
-    renderSummary();
-    renderGastos();
+    if (window.can('finance.view')) {
+      var res = await API.finanzas.resumen({ from: from, to: to });
+      state.summary = res.data || null;
+      renderSummary();
+    }
+    if (window.can('finance.gastos')) {
+      var gastosRes = await API.gastos.list({ from: from, to: to });
+      state.gastos = gastosRes.data || [];
+      renderGastos();
+    }
   } catch (err) {
     showToast('Error al cargar finanzas: ' + (err.message || ''), 'error');
   }
@@ -142,7 +159,7 @@ function renderGastos() {
     return;
   }
 
-  var canEdit = window.can && window.can('puedeVerFinanzas');
+  var canEdit = window.can && window.can('finance.gastos');
   tbody.innerHTML = gastos.map(function (g) {
     return '<tr class="hover:bg-slate-50 transition-colors">'
       + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(g.fecha || '') + '</td>'

@@ -12,7 +12,7 @@ const { createOrderFromReservation, reservationIsDue } = require('../lib/reserva
 const ESTADOS_VALIDOS = ['pendiente', 'confirmada', 'cancelada', 'completada'];
 
 // GET /api/reservas?estado=&fecha=&limit=
-router.get('/', requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.get('/', requirePermission('reservations.view'), async (req, res) => {
   try {
     var { estado, fecha, limit } = req.query;
     var limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 100));
@@ -47,7 +47,7 @@ router.get('/', requirePermission('puede_gestionar_usuarios'), async (req, res) 
 });
 
 // PATCH /api/reservas/:id/estado { estado, mesa_id? }
-router.patch('/:id/estado', requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.patch('/:id/estado', requirePermission('reservations.status'), async (req, res) => {
   try {
     var id = req.params.id;
     var b = req.body || {};
@@ -101,7 +101,7 @@ router.patch('/:id/estado', requirePermission('puede_gestionar_usuarios'), async
 });
 
 // DELETE /api/reservas/:id
-router.delete('/:id', requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.delete('/:id', requirePermission('reservations.delete'), async (req, res) => {
   try {
     var id = req.params.id;
     var { error } = await supabase.from('reservas').delete().eq('id', id);

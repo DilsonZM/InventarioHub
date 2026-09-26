@@ -80,7 +80,7 @@ router.get('/', async (req, res) => {
 });
 
 // PUT /api/config - solo admin: actualizar modo_publico y config de impresora
-router.put('/', authMiddleware, requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.put('/', authMiddleware, requirePermission('config.manage'), async (req, res) => {
   try {
     const { modoPublico, tituloPublico, printerHost, printerPort, printerEnabled, comandaEnabled, printerKind } = req.body;
     const updateData = {};

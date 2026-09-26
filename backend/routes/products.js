@@ -156,7 +156,7 @@ router.get('/low-stock', async (req, res) => {
 
 // POST /api/products/merma - registrar merma (perdida operativa, descuenta stock)
 // NOTA: debe ir ANTES de GET /:id para que Express no lo confunda con un id
-router.post('/merma', requirePermission('puede_crear_salidas'), async (req, res) => {
+router.post('/merma', requirePermission('movements.merma'), async (req, res) => {
   try {
     const { productId, cantidad, motivo } = req.body;
 
@@ -247,7 +247,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', requirePermission('puede_crear_productos'), async (req, res) => {
+router.post('/', requirePermission('products.create'), async (req, res) => {
   try {
     const { name, sku, category, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
 
@@ -307,7 +307,7 @@ router.post('/', requirePermission('puede_crear_productos'), async (req, res) =>
   }
 });
 
-router.put('/:id', requirePermission('puede_editar_productos'), async (req, res) => {
+router.put('/:id', requirePermission('products.edit'), async (req, res) => {
   try {
     const { name, sku, category, cost, stock, minStock, description, codigo_barras, unidad } = req.body;
 
@@ -372,7 +372,7 @@ router.put('/:id', requirePermission('puede_editar_productos'), async (req, res)
   }
 });
 
-router.delete('/:id', requirePermission('puede_eliminar_productos'), async (req, res) => {
+router.delete('/:id', requirePermission('products.delete'), async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('productos')

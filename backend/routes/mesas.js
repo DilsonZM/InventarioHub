@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.post('/', requirePermission('config.manage'), async (req, res) => {
   try {
     const { nombre } = req.body;
     if (!nombre) return res.status(400).json({ success: false, message: 'Nombre requerido' });
@@ -34,7 +34,7 @@ router.post('/', requirePermission('puede_gestionar_usuarios'), async (req, res)
   }
 });
 
-router.put('/:id', requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.put('/:id', requirePermission('config.manage'), async (req, res) => {
   try {
     const { nombre, activa } = req.body;
     const updates = {};
@@ -54,7 +54,7 @@ router.put('/:id', requirePermission('puede_gestionar_usuarios'), async (req, re
   }
 });
 
-router.delete('/:id', requirePermission('puede_gestionar_usuarios'), async (req, res) => {
+router.delete('/:id', requirePermission('config.manage'), async (req, res) => {
   try {
     const { error } = await supabase.from('mesas').delete().eq('id', req.params.id);
     if (error) throw error;

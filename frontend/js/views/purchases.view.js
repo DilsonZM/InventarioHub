@@ -145,11 +145,11 @@ async function loadCompras() {
         + '<td class="px-6 py-3 text-sm text-slate-600">' + escapeHtml(c.usuario_nombre || '') + '</td>'
         + '<td class="px-6 py-3 text-right">'
         + '<div class="flex items-center justify-end gap-1">'
-        + (window.can && window.can('puedeEditarEntradas') ?
+        + (window.can && window.can('purchases.edit') ?
           '<button onclick="window.editCompra(\'' + c.id + '\')" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Editar">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
           + '</button>' : '')
-        + (window.can && window.can('puedeEliminarEntradas') ?
+        + (window.can && window.can('purchases.delete') ?
           '<button onclick="window.deleteCompra(\'' + c.id + '\')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Eliminar">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
           + '</button>' : '')
@@ -164,11 +164,11 @@ async function loadCompras() {
         cantHtml = c.cantidad_presentacion + ' ' + escapeHtml(c.unidad_presentacion || '') + ' = ' + c.cantidad + ' ' + escapeHtml(c.producto_unidad || 'unid');
       }
       var actionsHtml = '<div class="flex items-center gap-1">'
-        + (window.can && window.can('puedeEditarEntradas') ?
+        + (window.can && window.can('purchases.edit') ?
           '<button onclick="window.editCompra(\'' + c.id + '\')" class="p-1.5 text-amber-500 hover:bg-amber-100 rounded-lg transition-colors touch-target" title="Editar">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>'
           + '</button>' : '')
-        + (window.can && window.can('puedeEliminarEntradas') ?
+        + (window.can && window.can('purchases.delete') ?
           '<button onclick="window.deleteCompra(\'' + c.id + '\')" class="p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors touch-target" title="Eliminar">'
           + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
           + '</button>' : '')
@@ -348,7 +348,7 @@ function selectCompraProducto(id, name, sku, unidad) {
 
 // Handlers expuestos en window (compatibilidad con onclick inline)
 window.editCompra = async function (id) {
-  if (!window.can('puedeEditarEntradas')) {
+  if (!window.can('purchases.edit')) {
     showToast('No tienes permiso para editar entradas', 'error');
     return;
   }
@@ -398,7 +398,7 @@ window.editCompra = async function (id) {
 }
 
 window.deleteCompra = async function (id) {
-  if (!window.can('puedeEliminarEntradas')) {
+  if (!window.can('purchases.delete')) {
     showToast('No tienes permiso para eliminar entradas', 'error');
     return;
   }

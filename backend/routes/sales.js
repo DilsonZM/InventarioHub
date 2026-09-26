@@ -194,7 +194,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /api/sales/:id - editar salida con recalculo de stock
-router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) => {
+router.put('/:id', requirePermission('orders.edit'), async (req, res) => {
   try {
     const { items, platos, paymentMethod, mesa_id } = req.body;
     const hasItems = items && Array.isArray(items) && items.length > 0;
@@ -476,7 +476,7 @@ router.put('/:id', requirePermission('puede_editar_salidas'), async (req, res) =
 });
 
 // DELETE /api/sales/:id - eliminar salida y revertir stock
-router.delete('/:id', requirePermission('puede_eliminar_salidas'), async (req, res) => {
+router.delete('/:id', requirePermission('orders.delete'), async (req, res) => {
   try {
     const { data: original, error: origError } = await supabase
       .from('ventas')
@@ -504,7 +504,7 @@ router.delete('/:id', requirePermission('puede_eliminar_salidas'), async (req, r
   }
 });
 
-router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
+router.post('/', requirePermission('pos.use'), async (req, res) => {
   try {
     const { items, platos, paymentMethod, clienteNombre, mesa_id, costoDomicilio, propina, bonoDescuento, formaPago } = req.body;
 
@@ -1025,7 +1025,7 @@ async function ensureSaleStockDiscounted(venta, motivo, userId) {
 // Operativos: pendiente | listo | entregado
 // Cierre:     confirmada (pago) | cortesia | cancelada
 // ============================================================
-router.patch('/:id/estado-cocina', requirePermission('puede_crear_salidas'), async (req, res) => {
+router.patch('/:id/estado-cocina', requirePermission('orders.status'), async (req, res) => {
   try {
     var { estado, motivo } = req.body;
     var validos = ACTIVE_KITCHEN_STATES.concat(CLOSED_KITCHEN_STATES);
@@ -1112,7 +1112,7 @@ router.patch('/:id/estado-cocina', requirePermission('puede_crear_salidas'), asy
 });
 
 // PUT /api/sales/:id/tip - editar propina (permitido siempre, incluso si estado='completada')
-router.put('/:id/tip', requirePermission('puede_editar_salidas'), async (req, res) => {
+router.put('/:id/tip', requirePermission('pos.tip'), async (req, res) => {
   try {
     var propina = parseFloat(req.body.propina);
     if (isNaN(propina) || propina < 0) {
@@ -1150,7 +1150,7 @@ router.put('/:id/tip', requirePermission('puede_editar_salidas'), async (req, re
 
 // PUT /api/sales/:id/payment - editar forma_pago, propina y bono_descuento juntos
 // Usado al cerrar la venta (el cliente decide como paga despues de hacer el pedido)
-router.put('/:id/payment', requirePermission('puede_editar_salidas'), async (req, res) => {
+router.put('/:id/payment', requirePermission('orders.payment'), async (req, res) => {
   try {
     var formaPago = req.body.formaPago || null;
     var propina = parseFloat(req.body.propina);
@@ -1206,7 +1206,7 @@ router.put('/:id/payment', requirePermission('puede_editar_salidas'), async (req
 
 // POST /api/sales/comanda - crear comanda (pedido inicial, estado pendiente)
 // Descuenta stock pero no factura (estado = 'pendiente', se factura despues)
-router.post('/comanda', requirePermission('puede_crear_salidas'), async (req, res) => {
+router.post('/comanda', requirePermission('pos.use'), async (req, res) => {
   try {
     // Reusar la logica de POST / pero forzando estado='pendiente'
     req.body.estado = 'pendiente';

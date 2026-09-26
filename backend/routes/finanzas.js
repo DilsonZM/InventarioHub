@@ -1,6 +1,6 @@
 // routes/finanzas.js
 // Resumen contable del periodo (modulo Finanzas).
-// Acceso: permiso puede_ver_finanzas.
+// Acceso RBAC: finance.view.
 
 const express = require('express');
 const router = express.Router();
@@ -8,7 +8,7 @@ const { requirePermission } = require('../middleware/auth');
 const { getFinanceSummary } = require('../lib/finance');
 
 // GET /api/finanzas/resumen?from&to
-router.get('/resumen', requirePermission('puede_ver_finanzas'), async (req, res) => {
+router.get('/resumen', requirePermission('finance.view'), async (req, res) => {
   try {
     const { from, to } = req.query;
     const summary = await getFinanceSummary(from, to);

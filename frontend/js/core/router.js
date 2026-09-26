@@ -42,6 +42,19 @@ const LOADERS = {
 };
 
 export function navigate(view) {
+  // RBAC: si el usuario no tiene permiso para la vista, redirigir a la
+  // primera vista permitida del sidebar (evita entrar por hash directo).
+  if (typeof window.canAccessView === 'function' && !window.canAccessView(view)) {
+    var links = Array.prototype.slice.call(document.querySelectorAll('a[data-nav]'));
+    var firstAllowed = links.filter(function (l) {
+      return l.style.display !== 'none' && window.canAccessView(l.getAttribute('data-nav'));
+    })[0];
+    if (firstAllowed && firstAllowed.getAttribute('data-nav') !== view) {
+      navigate(firstAllowed.getAttribute('data-nav'));
+      return;
+    }
+  }
+
   store.set({ currentView: view });
 
   document.querySelectorAll('.view-section').forEach(function (el) {

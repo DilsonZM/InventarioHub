@@ -7,16 +7,18 @@ function normalizeUser(u) {
     id: u.id,
     username: u.username,
     role: u.role,
+    roleId: u.roleId || u.role_id,
+    roleName: u.roleName || u.role_name,
     email: u.email,
-    nombreCompleto: u.nombre_completo || u.nombreCompleto,
+    nombreCompleto: u.nombreCompleto || u.nombre_completo,
     nombre_completo: u.nombre_completo,
-    estado: u.estado_aprobacion || u.estado,
+    estado: u.estadoAprobacion || u.estado_aprobacion || u.estado,
     activo: u.activo !== false,
-    ultimoAcceso: u.ultimo_acceso,
-    creadoEn: u.creado_en,
-    solicitadoEn: u.solicitado_en,
+    ultimoAcceso: u.ultimoAcceso || u.ultimo_acceso,
+    creadoEn: u.creadoEn || u.creado_en,
+    solicitadoEn: u.solicitadoEn || u.solicitado_en,
     motivo: u.motivo,
-    permisos: u.permisos || {}
+    permissions: u.permissions || []
   };
 }
 

@@ -74,7 +74,7 @@ export function renderTicketFromData(sale, includeTip) {
   // Mostrar boton guardar solo si la venta ya esta persistida (tiene numero_venta)
   var saveBtn = document.getElementById('ticketSavePaymentBtn');
   if (saveBtn) {
-    if (sale.id && sale.numero_venta && window.can && window.can('puedeEditarSalidas')) {
+    if (sale.id && sale.numero_venta && window.can && window.can('orders.edit')) {
       saveBtn.classList.remove('hidden');
     } else {
       saveBtn.classList.add('hidden');

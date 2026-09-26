@@ -782,7 +782,7 @@ window.editDish = async function (dishId) {
 }
 
 window.archiveDish = function (dishId, dishName) {
-  if (!window.can('puedeEditarProductos')) { showToast('Sin permiso', 'error'); return; }
+  if (!window.can('products.edit')) { showToast('Sin permiso', 'error'); return; }
   showConfirm({
     title: '¿Archivar plato?',
     message: '"' + dishName + '" dejará de estar disponible para ventas. Podés reactivarlo cuando quieras.',
@@ -799,7 +799,7 @@ window.archiveDish = function (dishId, dishName) {
 }
 
 window.reactivateDish = async function (dishId, dishName) {
-  if (!window.can('puedeEditarProductos')) { showToast('Sin permiso', 'error'); return; }
+  if (!window.can('products.edit')) { showToast('Sin permiso', 'error'); return; }
   try {
     var res = await API.dishes.update(dishId, { activo: true });
     if (res.success) { showToast('Plato reactivado', 'success'); loadDishes(); }
@@ -808,7 +808,7 @@ window.reactivateDish = async function (dishId, dishName) {
 }
 
 window.deleteDish = function (dishId, dishName) {
-  if (!window.can('puedeEliminarProductos')) { showToast('Sin permiso', 'error'); return; }
+  if (!window.can('products.delete')) { showToast('Sin permiso', 'error'); return; }
   showConfirm({
     title: '¿Eliminar plato permanentemente?',
     message: '"' + dishName + '" se borrará del sistema. El historial de ventas y reservas se conserva (solo queda desvinculado). Esta acción no se puede deshacer.',

@@ -226,7 +226,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Crear plato (admin)
-router.post('/', requirePermission('puede_crear_productos'), async (req, res) => {
+router.post('/', requirePermission('products.create'), async (req, res) => {
   try {
     const { nombre, descripcion, tipo, precio_venta, ingredientes } = req.body;
 
@@ -278,7 +278,7 @@ router.post('/', requirePermission('puede_crear_productos'), async (req, res) =>
 });
 
 // Actualizar plato (admin)
-router.put('/:id', requirePermission('puede_editar_productos'), async (req, res) => {
+router.put('/:id', requirePermission('products.edit'), async (req, res) => {
   try {
     const { nombre, descripcion, tipo, precio_venta, activo, ingredientes, descuento_pct, descuento_desde, descuento_hasta } = req.body;
 
@@ -335,7 +335,7 @@ router.put('/:id', requirePermission('puede_editar_productos'), async (req, res)
 // DELETE /api/dishes/:id?permanente=1 → elimina el plato de verdad.
 //   Solo si ya está archivado. El historial de ventas/reservas se conserva
 //   (las referencias quedan en NULL y los nombres denormalizados se mantienen).
-router.delete('/:id', requirePermission('puede_eliminar_productos'), async (req, res) => {
+router.delete('/:id', requirePermission('products.delete'), async (req, res) => {
   try {
     const permanente = req.query.permanente === '1' || req.query.permanente === 'true';
 

@@ -129,8 +129,17 @@ const API = (() => {
       create: (data) => request('/users', { method: 'POST', body: JSON.stringify(data) }),
       update: (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
       delete: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+      deletePermanent: (id) => request(`/users/${id}?permanente=1`, { method: 'DELETE' }),
       approve: (id, data) => request(`/users/${id}/aprobar`, { method: 'POST', body: JSON.stringify(data || {}) }),
       reject: (id, data) => request(`/users/${id}/rechazar`, { method: 'POST', body: JSON.stringify(data || {}) }),
+    },
+
+    roles: {
+      list: () => request('/roles'),
+      catalogo: () => request('/roles/catalogo'),
+      create: (data) => request('/roles', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id, data) => request(`/roles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      delete: (id) => request(`/roles/${id}`, { method: 'DELETE' }),
     },
 
     products: {

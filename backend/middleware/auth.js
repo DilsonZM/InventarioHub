@@ -29,20 +29,34 @@ function adminOnly(req, res, next) {
   next();
 }
 
-// Middleware granular: chequea un flag de permiso especifico
+// RBAC: resuelve el rol y sus permisos para un usuario.
+// Devuelve { roleId, roleName, permissions: [...] }
+async function getUserPermissions(userId) {
+  const supabase = require('../lib/supabase');
+  const { data, error } = await supabase
+    .from('perfiles')
+    .select('role_id, roles(id, name, permissions)')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  const role = data && data.roles ? data.roles : null;
+  return {
+    roleId: data ? data.role_id : null,
+    roleName: role ? role.name : null,
+    permissions: role && Array.isArray(role.permissions) ? role.permissions : []
+  };
+}
+
+// Middleware granular: chequea un permiso del rol del usuario (RBAC).
+// El usuario hereda estrictamente los permisos de su rol asignado.
 function requirePermission(perm) {
   return async (req, res, next) => {
     try {
-      const supabase = require('../lib/supabase');
-      const { data, error } = await supabase
-        .from('perfiles')
-        .select(perm)
-        .eq('id', req.user.id)
-        .single();
-      if (error) throw error;
-      if (!data || !data[perm]) {
+      const info = await getUserPermissions(req.user.id);
+      if (info.permissions.indexOf(perm) === -1) {
         return res.status(403).json({ success: false, message: 'No tienes permiso para esta accion' });
       }
+      req.userRole = info;
       next();
     } catch (err) {
       console.error('Permission check error:', err);
@@ -62,4 +76,4 @@ function generateToken(user) {
   );
 }
 
-module.exports = { authMiddleware, adminOnly, requirePermission, generateToken, JWT_SECRET };
+module.exports = { authMiddleware, adminOnly, requirePermission, getUserPermissions, generateToken, JWT_SECRET };
