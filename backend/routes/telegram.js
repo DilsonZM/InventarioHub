@@ -14,6 +14,7 @@ const {
   handleTelegramCallback,
   answerCallbackQuery,
   sendTelegramMessage,
+  sendTelegramDocument,
   editTelegramMessage,
   getConfiguredChatId
 } = require('../lib/telegram');
@@ -44,8 +45,11 @@ router.post('/webhook', async (req, res) => {
       await answerCallbackQuery(cb.id, cbResp && cbResp.toast);
       if (cbResp) {
         const useMarkdown = cbResp.markdown === true;
+        // Reportes PDF (solo Productos: la lista larga)
+        if (cbResp.document) {
+          await sendTelegramDocument(cbResp.document.buffer, cbResp.document.filename, cbResp.document.caption);
         // El panel de notificaciones se edita en el lugar (no llena el chat)
-        if (cbResp.edit && cb.message && cb.message.message_id) {
+        } else if (cbResp.edit && cb.message && cb.message.message_id) {
           const edited = await editTelegramMessage(cbResp.text, cb.message.message_id, {
             markdown: useMarkdown,
             replyMarkup: cbResp.replyMarkup

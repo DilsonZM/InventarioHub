@@ -14,6 +14,7 @@
 
 const supabase = require('./supabase');
 const { normalizePhone, formatPhone } = require('./phone');
+const stockReport = require('./stock-report');
 
 // Preferir IPv4 al conectar con la API de Telegram: en algunas redes el
 // enrutamiento IPv6 es inestable y produce "fetch failed" intermitentes.
@@ -240,6 +241,31 @@ async function notifyNewOrder(order, origin) {
   }
 }
 
+// Envia un documento (PDF) al chat configurado. No lanza excepciones.
+async function sendTelegramDocument(buffer, filename, caption) {
+  if (!isConfigured()) return { ok: false, skipped: true };
+  try {
+    const form = new FormData();
+    form.append('chat_id', String(CHAT_ID));
+    form.append('document', new Blob([buffer], { type: 'application/pdf' }), filename || 'reporte.pdf');
+    if (caption) form.append('caption', caption);
+    const res = await fetchWithRetry('https://api.telegram.org/bot' + BOT_TOKEN + '/sendDocument', {
+      method: 'POST',
+      body: form
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.warn('[telegram] envio documento fallo:', res.status, String(body).slice(0, 200));
+      return { ok: false };
+    }
+    console.log('[telegram] documento enviado');
+    return { ok: true };
+  } catch (err) {
+    console.warn('[telegram] sendDocument error (no bloqueante):', err.message);
+    return { ok: false, error: err.message };
+  }
+}
+
 // Responde al callback de un boton (quita el "relojito" de carga). No lanza.
 async function answerCallbackQuery(callbackQueryId, text) {
   if (!isConfigured() || !callbackQueryId) return;
@@ -460,6 +486,61 @@ async function buildNotificationsPanel() {
 }
 
 // ============================================================
+// Panel de inventario (/inventario) - reportes PDF bajo pedido
+// ============================================================
+
+function fmtNum(n) {
+  return (Number(n) || 0).toLocaleString('es-CO', { maximumFractionDigits: 2 });
+}
+
+async function buildInventoryPanel() {
+  const prods = await stockReport.getProductsData();
+  const bajos = prods.filter(function (p) { return p.minStock > 0 && p.stock <= p.minStock; }).length;
+  const lines = [];
+  lines.push('📦 *INVENTARIO Y REPORTES*');
+  lines.push('');
+  lines.push('📊 Productos activos: ' + prods.length);
+  lines.push('⚠️ Bajo mínimo: ' + bajos);
+  lines.push('');
+  lines.push('Generá un PDF:');
+  return {
+    text: lines.join('\n'),
+    markdown: true,
+    replyMarkup: {
+      inline_keyboard: [
+        [
+          { text: '⚠️ Stock bajo', callback_data: 'inv:bajos' },
+          { text: '📦 Productos', callback_data: 'inv:productos' }
+        ],
+        [
+          { text: '🍽️ Platos', callback_data: 'inv:platos' },
+          { text: '🥤 Bebidas', callback_data: 'inv:bebidas' }
+        ],
+        [
+          { text: '🔄 Actualizar', callback_data: 'inv:refresh' }
+        ]
+      ]
+    }
+  };
+}
+
+// Lista de stock bajo (texto) para el comando /stockbajos
+async function buildLowStockText() {
+  const bajos = await stockReport.getLowStockData();
+  if (bajos.length === 0) return '✅ No hay productos en o bajo el mínimo.';
+  const lines = [];
+  lines.push('⚠️ STOCK BAJO (' + bajos.length + ')');
+  lines.push('');
+  bajos.slice(0, 20).forEach(function (p) {
+    lines.push('🔴 ' + p.nombre + ': ' + fmtNum(p.stock) + ' ' + p.unidad + ' (mín. ' + fmtNum(p.minStock) + ')');
+  });
+  if (bajos.length > 20) lines.push('…y ' + (bajos.length - 20) + ' más');
+  lines.push('');
+  lines.push('🛒 Registra una entrada o ajusta el stock.');
+  return lines.join('\n');
+}
+
+// ============================================================
 // Comandos del chat
 // ============================================================
 
@@ -467,6 +548,8 @@ const HELP_TEXT = [
   '🤖 Comandos disponibles:',
   '',
   '/notificaciones — Panel para activar/silenciar avisos',
+  '/inventario — Reportes PDF (productos, platos, bebidas, stock bajo)',
+  '/stockbajos — Ver los productos bajo mínimo ahora',
   '/estado — Ver el estado actual (texto)',
   '/hoy — Resumen de ventas de hoy',
   '/rango — Resumen por rango de fechas (con selector)',
@@ -487,6 +570,15 @@ async function handleTelegramCommand(text) {
     case '/notif': {
       const panel = await buildNotificationsPanel();
       return { text: panel.text, markdown: panel.markdown, replyMarkup: panel.replyMarkup };
+    }
+    case '/inventario':
+    case '/inventarios': {
+      const panel = await buildInventoryPanel();
+      return { text: panel.text, markdown: panel.markdown, replyMarkup: panel.replyMarkup };
+    }
+    case '/stockbajos':
+    case '/bajos': {
+      return await buildLowStockText();
     }
     case '/hoy':
     case '/resumen': {
@@ -597,6 +689,54 @@ async function handleTelegramCallback(data) {
     };
   }
 
+  // --- Panel de inventario (/inventario): genera PDFs bajo pedido ---
+  if (key === 'inv') {
+    const action = parts[1];
+
+    if (action === 'refresh') {
+      const panel = await buildInventoryPanel();
+      return { text: panel.text, markdown: panel.markdown, replyMarkup: panel.replyMarkup, edit: true, toast: '🔄 Actualizado' };
+    }
+
+    if (action === 'productos') {
+      const data = await stockReport.getProductsData();
+      const pdf = await stockReport.buildProductsPdf(data, 'Inventario');
+      return {
+        document: { buffer: pdf, filename: 'inventario.pdf', caption: '📦 Inventario completo (' + data.length + ' productos)' },
+        toast: '📄 Generando inventario...'
+      };
+    }
+
+    if (action === 'bajos') {
+      const data = await stockReport.getLowStockData();
+      if (data.length === 0) return { text: '✅ No hay productos en o bajo el mínimo.', toast: 'Sin stock bajo' };
+      const pdf = await stockReport.buildProductsPdf(data, 'Productos con Stock Bajo');
+      return {
+        document: { buffer: pdf, filename: 'stock-bajo.pdf', caption: '⚠️ Productos con stock bajo (' + data.length + ')' },
+        toast: '📄 Generando reporte...'
+      };
+    }
+
+    if (action === 'platos' || action === 'bebidas') {
+      const esPlato = action === 'platos';
+      const data = await stockReport.getDishesData(esPlato ? 'plato' : 'bebida');
+      if (data.length === 0) {
+        return { text: (esPlato ? '🍽️ No hay platos activos.' : '🥤 No hay bebidas activas.'), toast: 'Sin datos' };
+      }
+      const pdf = await stockReport.buildDishesPdf(data, esPlato ? 'Platos' : 'Bebidas');
+      return {
+        document: {
+          buffer: pdf,
+          filename: (esPlato ? 'platos' : 'bebidas') + '.pdf',
+          caption: (esPlato ? '🍽️ Platos' : '🥤 Bebidas') + ' (' + data.length + ') — costo, precio y margen'
+        },
+        toast: '📄 Generando reporte...'
+      };
+    }
+
+    return null;
+  }
+
   // --- Panel de notificaciones (/notificaciones) ---
   if (key === 'ntf') {
     const action = parts[1];
@@ -650,11 +790,14 @@ module.exports = {
   notifyNewOrder,
   notifyOrderReady,
   sendTelegramMessage,
+  sendTelegramDocument,
   editTelegramMessage,
   buildOrderMessage,
   buildReadyMessage,
   buildDailySummaryRange,
   buildNotificationsPanel,
+  buildInventoryPanel,
+  buildLowStockText,
   handleTelegramCommand,
   handleTelegramCallback,
   answerCallbackQuery,

@@ -19,5 +19,11 @@
       "source": "/(.*)",
       "destination": "/frontend/$1"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/low-stock",
+      "schedule": "0 13 * * *"
+    }
   ]
 }
