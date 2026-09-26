@@ -407,6 +407,16 @@ function formatDateEs(dateStr) {
   } catch (e) { return dateStr; }
 }
 
+// Fecha larga en español con inicial mayúscula: "Sábado, 26 de septiembre de 2026"
+function formatDateEsLong(dateStr) {
+  try {
+    const s = new Date(dateStr + 'T12:00:00-05:00').toLocaleDateString('es-CO', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  } catch (e) { return dateStr; }
+}
+
 // Resumen de ventas de un rango (fechas 'YYYY-MM-DD' en zona Bogota)
 async function buildDailySummaryRange(from, to) {
   const { applyBogotaDateFilter } = require('./timezone');
@@ -415,44 +425,74 @@ async function buildDailySummaryRange(from, to) {
 
   let query = supabase
     .from('ventas')
-    .select('total, estado, estado_cocina, venta_detalles(producto_nombre, cantidad)');
+    .select('total, estado, estado_cocina, venta_detalles(producto_nombre, cantidad, subtotal, es_plato, plato_id, producto_id)');
   query = applyBogotaDateFilter(query, 'creado_en', from, to);
   const { data, error } = await query;
   if (error) throw error;
 
-  let pedidos = 0, facturado = 0, cortesias = 0, canceladas = 0;
+  // Costos para el margen estimado: platos (receta) y productos (precio_compra)
+  const platoCostos = {};
+  try {
+    const dishes = await stockReport.getDishesData();
+    dishes.forEach(function (d) { platoCostos[d.id] = d.costo; });
+  } catch (e) { /* noop */ }
+  const prodCostos = {};
+  try {
+    const { data: prods } = await supabase.from('productos').select('id, precio_compra');
+    (prods || []).forEach(function (p) { prodCostos[p.id] = parseFloat(p.precio_compra) || 0; });
+  } catch (e) { /* noop */ }
+
+  let pedidos = 0, facturado = 0, cortesias = 0, canceladas = 0, costoVentas = 0;
   const platos = {};
   (data || []).forEach(function (v) {
     if (v.estado_cocina === 'cancelada') { canceladas++; return; }
     pedidos++;
     if (v.estado_cocina === 'cortesia') cortesias++;
-    if (v.estado === 'completada') facturado += parseFloat(v.total) || 0;
+    const esCompletada = v.estado === 'completada';
+    if (esCompletada) facturado += parseFloat(v.total) || 0;
     (v.venta_detalles || []).forEach(function (d) {
-      const k = d.producto_nombre || '?';
-      platos[k] = (platos[k] || 0) + (parseInt(d.cantidad, 10) || 0);
+      const cant = parseInt(d.cantidad, 10) || 0;
+      if (d.es_plato) {
+        const k = d.producto_nombre || '?';
+        platos[k] = (platos[k] || 0) + cant;
+      }
+      // Costo solo de ventas facturadas (mismo universo que el facturado)
+      if (esCompletada) {
+        if (d.es_plato && d.plato_id && platoCostos[d.plato_id] != null) {
+          costoVentas += platoCostos[d.plato_id] * cant;
+        } else if (d.producto_id && prodCostos[d.producto_id] != null) {
+          costoVentas += prodCostos[d.producto_id] * cant;
+        }
+      }
     });
   });
 
-  const lista = Object.keys(platos).map(function (k) { return { nombre: k, cant: platos[k] }; })
-    .sort(function (a, b) { return b.cant - a.cant; });
+  const margen = facturado - costoVentas;
+  const margenPct = facturado > 0 ? (margen / facturado) * 100 : 0;
 
+  const top = Object.keys(platos).map(function (k) { return { nombre: k, cant: platos[k] }; })
+    .sort(function (a, b) { return b.cant - a.cant; })
+    .slice(0, 5);
+
+  const esDia = from === to;
   const lines = [];
-  lines.push('📊 RESUMEN DE VENTAS');
-  lines.push('📅 ' + (from === to ? formatDateEs(from) : (formatDateEs(from) + ' → ' + formatDateEs(to))));
+  lines.push('📊 RESUMEN DE VENTAS ' + (esDia ? 'DEL DÍA' : 'DEL PERIODO'));
+  lines.push('📅 ' + (esDia ? formatDateEsLong(from) : ('Del ' + formatDateEs(from) + ' al ' + formatDateEs(to))));
   lines.push('');
-  lines.push('🧾 Pedidos: ' + pedidos);
+  lines.push('🧾 Pedidos cerrados: ' + pedidos);
   lines.push('💰 Facturado: ' + formatCurrency(facturado));
+  lines.push('📈 Margen estimado: ' + formatCurrency(margen) + ' (' + margenPct.toFixed(1) + '%)');
   lines.push('🎁 Cortesías: ' + cortesias);
   lines.push('❌ Cancelados: ' + canceladas);
   lines.push('');
-  if (lista.length === 0) {
-    lines.push('🍽️ Sin ventas registradas en ese período.');
+  if (top.length === 0) {
+    lines.push('🍽️ Sin platos vendidos en ese período.');
   } else {
-    lines.push('🍽️ Vendidos:');
-    lista.slice(0, 15).forEach(function (p) {
-      lines.push('• ' + p.cant + 'x ' + p.nombre);
+    const medals = ['🥇', '🥈', '🥉'];
+    lines.push('🏆 Top 5 Platos más vendidos:');
+    top.forEach(function (p, i) {
+      lines.push((i + 1) + '. ' + (medals[i] || '') + ' ' + p.nombre + ' (' + p.cant + 'x)');
     });
-    if (lista.length > 15) lines.push('…y ' + (lista.length - 15) + ' más');
   }
   return lines.join('\n');
 }

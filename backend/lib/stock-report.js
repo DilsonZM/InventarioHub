@@ -107,7 +107,7 @@ async function getDishesData(tipo) {
     const precio = parseFloat(p.precio_venta) || 0;
     const margen = Math.round((precio - costo) * 100) / 100;
     const margenPct = precio > 0 ? Math.round((margen / precio) * 1000) / 10 : 0;
-    return { nombre: p.nombre, tipo: p.tipo, costo: costo, precio: precio, margen: margen, margenPct: margenPct };
+    return { id: p.id, nombre: p.nombre, tipo: p.tipo, costo: costo, precio: precio, margen: margen, margenPct: margenPct };
   }).sort(function (a, b) { return a.nombre.localeCompare(b.nombre); });
 }
 
