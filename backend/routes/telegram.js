@@ -71,7 +71,12 @@ router.post('/webhook', async (req, res) => {
       } else if (cbError) {
         await sendTelegramMessage('⚠️ No se pudo procesar la solicitud: ' + cbError.message, { markdown: false });
       }
-      return res.sendStatus(200);
+      // Telegram ignora el body; lo usamos para diagnostico
+      return res.status(200).json({
+        ok: true,
+        handled: cbResp ? (cbResp.document ? 'document' : (cbResp.edit ? 'edit' : 'text')) : 'none',
+        error: cbError ? cbError.message : null
+      });
     }
 
     const msg = update.message || update.edited_message || update.channel_post || {};
