@@ -186,10 +186,22 @@ router.post('/forgot-password', async (req, res) => {
       .single();
 
     // Por seguridad, no exponemos si el correo existe.
-    // La idea seria disparar un correo de recuperacion.
-    // Aqui dejamos el mensaje generico y, si existe, lo logueamos para el admin.
+    // No hay servicio de correo configurado: avisamos al grupo interno de
+    // Telegram para que el Super Admin restablezca la contrasena desde la BD.
     if (user) {
       console.log('[forgot-password] Solicitud de recuperacion para:', user.username, '<-', user.email);
+      const safeUser = String(user.username || '').replace(/[<>&]/g, '');
+      const safeEmail = String(user.email || '').replace(/[<>&]/g, '');
+      try {
+        const { sendTelegramMessage } = require('../lib/telegram');
+        sendTelegramMessage(
+          '🔑 <b>Solicitud de restablecimiento</b>\n\n'
+          + 'Usuario: <b>' + safeUser + '</b>\n'
+          + 'Correo: ' + safeEmail + '\n\n'
+          + 'Un Super Admin debe restablecer la contraseña desde la base de datos.',
+          { html: true }
+        ).catch(function () { /* no bloqueante */ });
+      } catch (e) { /* no bloqueante */ }
     }
 
     res.json({

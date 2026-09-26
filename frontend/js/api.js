@@ -95,6 +95,8 @@ const API = (() => {
       register: (username, password, role) =>
         request('/auth/register', { method: 'POST', body: JSON.stringify({ username, password, role }) }),
       me: () => request('/auth/me'),
+      forgotPassword: (email) =>
+        request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
     },
 
     config: {

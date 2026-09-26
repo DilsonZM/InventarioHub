@@ -250,10 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       setLoading(btn, true);
       try {
-        var res = await API.request('/auth/forgot-password', {
-          method: 'POST',
-          body: JSON.stringify({ email: email.trim().toLowerCase() })
-        });
+        var res = await API.auth.forgotPassword(email.trim().toLowerCase());
         showSuccess('forgotSuccess', (res.data && res.data.message) || 'Si el correo coincide, te enviamos las instrucciones.');
         showError('forgotError', '');
         forgotForm.reset();
