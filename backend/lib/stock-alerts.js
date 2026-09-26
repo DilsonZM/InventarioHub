@@ -7,13 +7,9 @@
 // Nunca lanza excepciones: si falla, solo queda el warning en consola.
 
 const supabase = require('./supabase');
-const { sendTelegramMessage, getBotSettings } = require('./telegram');
+const { sendTelegramMessage, getBotSettings, buildLowStockReport } = require('./telegram');
 
 const ALERT_COOLDOWN_HOURS = 12;
-
-function fmtNum(n) {
-  return (Number(n) || 0).toLocaleString('es-CO', { maximumFractionDigits: 2 });
-}
 
 async function checkLowStockAlerts() {
   try {
@@ -40,26 +36,10 @@ async function checkLowStockAlerts() {
     });
     if (bajos.length === 0) return;
 
-    // Mas critico primero (menor proporcion stock/minimo)
-    bajos.sort(function (a, b) {
-      const ra = (parseFloat(a.stock_actual) || 0) / (parseFloat(a.stock_minimo) || 1);
-      const rb = (parseFloat(b.stock_actual) || 0) / (parseFloat(b.stock_minimo) || 1);
-      return ra - rb;
-    });
-
-    const lines = [];
-    lines.push('⚠️ ALERTA DE STOCK BAJO');
-    lines.push('');
-    lines.push('🔴 Productos en o bajo el mínimo:');
-    bajos.slice(0, 20).forEach(function (p) {
-      lines.push('• ' + p.nombre + ': ' + fmtNum(p.stock_actual) + ' ' + (p.unidad_medida || '')
-        + ' (mín. ' + fmtNum(p.stock_minimo) + ')');
-    });
-    if (bajos.length > 20) lines.push('…y ' + (bajos.length - 20) + ' más');
-    lines.push('');
-    lines.push('🛒 Registra una entrada o ajusta el stock.');
-
-    const res = await sendTelegramMessage(lines.join('\n'), { markdown: false });
+    const res = await sendTelegramMessage(
+      buildLowStockReport(bajos, 'ALERTA DE STOCK BAJO'),
+      { html: true }
+    );
     if (res && res.ok) {
       const nowIso = new Date().toISOString();
       for (const p of bajos) {
@@ -91,32 +71,13 @@ async function sendDailyLowStockReport() {
       const min = parseFloat(p.stock_minimo) || 0;
       return min > 0 && stock <= min;
     });
-    if (bajos.length === 0) return { skipped: 'sin productos bajos' };
 
-    bajos.sort(function (a, b) {
-      const ra = (parseFloat(a.stock_actual) || 0) / (parseFloat(a.stock_minimo) || 1);
-      const rb = (parseFloat(b.stock_actual) || 0) / (parseFloat(b.stock_minimo) || 1);
-      return ra - rb;
-    });
-
-    const fecha = new Date().toLocaleDateString('es-CO', {
-      timeZone: 'America/Bogota', weekday: 'long', day: 'numeric', month: 'long'
-    });
-    const lines = [];
-    lines.push('📦 REPORTE DIARIO DE STOCK');
-    lines.push('📅 ' + fecha);
-    lines.push('');
-    lines.push('🔴 Productos en o bajo el mínimo (' + bajos.length + '):');
-    bajos.slice(0, 20).forEach(function (p) {
-      lines.push('• ' + p.nombre + ': ' + fmtNum(p.stock_actual) + ' ' + (p.unidad_medida || '')
-        + ' (mín. ' + fmtNum(p.stock_minimo) + ')');
-    });
-    if (bajos.length > 20) lines.push('…y ' + (bajos.length - 20) + ' más');
-    lines.push('');
-    lines.push('🛒 Registra una entrada o ajusta el stock.');
-
-    const res = await sendTelegramMessage(lines.join('\n'), { markdown: false });
-    if (res && res.ok) {
+    // Si no hay bajos, enviar el mensaje positivo igual
+    const res = await sendTelegramMessage(
+      buildLowStockReport(bajos, 'REPORTE DIARIO DE STOCK'),
+      { html: true }
+    );
+    if (res && res.ok && bajos.length > 0) {
       const nowIso = new Date().toISOString();
       for (const p of bajos) {
         await supabase.from('productos').update({ alerta_stock_enviada_en: nowIso }).eq('id', p.id);

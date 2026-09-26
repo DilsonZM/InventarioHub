@@ -40,6 +40,14 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
+// Escapa caracteres para parse_mode HTML
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 // ============================================================
 // Configuracion del bot (app_config) con cache corta
 // ============================================================
@@ -172,7 +180,7 @@ async function fetchWithTimeout(url, options, timeoutMs) {
 
 // fetch con reintentos cortos: la red hacia Telegram a veces da ETIMEDOUT
 async function fetchWithRetry(url, options, attempts) {
-  const max = attempts || 2;
+  const max = attempts || 3;
   let lastErr = null;
   for (let i = 0; i < max; i++) {
     try {
@@ -186,13 +194,19 @@ async function fetchWithRetry(url, options, attempts) {
 }
 
 // options.markdown: true (default) para MarkdownV2; false para texto plano
+// options.html: true para parse_mode HTML (tiene prioridad sobre markdown)
 // options.replyMarkup: teclado inline de Telegram (botones)
 async function sendTelegramMessage(text, options) {
   if (!isConfigured()) return { ok: false, skipped: true };
-  const useMarkdown = !options || options.markdown !== false;
+  const useHtml = !!(options && options.html);
+  const useMarkdown = !useHtml && (!options || options.markdown !== false);
   try {
     const payload = { chat_id: CHAT_ID, text: text };
-    if (useMarkdown) {
+    if (useHtml) {
+      payload.parse_mode = 'HTML';
+      payload.disable_web_page_preview = true;
+      payload.link_preview_options = { is_disabled: true };
+    } else if (useMarkdown) {
       payload.parse_mode = 'MarkdownV2';
       // Evita la tarjeta de preview del link de WhatsApp (ocupa mucho espacio)
       payload.disable_web_page_preview = true;
@@ -524,20 +538,67 @@ async function buildInventoryPanel() {
   };
 }
 
-// Lista de stock bajo (texto) para el comando /stockbajos
+// Reporte de stock bajo con formato rico (parse_mode HTML).
+// Acepta items con { nombre, stock|stock_actual, minStock|stock_minimo, unidad|unidad_medida }.
+// Clasifica en CRITICO/AGOTADO (stock <= 0 o <= 25% del minimo) y EN ALERTA.
+function buildLowStockReport(bajos, title) {
+  const APP_URL = process.env.APP_URL || 'https://inventory-app-one-azure.vercel.app';
+  const lines = [];
+  lines.push('📦📦📦📦📦📦📦📦📦📦');
+  lines.push('⚠️ <b>' + escHtml(title || 'STOCK BAJO') + '</b>');
+  lines.push('📦📦📦📦📦📦📦📦📦📦');
+  lines.push('');
+  lines.push('📅 ' + escHtml(new Date().toLocaleString('es-CO', {
+    timeZone: 'America/Bogota', dateStyle: 'long', timeStyle: 'short'
+  })));
+  lines.push('');
+
+  if (!bajos || bajos.length === 0) {
+    lines.push('✅ Todo el inventario se encuentra sobre el nivel mínimo operativo.');
+    return lines.join('\n');
+  }
+
+  const criticos = [];
+  const alerta = [];
+  bajos.forEach(function (p) {
+    const stock = parseFloat(p.stock != null ? p.stock : p.stock_actual) || 0;
+    const min = parseFloat(p.minStock != null ? p.minStock : p.stock_minimo) || 0;
+    const unidad = p.unidad || p.unidad_medida || '';
+    const falta = Math.round(Math.max(0, min - stock) * 100) / 100;
+    const item = { nombre: p.nombre, stock: stock, min: min, unidad: unidad, falta: falta };
+    if (stock <= 0 || (min > 0 && stock <= min * 0.25)) criticos.push(item);
+    else alerta.push(item);
+  });
+  const byRatio = function (a, b) { return (a.stock / (a.min || 1)) - (b.stock / (b.min || 1)); };
+  criticos.sort(byRatio);
+  alerta.sort(byRatio);
+
+  function itemLine(it) {
+    return '• <b>' + escHtml(it.nombre) + '</b>: ' + fmtNum(it.stock) + ' ' + escHtml(it.unidad)
+      + ' (mín. ' + fmtNum(it.min) + ') ➔ Falta: ' + fmtNum(it.falta) + ' ' + escHtml(it.unidad);
+  }
+
+  if (criticos.length > 0) {
+    lines.push('🔴 <b>CRÍTICO / AGOTADO</b>');
+    criticos.forEach(function (it) { lines.push(itemLine(it)); });
+    lines.push('');
+  }
+  if (alerta.length > 0) {
+    lines.push('🟡 <b>EN ALERTA</b>');
+    alerta.forEach(function (it) { lines.push(itemLine(it)); });
+    lines.push('');
+  }
+
+  lines.push('🛒 <b>Total insumos a reponer:</b> ' + bajos.length);
+  lines.push('');
+  lines.push('🔗 <a href="' + APP_URL + '/index.html#entradas">Registrar entradas en InventarioHub</a>');
+  return lines.join('\n');
+}
+
+// Lista de stock bajo para el comando /stockbajos (mismo formato)
 async function buildLowStockText() {
   const bajos = await stockReport.getLowStockData();
-  if (bajos.length === 0) return '✅ No hay productos en o bajo el mínimo.';
-  const lines = [];
-  lines.push('⚠️ STOCK BAJO (' + bajos.length + ')');
-  lines.push('');
-  bajos.slice(0, 20).forEach(function (p) {
-    lines.push('🔴 ' + p.nombre + ': ' + fmtNum(p.stock) + ' ' + p.unidad + ' (mín. ' + fmtNum(p.minStock) + ')');
-  });
-  if (bajos.length > 20) lines.push('…y ' + (bajos.length - 20) + ' más');
-  lines.push('');
-  lines.push('🛒 Registra una entrada o ajusta el stock.');
-  return lines.join('\n');
+  return buildLowStockReport(bajos, 'STOCK BAJO');
 }
 
 // ============================================================
@@ -578,7 +639,7 @@ async function handleTelegramCommand(text) {
     }
     case '/stockbajos':
     case '/bajos': {
-      return await buildLowStockText();
+      return { text: await buildLowStockText(), html: true };
     }
     case '/hoy':
     case '/resumen': {
@@ -798,6 +859,7 @@ module.exports = {
   buildNotificationsPanel,
   buildInventoryPanel,
   buildLowStockText,
+  buildLowStockReport,
   handleTelegramCommand,
   handleTelegramCallback,
   answerCallbackQuery,

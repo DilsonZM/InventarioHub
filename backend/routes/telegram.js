@@ -80,6 +80,7 @@ router.post('/webhook', async (req, res) => {
       } else {
         await sendTelegramMessage(response.text, {
           markdown: response.markdown === true,
+          html: response.html === true,
           replyMarkup: response.replyMarkup
         });
       }
