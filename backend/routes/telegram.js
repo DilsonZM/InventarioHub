@@ -41,7 +41,15 @@ router.post('/webhook', async (req, res) => {
       if (!cbChatId || String(cbChatId) !== String(getConfiguredChatId())) {
         return res.sendStatus(200);
       }
-      const cbResp = await handleTelegramCallback(cb.data);
+      let cbResp = null;
+      let cbError = null;
+      try {
+        cbResp = await handleTelegramCallback(cb.data);
+      } catch (cbErr) {
+        cbError = cbErr;
+        console.error('[telegram webhook] callback error:', cbErr.message);
+      }
+      // Siempre responder al callback (quita el "pensando..." del boton)
       await answerCallbackQuery(cb.id, cbResp && cbResp.toast);
       if (cbResp) {
         const useMarkdown = cbResp.markdown === true;
@@ -60,6 +68,8 @@ router.post('/webhook', async (req, res) => {
         } else {
           await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, replyMarkup: cbResp.replyMarkup });
         }
+      } else if (cbError) {
+        await sendTelegramMessage('⚠️ No se pudo procesar la solicitud: ' + cbError.message, { markdown: false });
       }
       return res.sendStatus(200);
     }

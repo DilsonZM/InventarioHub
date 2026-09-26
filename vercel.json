@@ -3,7 +3,15 @@
   "builds": [
     {
       "src": "backend/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "backend/node_modules/pdfkit/js/data/**",
+          "backend/node_modules/pdfkit/js/pdfkit.js",
+          "backend/node_modules/pdfkit/js/reference.js",
+          "backend/node_modules/pdfkit/package.json"
+        ]
+      }
     },
     {
       "src": "frontend/**",
