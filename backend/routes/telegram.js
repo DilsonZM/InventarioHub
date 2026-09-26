@@ -11,6 +11,8 @@ const express = require('express');
 const router = express.Router();
 const {
   handleTelegramCommand,
+  handleTelegramCallback,
+  answerCallbackQuery,
   sendTelegramMessage,
   getConfiguredChatId
 } = require('../lib/telegram');
@@ -29,6 +31,22 @@ router.post('/webhook', async (req, res) => {
     }
 
     const update = req.body || {};
+
+    // Botones del selector de fechas (callback_query de /rango)
+    const cb = update.callback_query;
+    if (cb) {
+      const cbChatId = cb.message && cb.message.chat ? cb.message.chat.id : null;
+      if (!cbChatId || String(cbChatId) !== String(getConfiguredChatId())) {
+        return res.sendStatus(200);
+      }
+      await answerCallbackQuery(cb.id);
+      const cbResp = await handleTelegramCallback(cb.data);
+      if (cbResp) {
+        await sendTelegramMessage(cbResp.text, { markdown: false, replyMarkup: cbResp.replyMarkup });
+      }
+      return res.sendStatus(200);
+    }
+
     const msg = update.message || update.edited_message || update.channel_post || {};
     const chatId = msg.chat ? msg.chat.id : null;
     const text = msg.text || '';
@@ -40,7 +58,11 @@ router.post('/webhook', async (req, res) => {
 
     const response = await handleTelegramCommand(text);
     if (response) {
-      await sendTelegramMessage(response, { markdown: false });
+      if (typeof response === 'string') {
+        await sendTelegramMessage(response, { markdown: false });
+      } else {
+        await sendTelegramMessage(response.text, { markdown: false, replyMarkup: response.replyMarkup });
+      }
     }
     return res.sendStatus(200);
   } catch (err) {

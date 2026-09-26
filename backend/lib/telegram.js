@@ -185,6 +185,7 @@ async function fetchWithRetry(url, options, attempts) {
 }
 
 // options.markdown: true (default) para MarkdownV2; false para texto plano
+// options.replyMarkup: teclado inline de Telegram (botones)
 async function sendTelegramMessage(text, options) {
   if (!isConfigured()) return { ok: false, skipped: true };
   const useMarkdown = !options || options.markdown !== false;
@@ -196,6 +197,7 @@ async function sendTelegramMessage(text, options) {
       payload.disable_web_page_preview = true;
       payload.link_preview_options = { is_disabled: true };
     }
+    if (options && options.replyMarkup) payload.reply_markup = options.replyMarkup;
     const res = await fetchWithRetry('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -237,6 +239,20 @@ async function notifyNewOrder(order, origin) {
   }
 }
 
+// Responde al callback de un boton (quita el "relojito" de carga). No lanza.
+async function answerCallbackQuery(callbackQueryId) {
+  if (!isConfigured() || !callbackQueryId) return;
+  try {
+    await fetchWithRetry('https://api.telegram.org/bot' + BOT_TOKEN + '/answerCallbackQuery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callback_query_id: callbackQueryId })
+    });
+  } catch (err) {
+    console.warn('[telegram] answerCallbackQuery error (no bloqueante):', err.message);
+  }
+}
+
 // Aviso de "pedido listo" para meseros/salon. Nunca lanza excepciones.
 async function notifyOrderReady(order) {
   try {
@@ -269,17 +285,44 @@ function todayBogota() {
   }).format(new Date());
 }
 
-// Acepta 'YYYY-MM-DD' o 'DD/MM' (o 'DD-MM') y devuelve 'YYYY-MM-DD'
+function addDaysBogota(dateStr, days) {
+  const d = new Date(dateStr + 'T12:00:00-05:00');
+  d.setDate(d.getDate() + days);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(d);
+}
+
+function startOfMonthBogota() {
+  return todayBogota().slice(0, 8) + '01';
+}
+
+function prevMonthRangeBogota() {
+  const t = todayBogota();
+  let y = parseInt(t.slice(0, 4), 10);
+  let m = parseInt(t.slice(5, 7), 10) - 1;
+  if (m === 0) { m = 12; y--; }
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return {
+    from: y + '-' + String(m).padStart(2, '0') + '-01',
+    to: y + '-' + String(m).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0')
+  };
+}
+
+// Acepta 'YYYY-MM-DD', 'DD/MM/YYYY', 'DDMMYYYY', 'DD/MM' (año actual)
+// y devuelve siempre 'YYYY-MM-DD'
 function parseDateArg(raw) {
   const s = String(raw || '').trim();
   let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return m[3] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
+  m = s.match(/^(\d{2})(\d{2})(\d{4})$/);
+  if (m) return m[3] + '-' + m[2] + '-' + m[1];
   m = s.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
   if (m) {
     const year = todayBogota().slice(0, 4);
-    const dd = String(m[1]).padStart(2, '0');
-    const mm = String(m[2]).padStart(2, '0');
-    return year + '-' + mm + '-' + dd;
+    return year + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
   }
   return null;
 }
@@ -292,22 +335,11 @@ function formatDateEs(dateStr) {
   } catch (e) { return dateStr; }
 }
 
-// Resumen de ventas de un dia o rango (fechas en zona Bogota)
-async function buildDailySummary(args) {
+// Resumen de ventas de un rango (fechas 'YYYY-MM-DD' en zona Bogota)
+async function buildDailySummaryRange(from, to) {
   const { applyBogotaDateFilter } = require('./timezone');
-  let from, to;
-  const a1 = args[0] ? parseDateArg(args[0]) : null;
-  const a2 = args[1] ? parseDateArg(args[1]) : null;
-  if (!args.length) {
-    from = to = todayBogota();
-  } else if (args.length === 1 && a1) {
-    from = to = a1;
-  } else if (args.length >= 2 && a1 && a2) {
-    from = a1; to = a2;
-    if (from > to) { const t = from; from = to; to = t; }
-  } else {
-    return '⚠️ Formato inválido\\. Usá:\n/hoy\n/hoy 26/09\n/hoy 20/09 26/09\n/hoy 2026-09-26';
-  }
+  if (!from || !to) { from = to = todayBogota(); }
+  if (from > to) { const t = from; from = to; to = t; }
 
   let query = supabase
     .from('ventas')
@@ -361,7 +393,8 @@ const HELP_TEXT = [
   '🤖 Comandos disponibles:',
   '',
   '/estado — Ver el estado actual',
-  '/hoy — Resumen de ventas de hoy (o /hoy 20/09 26/09)',
+  '/hoy — Resumen de ventas de hoy',
+  '/rango — Resumen por rango de fechas (con selector)',
   '/pausar — Pausar todas las notificaciones',
   '/reanudar — Reanudar notificaciones',
   '/silenciar_pos — Silenciar pedidos del POS',
@@ -385,7 +418,38 @@ async function handleTelegramCommand(text) {
     case '/hoy':
     case '/resumen': {
       const args = clean.split(/\s+/).slice(1);
-      return await buildDailySummary(args);
+      if (args.length === 0) return await buildDailySummaryRange(todayBogota(), todayBogota());
+      const d = parseDateArg(args[0]);
+      if (!d) return '⚠️ Formato inválido. Ej: /hoy 26/09/2026';
+      return await buildDailySummaryRange(d, d);
+    }
+    case '/rango': {
+      const args = clean.split(/\s+/).slice(1);
+      if (args.length === 0) {
+        // Selector de fechas con botones
+        return {
+          text: '📅 Elegí el rango de fechas:',
+          replyMarkup: {
+            inline_keyboard: [
+              [
+                { text: '📆 Hoy', callback_data: 'rango:hoy' },
+                { text: '📆 Ayer', callback_data: 'rango:ayer' }
+              ],
+              [
+                { text: '🗓️ Últimos 7 días', callback_data: 'rango:7d' },
+                { text: '🗓️ Este mes', callback_data: 'rango:mes' }
+              ],
+              [
+                { text: '🗓️ Mes pasado', callback_data: 'rango:mespasado' }
+              ]
+            ]
+          }
+        };
+      }
+      const d1 = parseDateArg(args[0]);
+      const d2 = args[1] ? parseDateArg(args[1]) : d1;
+      if (!d1 || !d2) return '⚠️ Formato inválido. Ej: /rango 20/09/2026 26/09/2026';
+      return await buildDailySummaryRange(d1, d2);
     }
     case '/pausar':
       await updateBotSetting({ notifications_active: false });
@@ -427,14 +491,46 @@ async function handleTelegramCommand(text) {
   }
 }
 
+// Procesa el callback de un boton del selector de fechas (/rango)
+async function handleTelegramCallback(data) {
+  const parts = String(data || '').split(':');
+  if (parts[0] !== 'rango') return null;
+  const hoy = todayBogota();
+  let from, to;
+  switch (parts[1]) {
+    case 'hoy': from = to = hoy; break;
+    case 'ayer': from = to = addDaysBogota(hoy, -1); break;
+    case '7d': from = addDaysBogota(hoy, -6); to = hoy; break;
+    case 'mes': from = startOfMonthBogota(); to = hoy; break;
+    case 'mespasado': {
+      const r = prevMonthRangeBogota();
+      from = r.from; to = r.to;
+      break;
+    }
+    default: return null;
+  }
+  const text = await buildDailySummaryRange(from, to);
+  return {
+    text: text,
+    replyMarkup: {
+      inline_keyboard: [[
+        { text: '📆 Hoy', callback_data: 'rango:hoy' },
+        { text: '🗓️ Este mes', callback_data: 'rango:mes' }
+      ]]
+    }
+  };
+}
+
 module.exports = {
   notifyNewOrder,
   notifyOrderReady,
   sendTelegramMessage,
   buildOrderMessage,
   buildReadyMessage,
-  buildDailySummary,
+  buildDailySummaryRange,
   handleTelegramCommand,
+  handleTelegramCallback,
+  answerCallbackQuery,
   getBotSettings,
   updateBotSetting,
   getConfiguredChatId,
