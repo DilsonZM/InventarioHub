@@ -1,5 +1,5 @@
 // lib/telegram.js
-// Notificaciones de pedidos nuevos a Telegram.
+// Notificaciones de pedidos nuevos a Telegram + comandos de control.
 //
 // El token del bot vive SOLO en variables de entorno del backend
 // (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID), nunca en el frontend.
@@ -7,7 +7,11 @@
 // Regla de oro: si Telegram falla o no esta configurado, el pedido
 // NUNCA se cancela ni se le muestra un error al usuario; solo se
 // registra el problema en consola.
+//
+// Control por comandos (webhook): /pausar, /reanudar, /silenciar_pos,
+// /activar_pos, /estado. Los flags se guardan en app_config.
 
+const supabase = require('./supabase');
 const { normalizePhone, formatPhone } = require('./phone');
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
@@ -17,14 +21,64 @@ function isConfigured() {
   return !!(BOT_TOKEN && CHAT_ID);
 }
 
+function getConfiguredChatId() {
+  return CHAT_ID;
+}
+
 function formatCurrency(n) {
   return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO');
 }
 
-// Escapa caracteres reservados de Markdown (v1) de Telegram
+// Escapa caracteres reservados de MarkdownV2 de Telegram
 function esc(s) {
   return String(s == null ? '' : s).replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
+
+// ============================================================
+// Configuracion del bot (app_config) con cache corta
+// ============================================================
+
+let _settingsCache = { value: null, ts: 0 };
+const SETTINGS_TTL = 10000; // 10 segundos
+
+async function getBotSettings() {
+  if (_settingsCache.value && (Date.now() - _settingsCache.ts) < SETTINGS_TTL) {
+    return _settingsCache.value;
+  }
+  try {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('notifications_active, notify_pos_orders')
+      .eq('id', 1)
+      .single();
+    if (error || !data) throw (error || new Error('sin datos'));
+    _settingsCache = {
+      value: {
+        notificationsActive: data.notifications_active !== false,
+        notifyPosOrders: data.notify_pos_orders !== false
+      },
+      ts: Date.now()
+    };
+  } catch (err) {
+    // Si las columnas no existen todavia, no bloquear las notificaciones
+    console.warn('[telegram] no se pudo leer app_config, usando defaults:', err.message);
+    _settingsCache = {
+      value: { notificationsActive: true, notifyPosOrders: true },
+      ts: Date.now()
+    };
+  }
+  return _settingsCache.value;
+}
+
+async function updateBotSetting(patch) {
+  const { error } = await supabase.from('app_config').update(patch).eq('id', 1);
+  if (error) throw error;
+  _settingsCache = { value: null, ts: 0 }; // invalidar cache: efecto inmediato
+}
+
+// ============================================================
+// Mensajes
+// ============================================================
 
 function buildOrderMessage(order) {
   const lines = [];
@@ -64,20 +118,22 @@ function buildOrderMessage(order) {
   return lines.join('\n');
 }
 
-async function sendTelegramMessage(text) {
+// options.markdown: true (default) para MarkdownV2; false para texto plano
+async function sendTelegramMessage(text, options) {
   if (!isConfigured()) return { ok: false, skipped: true };
+  const useMarkdown = !options || options.markdown !== false;
   try {
+    const payload = { chat_id: CHAT_ID, text: text };
+    if (useMarkdown) {
+      payload.parse_mode = 'MarkdownV2';
+      // Evita la tarjeta de preview del link de WhatsApp (ocupa mucho espacio)
+      payload.disable_web_page_preview = true;
+      payload.link_preview_options = { is_disabled: true };
+    }
     const res = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: text,
-        parse_mode: 'MarkdownV2',
-        // Evita la tarjeta de preview del link de WhatsApp (ocupa mucho espacio)
-        disable_web_page_preview: true,
-        link_preview_options: { is_disabled: true }
-      })
+      body: JSON.stringify(payload)
     });
     if (!res.ok) {
       const body = await res.text();
@@ -93,10 +149,20 @@ async function sendTelegramMessage(text) {
 }
 
 // Envia la notificacion de un pedido nuevo. Nunca lanza excepciones.
-async function notifyNewOrder(order) {
+// origin: 'pos' | 'public' (opcional; solo 'pos' respeta notify_pos_orders)
+async function notifyNewOrder(order, origin) {
   try {
     if (!isConfigured()) {
       console.log('[telegram] no configurado (falta TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID)');
+      return;
+    }
+    const settings = await getBotSettings();
+    if (!settings.notificationsActive) {
+      console.log('[telegram] omitido: notificaciones pausadas (/reanudar para activar)');
+      return;
+    }
+    if (origin === 'pos' && !settings.notifyPosOrders) {
+      console.log('[telegram] omitido: pedidos POS silenciados (/activar_pos para activar)');
       return;
     }
     await sendTelegramMessage(buildOrderMessage(order || {}));
@@ -105,4 +171,63 @@ async function notifyNewOrder(order) {
   }
 }
 
-module.exports = { notifyNewOrder, sendTelegramMessage, buildOrderMessage, isConfigured };
+// ============================================================
+// Comandos del chat
+// ============================================================
+
+const HELP_TEXT = [
+  '🤖 Comandos disponibles:',
+  '',
+  '/estado — Ver el estado actual',
+  '/pausar — Pausar todas las notificaciones',
+  '/reanudar — Reanudar notificaciones',
+  '/silenciar_pos — Silenciar pedidos del POS',
+  '/activar_pos — Activar pedidos del POS'
+].join('\n');
+
+// Procesa un comando y devuelve el texto de respuesta (o null si no es comando)
+async function handleTelegramCommand(text) {
+  const clean = String(text || '').trim();
+  const cmd = clean.toLowerCase().split('@')[0].split(/\s+/)[0];
+
+  switch (cmd) {
+    case '/start':
+    case '/ayuda':
+    case '/help':
+      return HELP_TEXT;
+    case '/pausar':
+      await updateBotSetting({ notifications_active: false });
+      return '⏸️ Bot pausado. No se enviarán notificaciones.';
+    case '/reanudar':
+      await updateBotSetting({ notifications_active: true });
+      return '▶️ Bot activo. Notificaciones reanudadas.';
+    case '/silenciar_pos':
+      await updateBotSetting({ notify_pos_orders: false });
+      return '🔇 Notificaciones de pedidos POS desactivadas.';
+    case '/activar_pos':
+      await updateBotSetting({ notify_pos_orders: true });
+      return '🔔 Notificaciones de pedidos POS activadas.';
+    case '/estado': {
+      const s = await getBotSettings();
+      return [
+        '📊 Estado del bot',
+        '',
+        s.notificationsActive ? '🔔 Notificaciones: ACTIVAS' : '⏸️ Notificaciones: PAUSADAS',
+        s.notifyPosOrders ? '🛒 Pedidos POS: ACTIVOS' : '🔇 Pedidos POS: SILENCIADOS'
+      ].join('\n');
+    }
+    default:
+      return null; // no es un comando reconocido
+  }
+}
+
+module.exports = {
+  notifyNewOrder,
+  sendTelegramMessage,
+  buildOrderMessage,
+  handleTelegramCommand,
+  getBotSettings,
+  updateBotSetting,
+  getConfiguredChatId,
+  isConfigured
+};

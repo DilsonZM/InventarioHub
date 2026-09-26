@@ -436,7 +436,7 @@ router.post('/reservas', async (req, res) => {
       total: Math.round((subtotalPlatos + (tipoPedido === 'domicilio' ? 3000 : 0)) * 100) / 100,
       notas: notas,
       hora: fecha + ' ' + hora
-    });
+    }, 'public');
 
     return res.json({
       success: true,

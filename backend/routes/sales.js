@@ -655,7 +655,7 @@ async function notifySaleToTelegram(mapped) {
     }),
     total: mapped.total,
     hora: new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
-  });
+  }, 'pos');
 }
 
 async function handleDishSale(req, res) {

@@ -1,0 +1,52 @@
+// routes/telegram.js
+// Webhook de Telegram: recibe los mensajes del grupo del restaurante y
+// responde a los comandos de control de notificaciones:
+//   /pausar, /reanudar, /silenciar_pos, /activar_pos, /estado, /ayuda
+//
+// Seguridad:
+//   - Se valida el header X-Telegram-Bot-Api-Secret-Token (si hay secreto).
+//   - Solo se procesan comandos enviados desde el chat configurado.
+
+const express = require('express');
+const router = express.Router();
+const {
+  handleTelegramCommand,
+  sendTelegramMessage,
+  getConfiguredChatId
+} = require('../lib/telegram');
+
+const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
+
+router.post('/webhook', async (req, res) => {
+  // Telegram espera un 200 rapido; si devolvemos error reintenta el envio.
+  try {
+    if (WEBHOOK_SECRET) {
+      const got = req.headers['x-telegram-bot-api-secret-token'];
+      if (got !== WEBHOOK_SECRET) {
+        console.warn('[telegram webhook] secreto invalido');
+        return res.sendStatus(401);
+      }
+    }
+
+    const update = req.body || {};
+    const msg = update.message || update.edited_message || update.channel_post || {};
+    const chatId = msg.chat ? msg.chat.id : null;
+    const text = msg.text || '';
+
+    // Solo procesar comandos del chat configurado (grupo del restaurante)
+    if (!chatId || String(chatId) !== String(getConfiguredChatId())) {
+      return res.sendStatus(200);
+    }
+
+    const response = await handleTelegramCommand(text);
+    if (response) {
+      await sendTelegramMessage(response, { markdown: false });
+    }
+    return res.sendStatus(200);
+  } catch (err) {
+    console.error('[telegram webhook] error:', err.message);
+    return res.sendStatus(200);
+  }
+});
+
+module.exports = router;
