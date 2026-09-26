@@ -208,8 +208,9 @@ async function sendTelegramMessage(text, options) {
       console.warn('[telegram] envio fallo:', res.status, String(body).slice(0, 200));
       return { ok: false };
     }
+    const body = await res.json().catch(function () { return null; });
     console.log('[telegram] notificacion enviada');
-    return { ok: true };
+    return { ok: true, messageId: body && body.result ? body.result.message_id : null };
   } catch (err) {
     console.warn('[telegram] error (no bloqueante):', err.message);
     return { ok: false, error: err.message };
@@ -240,16 +241,47 @@ async function notifyNewOrder(order, origin) {
 }
 
 // Responde al callback de un boton (quita el "relojito" de carga). No lanza.
-async function answerCallbackQuery(callbackQueryId) {
+async function answerCallbackQuery(callbackQueryId, text) {
   if (!isConfigured() || !callbackQueryId) return;
   try {
+    const payload = { callback_query_id: callbackQueryId };
+    if (text) payload.text = text;
     await fetchWithRetry('https://api.telegram.org/bot' + BOT_TOKEN + '/answerCallbackQuery', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ callback_query_id: callbackQueryId })
+      body: JSON.stringify(payload)
     });
   } catch (err) {
     console.warn('[telegram] answerCallbackQuery error (no bloqueante):', err.message);
+  }
+}
+
+// Edita un mensaje ya enviado (para el panel de notificaciones). No lanza.
+async function editTelegramMessage(text, messageId, options) {
+  if (!isConfigured() || !messageId) return { ok: false };
+  const useMarkdown = !options || options.markdown !== false;
+  try {
+    const payload = { chat_id: CHAT_ID, message_id: messageId, text: text };
+    if (useMarkdown) {
+      payload.parse_mode = 'MarkdownV2';
+      payload.disable_web_page_preview = true;
+      payload.link_preview_options = { is_disabled: true };
+    }
+    if (options && options.replyMarkup) payload.reply_markup = options.replyMarkup;
+    const res = await fetchWithRetry('https://api.telegram.org/bot' + BOT_TOKEN + '/editMessageText', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.warn('[telegram] edit fallo:', res.status, String(body).slice(0, 200));
+      return { ok: false };
+    }
+    return { ok: true };
+  } catch (err) {
+    console.warn('[telegram] editMessage error (no bloqueante):', err.message);
+    return { ok: false, error: err.message };
   }
 }
 
@@ -386,23 +418,59 @@ async function buildDailySummaryRange(from, to) {
 }
 
 // ============================================================
+// Panel de notificaciones (/notificaciones)
+// Botones con emojis de estado: 🟢 activo / 🔴 inactivo
+// ============================================================
+
+async function buildNotificationsPanel() {
+  const s = await getBotSettings();
+  const ON = '🟢';
+  const OFF = '🔴';
+
+  const lines = [];
+  lines.push('🔔 *PANEL DE NOTIFICACIONES*');
+  lines.push('');
+  lines.push('📊 *Estado actual:*');
+  lines.push(s.notificationsActive ? '🔔 Notificaciones: ACTIVAS' : '⏸️ Notificaciones: PAUSADAS');
+  lines.push(s.notifyPosOrders ? '🛒 Pedidos POS: ACTIVOS' : '🔇 Pedidos POS: SILENCIADOS');
+  lines.push(s.notifyReadyOrders ? '🍽️ Avisos de listos: ACTIVOS' : '🔇 Avisos de listos: SILENCIADOS');
+  lines.push(s.notifyLowStock ? '📦 Stock bajo: ACTIVAS' : '🔇 Stock bajo: SILENCIADAS');
+  lines.push('');
+  lines.push('Tocá un botón para activar o desactivar:');
+
+  return {
+    text: lines.join('\n'),
+    markdown: true,
+    replyMarkup: {
+      inline_keyboard: [
+        [
+          { text: (s.notifyPosOrders ? ON : OFF) + ' 🛒 POS', callback_data: 'ntf:pos' },
+          { text: (s.notifyReadyOrders ? ON : OFF) + ' 🍽️ Listos', callback_data: 'ntf:listos' }
+        ],
+        [
+          { text: (s.notifyLowStock ? ON : OFF) + ' 📦 Stock', callback_data: 'ntf:stock' },
+          { text: (s.notificationsActive ? ON : OFF) + ' 🔔 Todo', callback_data: 'ntf:all' }
+        ],
+        [
+          { text: '🔄 Actualizar', callback_data: 'ntf:refresh' }
+        ]
+      ]
+    }
+  };
+}
+
+// ============================================================
 // Comandos del chat
 // ============================================================
 
 const HELP_TEXT = [
   '🤖 Comandos disponibles:',
   '',
-  '/estado — Ver el estado actual',
+  '/notificaciones — Panel para activar/silenciar avisos',
+  '/estado — Ver el estado actual (texto)',
   '/hoy — Resumen de ventas de hoy',
   '/rango — Resumen por rango de fechas (con selector)',
-  '/pausar — Pausar todas las notificaciones',
-  '/reanudar — Reanudar notificaciones',
-  '/silenciar_pos — Silenciar pedidos del POS',
-  '/activar_pos — Activar pedidos del POS',
-  '/silenciar_listos — Silenciar avisos de platos listos',
-  '/activar_listos — Activar avisos de platos listos',
-  '/silenciar_stock — Silenciar alertas de stock bajo',
-  '/activar_stock — Activar alertas de stock bajo'
+  '/ayuda — Ver esta ayuda'
 ].join('\n');
 
 // Procesa un comando y devuelve el texto de respuesta (o null si no es comando)
@@ -415,6 +483,11 @@ async function handleTelegramCommand(text) {
     case '/ayuda':
     case '/help':
       return HELP_TEXT;
+    case '/notificaciones':
+    case '/notif': {
+      const panel = await buildNotificationsPanel();
+      return { text: panel.text, markdown: panel.markdown, replyMarkup: panel.replyMarkup };
+    }
     case '/hoy':
     case '/resumen': {
       const args = clean.split(/\s+/).slice(1);
@@ -491,43 +564,89 @@ async function handleTelegramCommand(text) {
   }
 }
 
-// Procesa el callback de un boton del selector de fechas (/rango)
+// Procesa el callback de un boton (selector de fechas o panel de notificaciones)
 async function handleTelegramCallback(data) {
   const parts = String(data || '').split(':');
-  if (parts[0] !== 'rango') return null;
-  const hoy = todayBogota();
-  let from, to;
-  switch (parts[1]) {
-    case 'hoy': from = to = hoy; break;
-    case 'ayer': from = to = addDaysBogota(hoy, -1); break;
-    case '7d': from = addDaysBogota(hoy, -6); to = hoy; break;
-    case 'mes': from = startOfMonthBogota(); to = hoy; break;
-    case 'mespasado': {
-      const r = prevMonthRangeBogota();
-      from = r.from; to = r.to;
-      break;
+  const key = parts[0];
+
+  // --- Selector de fechas (/rango) ---
+  if (key === 'rango') {
+    const hoy = todayBogota();
+    let from, to;
+    switch (parts[1]) {
+      case 'hoy': from = to = hoy; break;
+      case 'ayer': from = to = addDaysBogota(hoy, -1); break;
+      case '7d': from = addDaysBogota(hoy, -6); to = hoy; break;
+      case 'mes': from = startOfMonthBogota(); to = hoy; break;
+      case 'mespasado': {
+        const r = prevMonthRangeBogota();
+        from = r.from; to = r.to;
+        break;
+      }
+      default: return null;
     }
-    default: return null;
+    const text = await buildDailySummaryRange(from, to);
+    return {
+      text: text,
+      replyMarkup: {
+        inline_keyboard: [[
+          { text: '📆 Hoy', callback_data: 'rango:hoy' },
+          { text: '🗓️ Este mes', callback_data: 'rango:mes' }
+        ]]
+      }
+    };
   }
-  const text = await buildDailySummaryRange(from, to);
-  return {
-    text: text,
-    replyMarkup: {
-      inline_keyboard: [[
-        { text: '📆 Hoy', callback_data: 'rango:hoy' },
-        { text: '🗓️ Este mes', callback_data: 'rango:mes' }
-      ]]
+
+  // --- Panel de notificaciones (/notificaciones) ---
+  if (key === 'ntf') {
+    const action = parts[1];
+    let toast = null;
+    const s = await getBotSettings();
+    switch (action) {
+      case 'pos':
+        await updateBotSetting({ notify_pos_orders: !s.notifyPosOrders });
+        toast = s.notifyPosOrders ? '🔇 POS desactivado' : '🔔 POS activado';
+        break;
+      case 'listos':
+        await updateBotSetting({ notify_ready_orders: !s.notifyReadyOrders });
+        toast = s.notifyReadyOrders ? '🔇 Listos desactivado' : '🔔 Listos activado';
+        break;
+      case 'stock':
+        await updateBotSetting({ notify_low_stock: !s.notifyLowStock });
+        toast = s.notifyLowStock ? '🔇 Stock desactivado' : '🔔 Stock activado';
+        break;
+      case 'all':
+        await updateBotSetting({ notifications_active: !s.notificationsActive });
+        toast = s.notificationsActive ? '⏸️ Todo pausado' : '▶️ Todo activado';
+        break;
+      case 'refresh':
+        toast = '🔄 Actualizado';
+        break;
+      default:
+        return null;
     }
-  };
+    const panel = await buildNotificationsPanel();
+    return {
+      text: panel.text,
+      markdown: panel.markdown,
+      replyMarkup: panel.replyMarkup,
+      edit: true,
+      toast: toast
+    };
+  }
+
+  return null;
 }
 
 module.exports = {
   notifyNewOrder,
   notifyOrderReady,
   sendTelegramMessage,
+  editTelegramMessage,
   buildOrderMessage,
   buildReadyMessage,
   buildDailySummaryRange,
+  buildNotificationsPanel,
   handleTelegramCommand,
   handleTelegramCallback,
   answerCallbackQuery,

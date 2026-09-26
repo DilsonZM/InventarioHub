@@ -14,6 +14,7 @@ const {
   handleTelegramCallback,
   answerCallbackQuery,
   sendTelegramMessage,
+  editTelegramMessage,
   getConfiguredChatId
 } = require('../lib/telegram');
 
@@ -39,10 +40,22 @@ router.post('/webhook', async (req, res) => {
       if (!cbChatId || String(cbChatId) !== String(getConfiguredChatId())) {
         return res.sendStatus(200);
       }
-      await answerCallbackQuery(cb.id);
       const cbResp = await handleTelegramCallback(cb.data);
+      await answerCallbackQuery(cb.id, cbResp && cbResp.toast);
       if (cbResp) {
-        await sendTelegramMessage(cbResp.text, { markdown: false, replyMarkup: cbResp.replyMarkup });
+        const useMarkdown = cbResp.markdown === true;
+        // El panel de notificaciones se edita en el lugar (no llena el chat)
+        if (cbResp.edit && cb.message && cb.message.message_id) {
+          const edited = await editTelegramMessage(cbResp.text, cb.message.message_id, {
+            markdown: useMarkdown,
+            replyMarkup: cbResp.replyMarkup
+          });
+          if (!edited || !edited.ok) {
+            await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, replyMarkup: cbResp.replyMarkup });
+          }
+        } else {
+          await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, replyMarkup: cbResp.replyMarkup });
+        }
       }
       return res.sendStatus(200);
     }
@@ -61,7 +74,10 @@ router.post('/webhook', async (req, res) => {
       if (typeof response === 'string') {
         await sendTelegramMessage(response, { markdown: false });
       } else {
-        await sendTelegramMessage(response.text, { markdown: false, replyMarkup: response.replyMarkup });
+        await sendTelegramMessage(response.text, {
+          markdown: response.markdown === true,
+          replyMarkup: response.replyMarkup
+        });
       }
     }
     return res.sendStatus(200);
