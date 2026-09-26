@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
-const { requirePermission } = require('../middleware/auth');
+const { requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { applyBogotaDateFilter } = require('../lib/timezone');
 const { notifyNewOrder, notifyOrderReady } = require('../lib/telegram');
 const { checkLowStockAlerts } = require('../lib/stock-alerts');
@@ -504,7 +504,7 @@ router.delete('/:id', requirePermission('orders.delete'), async (req, res) => {
   }
 });
 
-router.post('/', requirePermission('pos.use'), async (req, res) => {
+router.post('/', requireAnyPermission(['pos.use', 'orders.create']), async (req, res) => {
   try {
     const { items, platos, paymentMethod, clienteNombre, mesa_id, costoDomicilio, propina, bonoDescuento, formaPago } = req.body;
 
@@ -1206,7 +1206,7 @@ router.put('/:id/payment', requirePermission('orders.payment'), async (req, res)
 
 // POST /api/sales/comanda - crear comanda (pedido inicial, estado pendiente)
 // Descuenta stock pero no factura (estado = 'pendiente', se factura despues)
-router.post('/comanda', requirePermission('pos.use'), async (req, res) => {
+router.post('/comanda', requireAnyPermission(['pos.use', 'orders.create']), async (req, res) => {
   try {
     // Reusar la logica de POST / pero forzando estado='pendiente'
     req.body.estado = 'pendiente';

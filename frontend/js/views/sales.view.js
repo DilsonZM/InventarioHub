@@ -1172,7 +1172,7 @@ function confirmOrderStateModal() {
 }
 
 window.changeOrderState = function (id, selectEl) {
-  if (!can('pos.use')) {
+  if (!can('orders.status')) {
     showToast('Sin permiso', 'error');
     selectEl.value = selectEl.dataset.prev;
     return;

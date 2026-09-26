@@ -233,11 +233,11 @@
           <h2 class="text-lg sm:text-xl font-bold text-brand-800 truncate" id="pageTitle">Dashboard</h2>
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
-          <button id="newOrderBtn" class="header-order-btn hidden sm:inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all touch-target" onclick="window.openPOS()" title="Nuevo Pedido">
+          <button id="newOrderBtn" data-requires-permission="pos.use" class="header-order-btn hidden sm:inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all touch-target" onclick="window.openPOS()" title="Nuevo Pedido">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             <span>Nuevo Pedido</span>
           </button>
-          <button id="newOrderBtnMobile" class="header-order-btn sm:hidden inline-flex items-center justify-center w-10 h-10 text-sm font-semibold rounded-xl transition-all touch-target" title="Nuevo Pedido">
+          <button id="newOrderBtnMobile" data-requires-permission="pos.use" class="header-order-btn sm:hidden inline-flex items-center justify-center w-10 h-10 text-sm font-semibold rounded-xl transition-all touch-target" title="Nuevo Pedido">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           </button>
           <button id="themeToggle" class="theme-toggle" aria-label="Cambiar modo" title="Modo oscuro">
@@ -1576,7 +1576,7 @@
           <div id="roleMatrixEmpty" class="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center">
             <p class="text-sm text-slate-400">Seleccioná un rol de la lista para ver y editar sus permisos.</p>
           </div>
-          <div id="roleMatrixWrap" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div id="roleMatrixWrap" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
             <div class="flex flex-wrap items-start justify-between gap-3 px-5 py-4 border-b border-slate-100">
               <div class="min-w-0">
                 <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2" id="roleMatrixTitle"></h3>
@@ -1589,9 +1589,9 @@
               </div>
             </div>
             <div id="roleMatrix" class="overflow-x-auto"></div>
-            <div class="flex items-center justify-between gap-3 px-5 py-4 border-t border-slate-100 bg-slate-50/60">
-              <p class="text-[11px] text-slate-400">Los cambios impactan a todos los usuarios con este rol.</p>
-              <button type="button" id="saveRolePermsBtn" disabled class="px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl shadow-sm transition-colors touch-target">Guardar cambios del rol</button>
+            <div class="flex items-center justify-between gap-3 px-5 py-4 border-t border-slate-200 bg-white">
+              <p class="text-[11px] text-slate-500">Los cambios impactan a todos los usuarios con este rol.</p>
+              <button type="button" id="saveRolePermsBtn" disabled class="px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:bg-slate-300 disabled:text-slate-600 disabled:cursor-not-allowed rounded-xl shadow-sm transition-colors touch-target">Guardar cambios del rol</button>
             </div>
           </div>
         </div>

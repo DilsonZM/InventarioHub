@@ -27,6 +27,7 @@ const CATALOG = [
     id: 'orders', name: 'Pedidos', icon: '🧾',
     permissions: [
       { key: 'orders.view', label: 'Ver', type: 'view' },
+      { key: 'orders.create', label: 'Crear', type: 'create' },
       { key: 'orders.edit', label: 'Editar', type: 'edit' },
       { key: 'orders.delete', label: 'Eliminar', type: 'delete' },
       { key: 'orders.status', label: 'Cambiar estado', type: 'action' },

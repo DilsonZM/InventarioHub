@@ -31,7 +31,7 @@ INSERT INTO roles (id, name, description, permissions, is_system) VALUES
 ('admin', 'Administrador', 'Acceso total al sistema', '[
   "dashboard.view",
   "pos.use","pos.discount","pos.tip",
-  "orders.view","orders.edit","orders.delete","orders.status","orders.payment",
+  "orders.view","orders.create","orders.edit","orders.delete","orders.status","orders.payment",
   "products.view","products.create","products.edit","products.delete",
   "purchases.view","purchases.create","purchases.edit","purchases.delete",
   "movements.view","movements.merma",
@@ -43,6 +43,7 @@ INSERT INTO roles (id, name, description, permissions, is_system) VALUES
   "dashboard.view",
   "pos.use",
   "orders.view",
+  "orders.create",
   "products.view",
   "reservations.view"
 ]'::jsonb, true),

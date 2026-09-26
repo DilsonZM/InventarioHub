@@ -76,4 +76,24 @@ function generateToken(user) {
   );
 }
 
-module.exports = { authMiddleware, adminOnly, requirePermission, getUserPermissions, generateToken, JWT_SECRET };
+// Middleware granular: basta con tener UNO de los permisos indicados
+function requireAnyPermission(perms) {
+  return async (req, res, next) => {
+    try {
+      const info = await getUserPermissions(req.user.id);
+      const allowed = Array.isArray(perms) && perms.some(function (p) {
+        return info.permissions.indexOf(p) !== -1;
+      });
+      if (!allowed) {
+        return res.status(403).json({ success: false, message: 'No tienes permiso para esta accion' });
+      }
+      req.userRole = info;
+      next();
+    } catch (err) {
+      console.error('Permission check error:', err);
+      res.status(500).json({ success: false, message: 'Error del servidor' });
+    }
+  };
+}
+
+module.exports = { authMiddleware, adminOnly, requirePermission, requireAnyPermission, getUserPermissions, generateToken, JWT_SECRET };

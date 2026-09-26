@@ -376,8 +376,14 @@ function renderMatrix() {
   $('#roleMatrixTitle').innerHTML = escapeHtml(role.name) + (role.isSystem ? ' <span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded align-middle">SISTEMA</span>' : '');
   $('#roleMatrixDesc').textContent = role.description || 'Sin descripción';
   $('#roleMatrixUsers').textContent = (role.userCount || 0) + (role.userCount === 1 ? ' usuario con este rol' : ' usuarios con este rol') + ' — los cambios impactan de inmediato al guardar.';
+  // Roles de sistema: no se renombran ni se eliminan (solo sus permisos)
   var delBtn = $('#deleteRoleBtn');
   if (delBtn) delBtn.style.display = role.isSystem ? 'none' : '';
+  var editBtn = $('#editRoleBtn');
+  if (editBtn) {
+    editBtn.style.display = role.isSystem ? 'none' : '';
+    editBtn.title = role.isSystem ? 'Los roles de sistema no se pueden renombrar' : '';
+  }
 
   var cols = [
     { type: 'view', label: 'Ver' },

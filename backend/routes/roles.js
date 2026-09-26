@@ -108,12 +108,20 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
 
     const { data: role, error: getError } = await supabase
       .from('roles')
-      .select('id')
+      .select('id, is_system')
       .eq('id', req.params.id)
       .maybeSingle();
     if (getError) throw getError;
     if (!role) {
       return res.status(404).json({ success: false, message: 'Rol no encontrado' });
+    }
+
+    // Los roles de sistema no se renombran (solo se editan sus permisos)
+    if (role.is_system && (name !== undefined || description !== undefined)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Los roles base del sistema no se pueden renombrar. Solo se pueden editar sus permisos.'
+      });
     }
 
     const update = { actualizado_en: new Date().toISOString() };
@@ -125,7 +133,17 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
       update.name = nombre;
     }
     if (description !== undefined) update.description = String(description || '').trim() || null;
-    if (permissions !== undefined) update.permissions = sanitizePermissions(permissions);
+    if (permissions !== undefined) {
+      const permisosFinales = sanitizePermissions(permissions);
+      // El rol Administrador no puede quedarse sin gestion de usuarios (evita lockout)
+      if (role.id === 'admin' && permisosFinales.indexOf('users.manage') === -1) {
+        return res.status(400).json({
+          success: false,
+          message: 'El rol Administrador debe conservar el permiso "Gestionar usuarios y roles".'
+        });
+      }
+      update.permissions = permisosFinales;
+    }
 
     const { data, error } = await supabase
       .from('roles')
