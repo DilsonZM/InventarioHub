@@ -4,6 +4,7 @@ const supabase = require('../lib/supabase');
 const { requirePermission } = require('../middleware/auth');
 const { applyBogotaDateFilter } = require('../lib/timezone');
 const { notifyNewOrder, notifyOrderReady } = require('../lib/telegram');
+const { checkLowStockAlerts } = require('../lib/stock-alerts');
 
 // Estados del flujo de pedidos (preparando fue eliminado del flujo)
 const ACTIVE_KITCHEN_STATES = ['pendiente', 'listo', 'entregado'];
@@ -573,6 +574,7 @@ router.post('/', requirePermission('puede_crear_salidas'), async (req, res) => {
 
     const response = mapSaleResponse(sale);
     await notifySaleToTelegram(response);
+    await checkLowStockAlerts();
     res.status(201).json({ success: true, data: response, message: 'Venta registrada' });
   } catch (err) {
     console.error('Sale create error:', err);
@@ -898,6 +900,7 @@ async function handleDishSale(req, res) {
 
     var mappedSale = mapSaleResponse(saleFull);
     await notifySaleToTelegram(mappedSale);
+    await checkLowStockAlerts();
     res.status(201).json({ success: true, data: mappedSale,
       message: saleEstado === 'pendiente' ? 'Pedido creado (pendiente)' : 'Pedido confirmado' });
   } catch (err) {
@@ -1270,6 +1273,7 @@ router.post('/comanda', requirePermission('puede_crear_salidas'), async (req, re
 
     var mappedComanda = mapSaleResponse(sale);
     await notifySaleToTelegram(mappedComanda);
+    await checkLowStockAlerts();
     res.status(201).json({ success: true, data: mappedComanda, message: 'Comanda registrada (pendiente)' });
   } catch (err) {
     console.error('POST comanda error:', err);

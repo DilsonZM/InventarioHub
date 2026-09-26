@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../lib/supabase');
+const { checkLowStockAlerts } = require('../lib/stock-alerts');
 const { requirePermission } = require('../middleware/auth');
 
 async function ensureInventoryOpening(productId, stock, cost, userId) {
@@ -194,6 +195,8 @@ router.post('/merma', requirePermission('puede_crear_salidas'), async (req, res)
       .select('id, nombre, stock_actual')
       .eq('id', productId)
       .single();
+
+    await checkLowStockAlerts();
 
     res.status(201).json({
       success: true,

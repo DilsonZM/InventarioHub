@@ -1,4 +1,5 @@
 const supabase = require('./supabase');
+const { checkLowStockAlerts } = require('./stock-alerts');
 
 function convertToBaseUnit(cantidad, fromUnit, toUnit) {
   var value = parseFloat(cantidad) || 0;
@@ -171,6 +172,10 @@ async function createOrderFromReservation(reserva, usuarioId) {
   }
 
   await supabase.from('reservas').update({ numero_venta: orderNumber }).eq('id', reserva.id);
+
+  // Aviso de stock bajo (no bloqueante)
+  await checkLowStockAlerts();
+
   return venta;
 }
 

@@ -53,7 +53,7 @@ async function getBotSettings() {
   try {
     const { data, error } = await supabase
       .from('app_config')
-      .select('notifications_active, notify_pos_orders, notify_ready_orders')
+      .select('notifications_active, notify_pos_orders, notify_ready_orders, notify_low_stock')
       .eq('id', 1)
       .single();
     if (error || !data) throw (error || new Error('sin datos'));
@@ -61,7 +61,8 @@ async function getBotSettings() {
       value: {
         notificationsActive: data.notifications_active !== false,
         notifyPosOrders: data.notify_pos_orders !== false,
-        notifyReadyOrders: data.notify_ready_orders !== false
+        notifyReadyOrders: data.notify_ready_orders !== false,
+        notifyLowStock: data.notify_low_stock !== false
       },
       ts: Date.now()
     };
@@ -69,7 +70,7 @@ async function getBotSettings() {
     // Si las columnas no existen todavia, no bloquear las notificaciones
     console.warn('[telegram] no se pudo leer app_config, usando defaults:', err.message);
     _settingsCache = {
-      value: { notificationsActive: true, notifyPosOrders: true, notifyReadyOrders: true },
+      value: { notificationsActive: true, notifyPosOrders: true, notifyReadyOrders: true, notifyLowStock: true },
       ts: Date.now()
     };
   }
@@ -259,6 +260,100 @@ async function notifyOrderReady(order) {
 }
 
 // ============================================================
+// Resumen de ventas (/hoy [desde] [hasta]) - zona Bogota (UTC-5)
+// ============================================================
+
+function todayBogota() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+}
+
+// Acepta 'YYYY-MM-DD' o 'DD/MM' (o 'DD-MM') y devuelve 'YYYY-MM-DD'
+function parseDateArg(raw) {
+  const s = String(raw || '').trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    const year = todayBogota().slice(0, 4);
+    const dd = String(m[1]).padStart(2, '0');
+    const mm = String(m[2]).padStart(2, '0');
+    return year + '-' + mm + '-' + dd;
+  }
+  return null;
+}
+
+function formatDateEs(dateStr) {
+  try {
+    return new Date(dateStr + 'T12:00:00-05:00').toLocaleDateString('es-CO', {
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+    });
+  } catch (e) { return dateStr; }
+}
+
+// Resumen de ventas de un dia o rango (fechas en zona Bogota)
+async function buildDailySummary(args) {
+  const { applyBogotaDateFilter } = require('./timezone');
+  let from, to;
+  const a1 = args[0] ? parseDateArg(args[0]) : null;
+  const a2 = args[1] ? parseDateArg(args[1]) : null;
+  if (!args.length) {
+    from = to = todayBogota();
+  } else if (args.length === 1 && a1) {
+    from = to = a1;
+  } else if (args.length >= 2 && a1 && a2) {
+    from = a1; to = a2;
+    if (from > to) { const t = from; from = to; to = t; }
+  } else {
+    return '⚠️ Formato inválido\\. Usá:\n/hoy\n/hoy 26/09\n/hoy 20/09 26/09\n/hoy 2026-09-26';
+  }
+
+  let query = supabase
+    .from('ventas')
+    .select('total, estado, estado_cocina, venta_detalles(producto_nombre, cantidad)');
+  query = applyBogotaDateFilter(query, 'creado_en', from, to);
+  const { data, error } = await query;
+  if (error) throw error;
+
+  let pedidos = 0, facturado = 0, cortesias = 0, canceladas = 0;
+  const platos = {};
+  (data || []).forEach(function (v) {
+    if (v.estado_cocina === 'cancelada') { canceladas++; return; }
+    pedidos++;
+    if (v.estado_cocina === 'cortesia') cortesias++;
+    if (v.estado === 'completada') facturado += parseFloat(v.total) || 0;
+    (v.venta_detalles || []).forEach(function (d) {
+      const k = d.producto_nombre || '?';
+      platos[k] = (platos[k] || 0) + (parseInt(d.cantidad, 10) || 0);
+    });
+  });
+
+  const lista = Object.keys(platos).map(function (k) { return { nombre: k, cant: platos[k] }; })
+    .sort(function (a, b) { return b.cant - a.cant; });
+
+  const lines = [];
+  lines.push('📊 RESUMEN DE VENTAS');
+  lines.push('📅 ' + (from === to ? formatDateEs(from) : (formatDateEs(from) + ' → ' + formatDateEs(to))));
+  lines.push('');
+  lines.push('🧾 Pedidos: ' + pedidos);
+  lines.push('💰 Facturado: ' + formatCurrency(facturado));
+  lines.push('🎁 Cortesías: ' + cortesias);
+  lines.push('❌ Cancelados: ' + canceladas);
+  lines.push('');
+  if (lista.length === 0) {
+    lines.push('🍽️ Sin ventas registradas en ese período.');
+  } else {
+    lines.push('🍽️ Vendidos:');
+    lista.slice(0, 15).forEach(function (p) {
+      lines.push('• ' + p.cant + 'x ' + p.nombre);
+    });
+    if (lista.length > 15) lines.push('…y ' + (lista.length - 15) + ' más');
+  }
+  return lines.join('\n');
+}
+
+// ============================================================
 // Comandos del chat
 // ============================================================
 
@@ -266,12 +361,15 @@ const HELP_TEXT = [
   '🤖 Comandos disponibles:',
   '',
   '/estado — Ver el estado actual',
+  '/hoy — Resumen de ventas de hoy (o /hoy 20/09 26/09)',
   '/pausar — Pausar todas las notificaciones',
   '/reanudar — Reanudar notificaciones',
   '/silenciar_pos — Silenciar pedidos del POS',
   '/activar_pos — Activar pedidos del POS',
   '/silenciar_listos — Silenciar avisos de platos listos',
-  '/activar_listos — Activar avisos de platos listos'
+  '/activar_listos — Activar avisos de platos listos',
+  '/silenciar_stock — Silenciar alertas de stock bajo',
+  '/activar_stock — Activar alertas de stock bajo'
 ].join('\n');
 
 // Procesa un comando y devuelve el texto de respuesta (o null si no es comando)
@@ -284,6 +382,11 @@ async function handleTelegramCommand(text) {
     case '/ayuda':
     case '/help':
       return HELP_TEXT;
+    case '/hoy':
+    case '/resumen': {
+      const args = clean.split(/\s+/).slice(1);
+      return await buildDailySummary(args);
+    }
     case '/pausar':
       await updateBotSetting({ notifications_active: false });
       return '⏸️ Bot pausado. No se enviarán notificaciones.';
@@ -302,6 +405,12 @@ async function handleTelegramCommand(text) {
     case '/activar_listos':
       await updateBotSetting({ notify_ready_orders: true });
       return '🔔 Alertas de platos listos activadas.';
+    case '/silenciar_stock':
+      await updateBotSetting({ notify_low_stock: false });
+      return '🔇 Alertas de stock bajo desactivadas.';
+    case '/activar_stock':
+      await updateBotSetting({ notify_low_stock: true });
+      return '🔔 Alertas de stock bajo activadas.';
     case '/estado': {
       const s = await getBotSettings();
       return [
@@ -309,7 +418,8 @@ async function handleTelegramCommand(text) {
         '',
         s.notificationsActive ? '🔔 Notificaciones: ACTIVAS' : '⏸️ Notificaciones: PAUSADAS',
         s.notifyPosOrders ? '🛒 Pedidos POS: ACTIVOS' : '🔇 Pedidos POS: SILENCIADOS',
-        s.notifyReadyOrders ? '🍽️ Avisos de listos: ACTIVOS' : '🔇 Avisos de listos: SILENCIADOS'
+        s.notifyReadyOrders ? '🍽️ Avisos de listos: ACTIVOS' : '🔇 Avisos de listos: SILENCIADOS',
+        s.notifyLowStock ? '📦 Stock bajo: ACTIVAS' : '🔇 Stock bajo: SILENCIADAS'
       ].join('\n');
     }
     default:
@@ -323,6 +433,7 @@ module.exports = {
   sendTelegramMessage,
   buildOrderMessage,
   buildReadyMessage,
+  buildDailySummary,
   handleTelegramCommand,
   getBotSettings,
   updateBotSetting,
