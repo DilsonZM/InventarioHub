@@ -14,7 +14,7 @@ const router = express.Router();
 const {
   handleTelegramCommand,
   handleTelegramCallback,
-  handleGastoFlowText,
+  handleTelegramFlowText,
   getTelegramActor,
   answerCallbackQuery,
   sendTelegramMessage,
@@ -51,7 +51,11 @@ router.post('/webhook', async (req, res) => {
 
       const fromId = cb.from ? cb.from.id : null;
       const actor = await getTelegramActor(fromId);
-      const ctx = { fromId, isPrivate, actor, chatId: cbChatId };
+      const ctx = {
+        fromId, isPrivate, actor, chatId: cbChatId,
+        fromName: cb.from ? cb.from.first_name : null,
+        fromUsername: cb.from ? cb.from.username : null
+      };
 
       let cbResp = null;
       let cbError = null;
@@ -106,11 +110,15 @@ router.post('/webhook', async (req, res) => {
     if (isPrivate && !fromId) return res.sendStatus(200);
 
     const actor = await getTelegramActor(fromId);
-    const ctx = { fromId, isPrivate, actor, chatId };
+    const ctx = {
+      fromId, isPrivate, actor, chatId,
+      fromName: msg.from ? msg.from.first_name : null,
+      fromUsername: msg.from ? msg.from.username : null
+    };
 
     let response = await handleTelegramCommand(text, ctx);
-    // Si no fue un comando, puede ser un paso del formulario de /gasto
-    if (!response) response = await handleGastoFlowText(text, chatId, ctx);
+    // Si no fue un comando, puede ser un paso de un flujo (gasto / vincular ID)
+    if (!response) response = await handleTelegramFlowText(text, chatId, ctx);
     if (response) {
       if (typeof response === 'string') {
         await sendTelegramMessage(response, { markdown: false, chatId });

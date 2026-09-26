@@ -33,6 +33,17 @@ function getConfiguredChatId() {
   return CHAT_ID;
 }
 
+const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'CornerHouse2_bot';
+
+// Boton para abrir el chat privado del bot (deep link)
+function dmKeyboard(text) {
+  return {
+    inline_keyboard: [[
+      { text: text || '💬 Abrir chat privado', url: 'https://t.me/' + BOT_USERNAME }
+    ]]
+  };
+}
+
 function formatCurrency(n) {
   return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO');
 }
@@ -791,6 +802,134 @@ async function clearEstado(chatId) {
   } catch (e) { /* noop */ }
 }
 
+// ============================================================
+// Gestion de vinculos Telegram <-> usuario (/gestionusers)
+// ============================================================
+
+function roleNameOf(roles) {
+  if (!roles) return '-';
+  if (Array.isArray(roles)) return (roles[0] && roles[0].name) || '-';
+  return roles.name || '-';
+}
+
+async function buildUsersLinkPanel() {
+  const { data, error } = await supabase
+    .from('perfiles')
+    .select('id, username, telegram_user_id, activo, roles(name)')
+    .order('username', { ascending: true });
+  if (error) throw error;
+  const users = data || [];
+  const rows = users.map(function (u) {
+    const linked = u.telegram_user_id ? ' ✅' : '';
+    const label = (u.username + ' · ' + roleNameOf(u.roles) + linked).slice(0, 60);
+    return [{ text: label, callback_data: 'tgu:u:' + u.id }];
+  });
+  rows.push([{ text: '🔄 Actualizar', callback_data: 'tgu:refresh' }]);
+  const linkedCount = users.filter(function (u) { return u.telegram_user_id; }).length;
+  return {
+    text: '👥 <b>Usuarios y Telegram</b>\n\n'
+      + 'Vinculados: <b>' + linkedCount + '</b> de ' + users.length + '\n\n'
+      + 'Elegí un usuario para vincular su Telegram ID (✅ = ya vinculado):',
+    html: true,
+    replyMarkup: { inline_keyboard: rows }
+  };
+}
+
+async function buildUserLinkDetail(perfilId) {
+  const { data: u, error } = await supabase
+    .from('perfiles')
+    .select('id, username, telegram_user_id, activo, roles(name)')
+    .eq('id', perfilId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!u) return { text: '⚠️ Usuario no encontrado.', html: true, replyMarkup: { inline_keyboard: [[{ text: '↩️ Volver', callback_data: 'tgu:refresh' }]] } };
+  const lines = [
+    '👤 <b>' + escHtml(u.username) + '</b>',
+    'Rol: ' + escHtml(roleNameOf(u.roles)),
+    'Estado: ' + (u.activo === false ? 'Archivado' : 'Activo'),
+    'Telegram: ' + (u.telegram_user_id ? '<code>' + u.telegram_user_id + '</code>' : 'sin vincular')
+  ];
+  const rows = [[{ text: '🔗 Vincular mi Telegram ID', callback_data: 'tgu:me:' + u.id }]];
+  if (u.telegram_user_id) rows.push([{ text: '🗑️ Quitar vínculo', callback_data: 'tgu:unlink:' + u.id }]);
+  rows.push([{ text: '↩️ Volver a la lista', callback_data: 'tgu:refresh' }]);
+  return {
+    text: lines.join('\n') + '\n\n' + (u.telegram_user_id
+      ? 'Enviá en este chat el número nuevo para cambiarlo.'
+      : 'Enviá en este chat el Telegram ID de ' + escHtml(u.username) + ', o usá "Vincular mi Telegram ID".'),
+    html: true,
+    replyMarkup: { inline_keyboard: rows }
+  };
+}
+
+async function linkTelegramId(perfilId, telegramId) {
+  const tgId = Number(String(telegramId).replace(/[^0-9]/g, ''));
+  if (!Number.isFinite(tgId) || tgId <= 0) {
+    return { text: '⚠️ ID inválido. Enviá solo el número (ej: 123456789).', html: true };
+  }
+  const { data: u } = await supabase.from('perfiles').select('id, username').eq('id', perfilId).maybeSingle();
+  if (!u) return { text: '⚠️ Usuario no encontrado.', html: true };
+  const { error } = await supabase.from('perfiles').update({ telegram_user_id: tgId }).eq('id', perfilId);
+  if (error) {
+    if (error.code === '23505') return { text: '⚠️ Ese Telegram ID ya está vinculado a otro usuario.', html: true };
+    return { text: '⚠️ No se pudo guardar: ' + escHtml(error.message), html: true };
+  }
+  return { text: '✅ <b>' + escHtml(u.username) + '</b> quedó vinculado al Telegram ID <code>' + tgId + '</code>.\nYa puede usar los comandos de su rol (los contables, por privado).', html: true };
+}
+
+async function unlinkTelegramId(perfilId) {
+  const { data: u } = await supabase.from('perfiles').select('id, username').eq('id', perfilId).maybeSingle();
+  if (!u) return { text: '⚠️ Usuario no encontrado.', html: true };
+  await supabase.from('perfiles').update({ telegram_user_id: null }).eq('id', perfilId);
+  return { text: '🗑️ Vínculo de <b>' + escHtml(u.username) + '</b> eliminado.', html: true };
+}
+
+// Avisa a los admins vinculados cuando alguien manda /id sin vincular
+async function notifyAdminsTelegramId(context) {
+  try {
+    const { data: admins } = await supabase
+      .from('perfiles')
+      .select('telegram_user_id, roles(permissions)')
+      .not('telegram_user_id', 'is', null);
+    const list = (admins || []).filter(function (a) {
+      const perms = a.roles && Array.isArray(a.roles.permissions) ? a.roles.permissions : [];
+      return perms.indexOf('users.manage') !== -1 && a.telegram_user_id !== context.fromId;
+    });
+    if (list.length === 0) return;
+    const name = [context.fromName, context.fromUsername ? '@' + context.fromUsername : ''].filter(Boolean).join(' ');
+    const text = '🆔 <b>Solicitud de vínculo</b>\n\n'
+      + (name ? escHtml(name) + ' envió /id.\n' : 'Alguien envió /id.\n')
+      + 'ID: <code>' + context.fromId + '</code>\n\n'
+      + 'Usá /gestionusers para asignarlo a su usuario.';
+    for (const a of list) {
+      await sendTelegramMessage(text, { html: true, chatId: a.telegram_user_id });
+    }
+  } catch (e) { /* no bloqueante */ }
+}
+
+// Flujo de texto libre: wizard de gasto o carga de Telegram ID
+async function handleTelegramFlowText(text, chatId, ctx) {
+  const context = ctx || {};
+  const clean = String(text || '').trim();
+  if (!chatId || !clean || clean.charAt(0) === '/') return null;
+  const estado = await getEstado(chatId);
+  if (!estado) return null;
+
+  // Cargar Telegram ID para un usuario (/gestionusers)
+  if (estado.estado === 'link_id') {
+    if (!context.actor || context.actor.permissions.indexOf('users.manage') === -1) return null;
+    if (!context.isPrivate) return null;
+    const perfilId = estado.datos && estado.datos.perfilId;
+    await clearEstado(chatId);
+    if (!perfilId) return null;
+    const res = await linkTelegramId(perfilId, clean);
+    const panel = await buildUsersLinkPanel();
+    return { text: res.text + '\n\n' + panel.text, html: true, replyMarkup: panel.replyMarkup };
+  }
+
+  // Wizard de gasto
+  return await handleGastoFlowText(clean, chatId, context);
+}
+
 // Inicia el formulario guiado de gasto (paso 1: monto)
 async function startGastoWizard(chatId) {
   await setEstado(chatId, 'gasto_monto', {});
@@ -895,6 +1034,9 @@ const COMMAND_RULES = {
   '/activar_listos': { perm: 'users.manage', sensitive: true },
   '/silenciar_stock': { perm: 'users.manage', sensitive: true },
   '/activar_stock': { perm: 'users.manage', sensitive: true },
+  '/gestionusers': { perm: 'users.manage', sensitive: true },
+  '/usuarios': { perm: 'users.manage', sensitive: true },
+  '/vincular': { perm: 'users.manage', sensitive: true },
   '/inventario': { perm: 'products.view' },
   '/inventarios': { perm: 'products.view' },
   '/stockbajos': { perm: 'products.view' },
@@ -964,8 +1106,10 @@ function buildHelpText(actor, isPrivate) {
   return lines.join('\n');
 }
 
-function denyResponse(reason) {
-  return { text: reason, html: true };
+function denyResponse(reason, keyboard) {
+  const out = { text: reason, html: true };
+  if (keyboard) out.replyMarkup = keyboard;
+  return out;
 }
 
 // Procesa un comando. ctx = { fromId, isPrivate, actor }
@@ -976,14 +1120,33 @@ async function handleTelegramCommand(text, ctx) {
 
   // /id siempre disponible (para poder vincular la cuenta)
   if (cmd === '/id') {
+    if (!context.actor && context.fromId) {
+      // Avisar a los admins vinculados para que lo asignen
+      notifyAdminsTelegramId(context).catch(function () { /* no bloqueante */ });
+    }
     return {
-      text: '🆔 Tu Telegram ID es: <code>' + String(context.fromId || '?') + '</code>\n\nPedile al administrador que lo cargue en tu usuario (Usuarios y Roles → Telegram ID).',
+      text: '🆔 Tu Telegram ID es: <code>' + String(context.fromId || '?') + '</code>\n\nPedile al administrador que lo cargue en tu usuario (Usuarios y Roles → Telegram ID), o que use /gestionusers.',
       html: true
     };
   }
 
+  // /start: bienvenida (en privado) + ayuda filtrada
+  if (cmd === '/start') {
+    if (context.isPrivate) {
+      const who = context.actor ? '<b>' + escHtml(context.actor.username) + '</b>' : '';
+      return {
+        text: '👋 ¡Hola' + (who ? ' ' + who : '') + '!\n\n'
+          + 'Este es el bot interno de Corner House.\n'
+          + 'Acá podés consultar información según tu rol. Los comandos contables funcionan solo por privado.\n\n'
+          + buildHelpText(context.actor, true),
+        html: true
+      };
+    }
+    return { text: buildHelpText(context.actor, false), html: true };
+  }
+
   // Ayuda filtrada por permisos
-  if (cmd === '/start' || cmd === '/ayuda' || cmd === '/help') {
+  if (cmd === '/ayuda' || cmd === '/help') {
     return { text: buildHelpText(context.actor, !!context.isPrivate), html: true };
   }
 
@@ -991,13 +1154,13 @@ async function handleTelegramCommand(text, ctx) {
   const rule = COMMAND_RULES[cmd];
   if (rule) {
     if (!context.actor) {
-      return denyResponse('🔒 Tu Telegram no está vinculado a una cuenta.\nEnviá /id y pedile al administrador que cargue ese número en tu usuario.');
+      return denyResponse('🔒 Tu Telegram no está vinculado a una cuenta.\nAbrí el chat privado del bot y enviá /id para vincularte.', dmKeyboard('💬 Abrir el bot y enviar /id'));
     }
     if (context.actor.permissions.indexOf(rule.perm) === -1) {
       return denyResponse('⛔ No tenés permiso para este comando.');
     }
     if (rule.sensitive && !context.isPrivate) {
-      return denyResponse('🔒 Ese comando es privado.\nAbrí el chat con el bot y pedilo ahí.');
+      return denyResponse('🔒 Ese comando es privado.\nAbrí el chat con el bot y pedilo ahí.', dmKeyboard());
     }
   }
 
@@ -1039,13 +1202,19 @@ async function handleTelegramCommand(text, ctx) {
     }
     case '/cancelar':
     case '/cancel': {
-      await clearEstado(getConfiguredChatId());
+      await clearEstado(context.chatId || getConfiguredChatId());
       return { text: '❌ Operación cancelada.', html: true };
+    }
+    case '/gestionusers':
+    case '/usuarios':
+    case '/vincular': {
+      const panel = await buildUsersLinkPanel();
+      return { text: panel.text, html: true, replyMarkup: panel.replyMarkup };
     }
     case '/gasto': {
       const args = clean.split(/\s+/).slice(1);
       // Sin argumentos: formulario guiado por pasos
-      if (args.length === 0) return await startGastoWizard(getConfiguredChatId());
+      if (args.length === 0) return await startGastoWizard(context.chatId || getConfiguredChatId());
       const monto = parseFloat(String(args[0] || '').replace(/[^0-9.]/g, ''));
       const categoria = String(args[1] || 'otros').toLowerCase();
       const descripcion = args.slice(2).join(' ') || null;
@@ -1151,19 +1320,49 @@ async function handleTelegramCallback(data, ctx) {
     gas: { perm: 'finance.gastos', sensitive: true },
     ntf: { perm: 'users.manage', sensitive: true },
     inv: { perm: 'products.view' },
-    rango: { perm: 'finance.view', sensitive: true }
+    rango: { perm: 'finance.view', sensitive: true },
+    tgu: { perm: 'users.manage', sensitive: true }
   };
   const rule = CALLBACK_RULES[key];
   if (rule) {
     if (!context.actor) {
-      return { text: '🔒 Vinculá tu cuenta de Telegram para usar esto. Enviá /id y pedile al administrador que cargue tu ID.', html: true, toast: 'Sin permiso' };
+      return { text: '🔒 Vinculá tu cuenta de Telegram para usar esto. Abrí el chat privado del bot y enviá /id.', html: true, toast: 'Sin permiso', replyMarkup: dmKeyboard('💬 Abrir el bot y enviar /id') };
     }
     if (context.actor.permissions.indexOf(rule.perm) === -1) {
       return { text: '⛔ No tenés permiso para esta acción.', html: true, toast: 'Sin permiso' };
     }
     if (rule.sensitive && !context.isPrivate) {
-      return { text: '🔒 Esta acción es privada. Usá el chat privado con el bot.', html: true, toast: 'Solo por privado' };
+      return { text: '🔒 Esta acción es privada. Usá el chat privado con el bot.', html: true, toast: 'Solo por privado', replyMarkup: dmKeyboard() };
     }
+  }
+
+  // --- Gestion de usuarios/vinculos (/gestionusers) ---
+  if (key === 'tgu') {
+    const action = parts[1];
+    const chatId = context.chatId || getConfiguredChatId();
+    if (action === 'refresh') {
+      const panel = await buildUsersLinkPanel();
+      return { text: panel.text, html: true, replyMarkup: panel.replyMarkup, edit: true, toast: '🔄 Actualizado' };
+    }
+    if (action === 'u') {
+      const perfilId = parts[2];
+      await setEstado(chatId, 'link_id', { perfilId: perfilId });
+      const detail = await buildUserLinkDetail(perfilId);
+      return { text: detail.text, html: true, replyMarkup: detail.replyMarkup, edit: true, toast: '👤 Usuario' };
+    }
+    if (action === 'me') {
+      const res = await linkTelegramId(parts[2], context.fromId);
+      await clearEstado(chatId);
+      const panel = await buildUsersLinkPanel();
+      return { text: res.text + '\n\n' + panel.text, html: true, replyMarkup: panel.replyMarkup, edit: true, toast: '🔗 Vinculado' };
+    }
+    if (action === 'unlink') {
+      const res = await unlinkTelegramId(parts[2]);
+      await clearEstado(chatId);
+      const panel = await buildUsersLinkPanel();
+      return { text: res.text + '\n\n' + panel.text, html: true, replyMarkup: panel.replyMarkup, edit: true, toast: '🗑️ Desvinculado' };
+    }
+    return null;
   }
 
   // --- Selector de fechas (/rango) ---
@@ -1383,6 +1582,7 @@ module.exports = {
   handleTelegramCommand,
   handleTelegramCallback,
   handleGastoFlowText,
+  handleTelegramFlowText,
   getTelegramActor,
   answerCallbackQuery,
   getBotSettings,
