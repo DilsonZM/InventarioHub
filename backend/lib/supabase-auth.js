@@ -77,6 +77,12 @@ function updateUserPassword(accessToken, password) {
   return gotrue('/user', { method: 'PUT', token: accessToken, body: { password: password } });
 }
 
+// Verifica un token_hash (flujo scanner-proof: el token no se consume al
+// abrir el enlace, solo al validarlo aqui). Devuelve una sesion.
+function verifyOtp(type, tokenHash) {
+  return gotrue('/verify', { body: { type: type || 'recovery', token_hash: tokenHash } });
+}
+
 module.exports = {
   gotrue,
   adminCreateUser,
@@ -85,5 +91,6 @@ module.exports = {
   findAuthUserByEmail,
   signInWithPassword,
   sendRecovery,
-  updateUserPassword
+  updateUserPassword,
+  verifyOtp
 };

@@ -264,17 +264,34 @@ router.post('/forgot-password', async (req, res) => {
 // contrasena. Actualiza la credencial en Supabase Auth y el hash local.
 router.post('/reset-password', async (req, res) => {
   try {
-    const { access_token, password } = req.body || {};
-    if (!access_token || !password) {
-      return res.status(400).json({ success: false, message: 'Token y nueva contrasena requeridos' });
+    const { access_token, token_hash, type, password } = req.body || {};
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'La nueva contrasena es requerida' });
+    }
+    if (!access_token && !token_hash) {
+      return res.status(400).json({ success: false, message: 'Token de recuperacion requerido' });
     }
     if (password.length < 6) {
       return res.status(400).json({ success: false, message: 'La contrasena debe tener al menos 6 caracteres' });
     }
 
+    // Flujo token_hash: se valida recien ahora (no al abrir el enlace)
+    let accessToken = access_token;
+    if (!accessToken && token_hash) {
+      try {
+        const session = await supabaseAuth.verifyOtp(type || 'recovery', token_hash);
+        accessToken = session.access_token;
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          message: 'El enlace expiro o es invalido. Solicita uno nuevo.'
+        });
+      }
+    }
+
     let authUser;
     try {
-      authUser = await supabaseAuth.updateUserPassword(access_token, password);
+      authUser = await supabaseAuth.updateUserPassword(accessToken, password);
     } catch (err) {
       return res.status(400).json({
         success: false,
