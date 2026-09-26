@@ -3,7 +3,7 @@ const router = express.Router();
 const supabase = require('../lib/supabase');
 const { requirePermission } = require('../middleware/auth');
 const { applyBogotaDateFilter } = require('../lib/timezone');
-const { notifyNewOrder } = require('../lib/telegram');
+const { notifyNewOrder, notifyOrderReady } = require('../lib/telegram');
 
 // Estados del flujo de pedidos (preparando fue eliminado del flujo)
 const ACTIVE_KITCHEN_STATES = ['pendiente', 'listo', 'entregado'];
@@ -658,6 +658,37 @@ async function notifySaleToTelegram(mapped) {
   }, 'pos');
 }
 
+// Aviso de "pedido listo" a Telegram cuando el pedido pasa a estado listo.
+// Nunca lanza excepciones (no debe bloquear el cambio de estado).
+async function notifyOrderReadyForSale(saleId) {
+  try {
+    const { data: sale } = await supabase
+      .from('ventas')
+      .select('numero_venta, metodo_pago, personas, mesas(nombre), venta_detalles(producto_nombre, cantidad)')
+      .eq('id', saleId)
+      .single();
+    if (!sale) return;
+
+    var destino;
+    if (sale.metodo_pago === 'domicilio') destino = '🛵 Domicilio';
+    else if (sale.metodo_pago === 'recogido') destino = '🏠 Recoger';
+    else {
+      destino = '🍽️ ' + (sale.mesas ? sale.mesas.nombre : 'Mesa');
+      if (sale.personas) destino += ' · ' + sale.personas + ' pers.';
+    }
+
+    await notifyOrderReady({
+      destino: destino,
+      numero_venta: sale.numero_venta,
+      items: (sale.venta_detalles || []).map(function (d) {
+        return { cantidad: d.cantidad, nombre: d.producto_nombre };
+      })
+    });
+  } catch (err) {
+    console.warn('[telegram] aviso de listo error (no bloqueante):', err.message);
+  }
+}
+
 async function handleDishSale(req, res) {
   try {
     var platos = req.body.platos;
@@ -996,6 +1027,10 @@ router.patch('/:id/estado-cocina', requirePermission('puede_crear_salidas'), asy
     if (ACTIVE_KITCHEN_STATES.indexOf(estado) !== -1) {
       var { error } = await supabase.from('ventas').update({ estado_cocina: estado }).eq('id', venta.id);
       if (error) throw error;
+      // Aviso a meseros: solo en la transicion hacia "listo"
+      if (estado === 'listo' && actual !== 'listo') {
+        await notifyOrderReadyForSale(venta.id);
+      }
       return res.json({ success: true, data: { estadoCocina: estado }, message: 'Estado actualizado a ' + estado });
     }
 
