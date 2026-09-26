@@ -11,7 +11,7 @@ const supabaseAuth = require('../lib/supabase-auth');
 
 const SALT_ROUNDS = 10;
 
-const USER_SELECT = 'id, username, role, role_id, roles(id, name), email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en';
+const USER_SELECT = 'id, username, role, role_id, roles(id, name), email, nombre_completo, activo, estado_aprobacion, motivo_rechazo, solicitado_en, ultimo_acceso, creado_en, telegram_user_id';
 
 function userPublic(u) {
   const role = u.roles || null;
@@ -28,7 +28,8 @@ function userPublic(u) {
     motivoRechazo: u.motivo_rechazo,
     solicitadoEn: u.solicitado_en,
     ultimoAcceso: u.ultimo_acceso,
-    creadoEn: u.creado_en
+    creadoEn: u.creado_en,
+    telegramUserId: u.telegram_user_id != null ? Number(u.telegram_user_id) : null
   };
 }
 
@@ -46,6 +47,15 @@ async function getRoleIdOf(userId) {
 // La cuenta Super Admin solo puede ser editada por su titular y nadie
 // puede archivarla/eliminarla. Solo un Super Admin puede asignar ese rol.
 const SUPERADMIN = 'superadmin';
+
+// Telegram ID: numero entero positivo o null
+function normalizeTelegramId(value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return Math.trunc(n);
+}
 
 // Email efectivo para Supabase Auth (los perfiles sin correo usan placeholder)
 function effectiveEmail(username, email) {
@@ -73,7 +83,7 @@ router.get('/', authMiddleware, requirePermission('users.manage'), async (req, r
 // POST /api/users - crear usuario (o reactivar uno inactivo con el mismo username)
 router.post('/', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
-    const { username, password, nombreCompleto, email, roleId } = req.body;
+    const { username, password, nombreCompleto, email, roleId, telegramUserId } = req.body;
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Usuario y contrasena requeridos' });
     }
@@ -114,18 +124,21 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
       }
 
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      const tgId = normalizeTelegramId(telegramUserId);
+      const reactPatch = {
+        password_hash: passwordHash,
+        auth_id: authId || null,
+        role_id: userRoleId,
+        role: userRoleId,
+        email: authEmail,
+        nombre_completo: nombreCompleto || null,
+        activo: true,
+        estado_aprobacion: 'aprobado'
+      };
+      if (tgId !== undefined) reactPatch.telegram_user_id = tgId;
       const { data: reactivated, error: reactError } = await supabase
         .from('perfiles')
-        .update({
-          password_hash: passwordHash,
-          auth_id: authId || null,
-          role_id: userRoleId,
-          role: userRoleId,
-          email: authEmail,
-          nombre_completo: nombreCompleto || null,
-          activo: true,
-          estado_aprobacion: 'aprobado'
-        })
+        .update(reactPatch)
         .eq('id', existing.id)
         .select(USER_SELECT)
         .single();
@@ -161,6 +174,7 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
         role: userRoleId,
         email: authEmail,
         nombre_completo: nombreCompleto || null,
+        telegram_user_id: normalizeTelegramId(telegramUserId) || null,
         estado_aprobacion: 'aprobado'
       })
       .select(USER_SELECT)
@@ -173,6 +187,9 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
     res.status(201).json({ success: true, data: userPublic(user) });
   } catch (err) {
     console.error('User create error:', err);
+    if (err && err.code === '23505') {
+      return res.status(400).json({ success: false, message: 'Ese Telegram ID ya esta vinculado a otro usuario' });
+    }
     res.status(500).json({ success: false, message: 'Error del servidor' });
   }
 });
@@ -180,7 +197,7 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
 // PUT /api/users/:id - editar usuario
 router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req, res) => {
   try {
-    const { username, password, nombreCompleto, email, roleId, activo } = req.body;
+    const { username, password, nombreCompleto, email, roleId, activo, telegramUserId } = req.body;
 
     const { data: target, error: targetError } = await supabase
       .from('perfiles')
@@ -221,6 +238,8 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
       updateData.role = roleId;
     }
     if (typeof activo === 'boolean') updateData.activo = activo;
+    const tgId = normalizeTelegramId(telegramUserId);
+    if (tgId !== undefined) updateData.telegram_user_id = tgId;
     if (password) {
       if (password.length < 6) {
         return res.status(400).json({ success: false, message: 'La contrasena debe tener al menos 6 caracteres' });
@@ -256,6 +275,9 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
     res.json({ success: true, data: userPublic(data) });
   } catch (err) {
     console.error('User update error:', err);
+    if (err && err.code === '23505') {
+      return res.status(400).json({ success: false, message: 'Ese Telegram ID ya esta vinculado a otro usuario' });
+    }
     res.status(500).json({ success: false, message: 'Error del servidor' });
   }
 });

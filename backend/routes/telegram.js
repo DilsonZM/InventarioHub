@@ -1,11 +1,13 @@
 // routes/telegram.js
-// Webhook de Telegram: recibe los mensajes del grupo del restaurante y
-// responde a los comandos de control de notificaciones:
-//   /pausar, /reanudar, /silenciar_pos, /activar_pos, /estado, /ayuda
+// Webhook de Telegram. Acepta:
+//   - Mensajes del grupo configurado (avisos y comandos operativos)
+//   - Mensajes privados (DM) de usuarios, donde viven los comandos
+//     contables/admin segun el rol (RBAC via perfiles.telegram_user_id)
 //
 // Seguridad:
-//   - Se valida el header X-Telegram-Bot-Api-Secret-Token (si hay secreto).
-//   - Solo se procesan comandos enviados desde el chat configurado.
+//   - Header X-Telegram-Bot-Api-Secret-Token (si hay secreto)
+//   - Grupos: solo el chat configurado
+//   - Privados: el vinculo Telegram ID <-> perfil resuelve los permisos
 
 const express = require('express');
 const router = express.Router();
@@ -13,6 +15,7 @@ const {
   handleTelegramCommand,
   handleTelegramCallback,
   handleGastoFlowText,
+  getTelegramActor,
   answerCallbackQuery,
   sendTelegramMessage,
   sendTelegramDocument,
@@ -35,17 +38,25 @@ router.post('/webhook', async (req, res) => {
 
     const update = req.body || {};
 
-    // Botones del selector de fechas (callback_query de /rango)
+    // ---------- Botones (callback_query) ----------
     const cb = update.callback_query;
     if (cb) {
-      const cbChatId = cb.message && cb.message.chat ? cb.message.chat.id : null;
-      if (!cbChatId || String(cbChatId) !== String(getConfiguredChatId())) {
+      const cbChat = cb.message && cb.message.chat ? cb.message.chat : null;
+      const cbChatId = cbChat ? cbChat.id : null;
+      const isPrivate = !!(cbChat && cbChat.type === 'private');
+      if (!cbChatId) return res.sendStatus(200);
+      if (!isPrivate && String(cbChatId) !== String(getConfiguredChatId())) {
         return res.sendStatus(200);
       }
+
+      const fromId = cb.from ? cb.from.id : null;
+      const actor = await getTelegramActor(fromId);
+      const ctx = { fromId, isPrivate, actor, chatId: cbChatId };
+
       let cbResp = null;
       let cbError = null;
       try {
-        cbResp = await handleTelegramCallback(cb.data);
+        cbResp = await handleTelegramCallback(cb.data, ctx);
       } catch (cbErr) {
         cbError = cbErr;
         console.error('[telegram webhook] callback error:', cbErr.message);
@@ -55,26 +66,24 @@ router.post('/webhook', async (req, res) => {
       if (cbResp) {
         const useMarkdown = cbResp.markdown === true;
         const useHtml = cbResp.html === true;
-        // Reportes PDF (solo Productos: la lista larga)
         if (cbResp.document) {
-          await sendTelegramDocument(cbResp.document.buffer, cbResp.document.filename, cbResp.document.caption);
-        // Los paneles/reportes se editan en el lugar (no llenan el chat)
+          await sendTelegramDocument(cbResp.document.buffer, cbResp.document.filename, cbResp.document.caption, { chatId: cbChatId });
         } else if (cbResp.edit && cb.message && cb.message.message_id) {
           const edited = await editTelegramMessage(cbResp.text, cb.message.message_id, {
             markdown: useMarkdown,
             html: useHtml,
-            replyMarkup: cbResp.replyMarkup
+            replyMarkup: cbResp.replyMarkup,
+            chatId: cbChatId
           });
           if (!edited || !edited.ok) {
-            await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, html: useHtml, replyMarkup: cbResp.replyMarkup });
+            await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, html: useHtml, replyMarkup: cbResp.replyMarkup, chatId: cbChatId });
           }
         } else {
-          await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, html: useHtml, replyMarkup: cbResp.replyMarkup });
+          await sendTelegramMessage(cbResp.text, { markdown: useMarkdown, html: useHtml, replyMarkup: cbResp.replyMarkup, chatId: cbChatId });
         }
       } else if (cbError) {
-        await sendTelegramMessage('⚠️ No se pudo procesar la solicitud: ' + cbError.message, { markdown: false });
+        await sendTelegramMessage('⚠️ No se pudo procesar la solicitud: ' + cbError.message, { markdown: false, chatId: cbChatId });
       }
-      // Telegram ignora el body; lo usamos para diagnostico
       return res.status(200).json({
         ok: true,
         handled: cbResp ? (cbResp.document ? 'document' : (cbResp.edit ? 'edit' : 'text')) : 'none',
@@ -82,26 +91,35 @@ router.post('/webhook', async (req, res) => {
       });
     }
 
+    // ---------- Mensajes ----------
     const msg = update.message || update.edited_message || update.channel_post || {};
-    const chatId = msg.chat ? msg.chat.id : null;
+    const chat = msg.chat || {};
+    const chatId = chat.id;
+    const isPrivate = chat.type === 'private';
+    const fromId = msg.from ? msg.from.id : null;
     const text = msg.text || '';
 
-    // Solo procesar comandos del chat configurado (grupo del restaurante)
-    if (!chatId || String(chatId) !== String(getConfiguredChatId())) {
+    // Grupos: solo el chat configurado. Privados: cualquier usuario (el vinculo decide).
+    if (!isPrivate && String(chatId) !== String(getConfiguredChatId())) {
       return res.sendStatus(200);
     }
+    if (isPrivate && !fromId) return res.sendStatus(200);
 
-    let response = await handleTelegramCommand(text);
+    const actor = await getTelegramActor(fromId);
+    const ctx = { fromId, isPrivate, actor, chatId };
+
+    let response = await handleTelegramCommand(text, ctx);
     // Si no fue un comando, puede ser un paso del formulario de /gasto
-    if (!response) response = await handleGastoFlowText(text, chatId);
+    if (!response) response = await handleGastoFlowText(text, chatId, ctx);
     if (response) {
       if (typeof response === 'string') {
-        await sendTelegramMessage(response, { markdown: false });
+        await sendTelegramMessage(response, { markdown: false, chatId });
       } else {
         await sendTelegramMessage(response.text, {
           markdown: response.markdown === true,
           html: response.html === true,
-          replyMarkup: response.replyMarkup
+          replyMarkup: response.replyMarkup,
+          chatId
         });
       }
     }

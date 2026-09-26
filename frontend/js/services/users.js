@@ -18,7 +18,8 @@ function normalizeUser(u) {
     creadoEn: u.creadoEn || u.creado_en,
     solicitadoEn: u.solicitadoEn || u.solicitado_en,
     motivo: u.motivo,
-    permissions: u.permissions || []
+    permissions: u.permissions || [],
+    telegramUserId: u.telegramUserId != null ? u.telegramUserId : (u.telegram_user_id != null ? u.telegram_user_id : null)
   };
 }
 

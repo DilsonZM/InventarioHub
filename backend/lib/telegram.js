@@ -16,6 +16,7 @@ const supabase = require('./supabase');
 const { normalizePhone, formatPhone } = require('./phone');
 const stockReport = require('./stock-report');
 const finance = require('./finance');
+const { getUserPermissions } = require('../middleware/auth');
 
 // Preferir IPv4 al conectar con la API de Telegram: en algunas redes el
 // enrutamiento IPv6 es inestable y produce "fetch failed" intermitentes.
@@ -201,8 +202,9 @@ async function sendTelegramMessage(text, options) {
   if (!isConfigured()) return { ok: false, skipped: true };
   const useHtml = !!(options && options.html);
   const useMarkdown = !useHtml && (!options || options.markdown !== false);
+  const targetChat = (options && options.chatId) ? options.chatId : CHAT_ID;
   try {
-    const payload = { chat_id: CHAT_ID, text: text };
+    const payload = { chat_id: targetChat, text: text };
     if (useHtml) {
       payload.parse_mode = 'HTML';
       payload.disable_web_page_preview = true;
@@ -257,11 +259,12 @@ async function notifyNewOrder(order, origin) {
 }
 
 // Envia un documento (PDF) al chat configurado. No lanza excepciones.
-async function sendTelegramDocument(buffer, filename, caption) {
+async function sendTelegramDocument(buffer, filename, caption, options) {
   if (!isConfigured()) return { ok: false, skipped: true };
+  const targetChat = (options && options.chatId) ? options.chatId : CHAT_ID;
   try {
     const form = new FormData();
-    form.append('chat_id', String(CHAT_ID));
+    form.append('chat_id', String(targetChat));
     form.append('document', new Blob([buffer], { type: 'application/pdf' }), filename || 'reporte.pdf');
     if (caption) form.append('caption', caption);
     const res = await fetchWithRetry('https://api.telegram.org/bot' + BOT_TOKEN + '/sendDocument', {
@@ -303,8 +306,9 @@ async function editTelegramMessage(text, messageId, options) {
   if (!isConfigured() || !messageId) return { ok: false };
   const useHtml = !!(options && options.html);
   const useMarkdown = !useHtml && (!options || options.markdown !== false);
+  const targetChat = (options && options.chatId) ? options.chatId : CHAT_ID;
   try {
-    const payload = { chat_id: CHAT_ID, message_id: messageId, text: text };
+    const payload = { chat_id: targetChat, message_id: messageId, text: text };
     if (useHtml) {
       payload.parse_mode = 'HTML';
       payload.disable_web_page_preview = true;
@@ -798,8 +802,12 @@ async function startGastoWizard(chatId) {
 
 // Procesa un texto libre mientras hay un wizard activo. Devuelve null si
 // el chat no tiene ningún flujo pendiente (o si el texto es un comando).
-async function handleGastoFlowText(text, chatId) {
+async function handleGastoFlowText(text, chatId, ctx) {
+  const context = ctx || {};
   if (!chatId) return null;
+  // Solo usuarios vinculados con permiso de gastos, y solo por privado
+  if (!context.actor || context.actor.permissions.indexOf('finance.gastos') === -1) return null;
+  if (!context.isPrivate) return null;
   const clean = String(text || '').trim();
   if (!clean || clean.charAt(0) === '/') return null;
   const estado = await getEstado(chatId);
@@ -869,31 +877,131 @@ async function guardarGastoWizard(chatId, monto, categoria, descripcion, edit) {
 // Comandos del chat
 // ============================================================
 
-const HELP_TEXT = [
-  '🤖 Comandos disponibles:',
-  '',
-  '/notificaciones — Panel para activar/silenciar avisos',
-  '/inventario — Reportes PDF (productos, platos, bebidas, stock bajo)',
-  '/stockbajos — Ver los productos bajo mínimo ahora',
-  '/finanzas — Informe contable (ingresos, egresos, utilidad)',
-  '/gasto — Registrar un gasto operativo (formulario guiado)',
-  '/cancelar — Cancelar la operación en curso',
-  '/estado — Ver el estado actual (texto)',
-  '/hoy — Resumen de ventas de hoy',
-  '/rango — Resumen por rango de fechas (con selector)',
-  '/ayuda — Ver esta ayuda'
-].join('\n');
+// ============================================================
+// RBAC de Telegram: el bot decide segun el rol del usuario
+// ============================================================
 
-// Procesa un comando y devuelve el texto de respuesta (o null si no es comando)
-async function handleTelegramCommand(text) {
+// Comandos que requieren permiso. `sensitive` = solo por privado
+// (lo contable/admin nunca se responde en el grupo).
+const COMMAND_RULES = {
+  '/notificaciones': { perm: 'users.manage', sensitive: true },
+  '/notif': { perm: 'users.manage', sensitive: true },
+  '/estado': { perm: 'users.manage', sensitive: true },
+  '/pausar': { perm: 'users.manage', sensitive: true },
+  '/reanudar': { perm: 'users.manage', sensitive: true },
+  '/silenciar_pos': { perm: 'users.manage', sensitive: true },
+  '/activar_pos': { perm: 'users.manage', sensitive: true },
+  '/silenciar_listos': { perm: 'users.manage', sensitive: true },
+  '/activar_listos': { perm: 'users.manage', sensitive: true },
+  '/silenciar_stock': { perm: 'users.manage', sensitive: true },
+  '/activar_stock': { perm: 'users.manage', sensitive: true },
+  '/inventario': { perm: 'products.view' },
+  '/inventarios': { perm: 'products.view' },
+  '/stockbajos': { perm: 'products.view' },
+  '/bajos': { perm: 'products.view' },
+  '/finanzas': { perm: 'finance.view', sensitive: true },
+  '/gasto': { perm: 'finance.gastos', sensitive: true },
+  '/hoy': { perm: 'finance.view', sensitive: true },
+  '/resumen': { perm: 'finance.view', sensitive: true },
+  '/rango': { perm: 'finance.view', sensitive: true }
+};
+
+// Resuelve el actor de Telegram (perfil + permisos) por su Telegram ID
+async function getTelegramActor(fromId) {
+  if (!fromId) return null;
+  try {
+    const { data } = await supabase
+      .from('perfiles')
+      .select('id, username, activo')
+      .eq('telegram_user_id', fromId)
+      .maybeSingle();
+    if (!data || data.activo === false) return null;
+    const info = await getUserPermissions(data.id);
+    return {
+      userId: data.id,
+      username: data.username,
+      roleId: info.roleId,
+      roleName: info.roleName,
+      permissions: info.permissions
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+// Ayuda filtrada segun permisos del actor
+function buildHelpText(actor, isPrivate) {
+  const lines = ['🤖 <b>Comandos disponibles</b>', ''];
+  lines.push('/id — Ver tu Telegram ID (para vincular tu cuenta)');
+
+  if (!actor) {
+    lines.push('');
+    lines.push('🔒 Tu Telegram no está vinculado a una cuenta.');
+    lines.push('Enviá /id y pedile al administrador que cargue ese número en tu usuario (Usuarios y Roles).');
+    lines.push('/ayuda — Ver esta ayuda');
+    return lines.join('\n');
+  }
+
+  const can = function (perm) { return actor.permissions.indexOf(perm) !== -1; };
+  const priv = isPrivate ? '' : ' <i>(solo por privado)</i>';
+  if (can('products.view')) {
+    lines.push('/stockbajos — Ver los productos bajo mínimo ahora');
+    lines.push('/inventario — Reportes PDF (productos, platos, bebidas, stock bajo)');
+  }
+  if (can('finance.view')) {
+    lines.push('/hoy — Resumen de ventas de hoy' + priv);
+    lines.push('/rango — Resumen por rango de fechas' + priv);
+    lines.push('/finanzas — Informe contable' + priv);
+  }
+  if (can('finance.gastos')) lines.push('/gasto — Registrar un gasto operativo' + priv);
+  if (can('users.manage')) {
+    lines.push('/notificaciones — Panel para activar/silenciar avisos' + priv);
+    lines.push('/estado — Ver el estado del bot' + priv);
+  }
+  lines.push('/ayuda — Ver esta ayuda');
+  lines.push('');
+  lines.push('👤 Rol: <b>' + escHtml(actor.roleName || actor.roleId || '-') + '</b>');
+  return lines.join('\n');
+}
+
+function denyResponse(reason) {
+  return { text: reason, html: true };
+}
+
+// Procesa un comando. ctx = { fromId, isPrivate, actor }
+async function handleTelegramCommand(text, ctx) {
+  const context = ctx || {};
   const clean = String(text || '').trim();
   const cmd = clean.toLowerCase().split('@')[0].split(/\s+/)[0];
 
+  // /id siempre disponible (para poder vincular la cuenta)
+  if (cmd === '/id') {
+    return {
+      text: '🆔 Tu Telegram ID es: <code>' + String(context.fromId || '?') + '</code>\n\nPedile al administrador que lo cargue en tu usuario (Usuarios y Roles → Telegram ID).',
+      html: true
+    };
+  }
+
+  // Ayuda filtrada por permisos
+  if (cmd === '/start' || cmd === '/ayuda' || cmd === '/help') {
+    return { text: buildHelpText(context.actor, !!context.isPrivate), html: true };
+  }
+
+  // Control de acceso por comando
+  const rule = COMMAND_RULES[cmd];
+  if (rule) {
+    if (!context.actor) {
+      return denyResponse('🔒 Tu Telegram no está vinculado a una cuenta.\nEnviá /id y pedile al administrador que cargue ese número en tu usuario.');
+    }
+    if (context.actor.permissions.indexOf(rule.perm) === -1) {
+      return denyResponse('⛔ No tenés permiso para este comando.');
+    }
+    if (rule.sensitive && !context.isPrivate) {
+      return denyResponse('🔒 Ese comando es privado.\nAbrí el chat con el bot y pedilo ahí.');
+    }
+  }
+
   switch (cmd) {
-    case '/start':
-    case '/ayuda':
-    case '/help':
-      return HELP_TEXT;
     case '/notificaciones':
     case '/notif': {
       const panel = await buildNotificationsPanel();
@@ -1032,9 +1140,31 @@ async function handleTelegramCommand(text) {
 }
 
 // Procesa el callback de un boton (selector de fechas o panel de notificaciones)
-async function handleTelegramCallback(data) {
+async function handleTelegramCallback(data, ctx) {
+  const context = ctx || {};
   const parts = String(data || '').split(':');
   const key = parts[0];
+
+  // Control de acceso por tipo de boton (mismos permisos que la web)
+  const CALLBACK_RULES = {
+    fin: { perm: 'finance.view', sensitive: true },
+    gas: { perm: 'finance.gastos', sensitive: true },
+    ntf: { perm: 'users.manage', sensitive: true },
+    inv: { perm: 'products.view' },
+    rango: { perm: 'finance.view', sensitive: true }
+  };
+  const rule = CALLBACK_RULES[key];
+  if (rule) {
+    if (!context.actor) {
+      return { text: '🔒 Vinculá tu cuenta de Telegram para usar esto. Enviá /id y pedile al administrador que cargue tu ID.', html: true, toast: 'Sin permiso' };
+    }
+    if (context.actor.permissions.indexOf(rule.perm) === -1) {
+      return { text: '⛔ No tenés permiso para esta acción.', html: true, toast: 'Sin permiso' };
+    }
+    if (rule.sensitive && !context.isPrivate) {
+      return { text: '🔒 Esta acción es privada. Usá el chat privado con el bot.', html: true, toast: 'Solo por privado' };
+    }
+  }
 
   // --- Selector de fechas (/rango) ---
   if (key === 'rango') {
@@ -1253,6 +1383,7 @@ module.exports = {
   handleTelegramCommand,
   handleTelegramCallback,
   handleGastoFlowText,
+  getTelegramActor,
   answerCallbackQuery,
   getBotSettings,
   updateBotSetting,

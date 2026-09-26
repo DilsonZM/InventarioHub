@@ -271,6 +271,7 @@ function openUserModal(user) {
   $('#userEmail').value = isEdit ? (user.email || '') : '';
   fillRoleSelect(isEdit ? (user.roleId || user.role) : 'vendedor');
   $('#userEstado').value = (isEdit && user.activo === false) ? 'archivado' : 'activo';
+  $('#userTelegramId').value = (isEdit && user.telegramUserId) ? String(user.telegramUserId) : '';
 
   // Cuenta Super Admin: rol y estado bloqueados (no se puede degradar ni archivar)
   var isSuper = isEdit && user.roleId === 'superadmin';
@@ -287,7 +288,8 @@ async function saveUser(e) {
     nombreCompleto: $('#userNombreCompleto').value.trim(),
     email: $('#userEmail').value.trim(),
     roleId: $('#userRole').value,
-    activo: $('#userEstado').value === 'activo'
+    activo: $('#userEstado').value === 'activo',
+    telegramUserId: $('#userTelegramId').value.trim() || null
   };
   if (!ui.editingUserId && !password) {
     showError('userFormError', 'La contraseña es requerida para nuevos usuarios');
