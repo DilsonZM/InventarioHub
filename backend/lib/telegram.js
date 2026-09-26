@@ -90,7 +90,7 @@ async function updateBotSetting(patch) {
 function buildOrderMessage(order) {
   const lines = [];
   lines.push('🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧');
-  lines.push('🔥 *NUEVO PEDIDO REGISTRADO* 🔥');
+  lines.push('*NUEVO PEDIDO REGISTRADO*');
   lines.push('🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧');
   lines.push('');
   lines.push('📍 *Destino:* ' + esc(order.destino || '—'));
@@ -130,7 +130,7 @@ function buildOrderMessage(order) {
 function buildReadyMessage(order) {
   const lines = [];
   lines.push('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩');
-  lines.push('🍽️ *¡PLATO LISTO PARA SERVIR\\!* 🍽️');
+  lines.push('*¡PLATO LISTO PARA SERVIR\\!*');
   lines.push('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩');
   lines.push('');
   lines.push('📍 *Mesa / Destino:* ' + esc(order.destino || '—'));
